@@ -10,12 +10,13 @@
 - **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`.
 - **Semantic Search**: Concept-based retrieval using local heuristic-driven RAG.
 - **Web Intelligence**: Integrated search and automated Markdown conversion for live research.
+- **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping.
 
 ### 🛠️ Industrial Tooling
 
 - **Full MCP & LSP Support**: Native integration with any Model Context Protocol and Language Server Protocol servers.
+- **Runtime Server Addition**: Add new MCP servers interactively without restarting.
 - **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.).
-- **Global Refactoring**: Perform codebase-wide regex transformations with safety-guaranteed inclusion globs.
 
 ### 🛡️ Security & Observability
 
@@ -23,12 +24,16 @@
 - **Network Gating**: Domain-level whitelisting for all external web requests.
 - **Persistent Auditing**: Every tool call is logged with timestamps, inputs, and results.
 - **Usage Tracking**: Real-time token counts and cost estimation in USD.
+- **Telemetry Export**: Session metrics exported to `telemetry.json` on exit.
 
 ### ⌨️ Professional UX
 
+- **Tabbed Interface**: Switch between `Chat` and `Tasks` views with `[Tab]`.
+- **File Tree Sidebar**: Collapsible project navigator with `[Ctrl+B]`.
+- **Command History**: Persistent history across sessions; navigate with `[↑]`/`[↓]`.
 - **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer.
 - **Context Pinning**: Permanently lock critical files into the agent's context.
-- **Customizable TUI**: Fully configurable keybinds and theme engine with RGB support.
+- **Customizable TUI**: Configurable keybinds and theme engine with RGB support.
 
 ## 📦 Installation
 
@@ -46,19 +51,91 @@ Configure your environment in `~/.config/open_crust/config.json`:
 {
   "provider": "ollama",
   "model": "llama3",
+  "ollama_url": "http://localhost:11434",
   "mcp": {
-    "weather": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-weather"], "enabled": true }
+    "weather": {
+      "command": ["npx", "-y", "@modelcontextprotocol/server-weather"],
+      "enabled": true
+    }
   },
-  "allowed_domains": ["api.brave.com", "github.com"]
+  "lsp": {
+    "rust": {
+      "command": ["rust-analyzer"],
+      "extensions": ["rs"],
+      "disabled": false
+    }
+  },
+  "allowed_domains": ["api.brave.com", "github.com"],
+  "tui": {
+    "keybinds": {
+      "leader": "ctrl+x",
+      "app_exit": "ctrl+c,ctrl+d",
+      "input_submit": "return"
+    }
+  },
+  "theme": {
+    "background": "#1e1e2e",
+    "foreground": "#cdd6f4",
+    "accent": "#89b4fa",
+    "border": "#313244"
+  }
 }
 ```
 
-## ⌨️ Quick Start Keybinds
+## ⌨️ Keybinds
 
-- `i`: Enter Insert Mode
-- `s`: Open Server Management
-- `Esc`: Back to Normal Mode
-- `Ctrl+C`: Exit App (with Telemetry Export)
+| Key | Action |
+|-----|--------|
+| `i` | Enter Insert (input) mode |
+| `Esc` | Return to Normal mode |
+| `Tab` | Cycle between Chat / Tasks views |
+| `Ctrl+B` | Toggle file tree sidebar |
+| `↑` / `↓` | Navigate command history (in Insert mode) |
+| `s` | Open Server Management panel |
+| `Enter` | Submit message |
+| `a` | Approve proposed change |
+| `d` | Deny proposed change |
+| `Ctrl+C` / `Ctrl+D` | Quit |
+
+## 🏗️ Architecture
+
+```
+open_crust/
+├── src/
+│   ├── main.rs        # Entry point, TUI event loop
+│   ├── app.rs         # Application state, tabs, history
+│   ├── ui.rs          # TUI rendering (ratatui)
+│   ├── llm.rs         # LLM client, tool execution loop
+│   ├── tools.rs       # Tool schema definitions
+│   ├── config.rs      # Config loading/saving
+│   ├── mcp.rs         # MCP server management (JSON-RPC)
+│   ├── lsp.rs         # LSP client (JSON-RPC)
+│   ├── skills.rs      # Skill discovery and loading
+│   ├── sessions.rs    # Session persistence
+│   ├── planner.rs     # Task planner
+│   ├── rag.rs         # Local semantic search
+│   ├── audit.rs       # Audit logging
+│   ├── stats.rs       # Token & cost tracking
+│   ├── telemetry.rs   # Session telemetry export
+│   ├── permissions.rs # Permission enforcement
+│   ├── web.rs         # Web search integration
+│   └── acp.rs         # ACP stdio interface
+```
+
+## 🔌 Adding Skills
+
+Create a SKILL.md file in `.opencrust/skills/<skill-name>/`:
+
+```markdown
+---
+name: my_skill
+description: Does something useful
+---
+
+## Instructions
+
+The agent should follow these steps to accomplish the task...
+```
 
 ---
 Built with 🦀 by the OpenCrust Team.

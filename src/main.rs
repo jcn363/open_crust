@@ -173,6 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
 
     let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, llm_client.clone());
+    app.refresh_sidebar();
 
     loop {
         while let Ok(response) = response_rx.try_recv() {
@@ -189,12 +190,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             
-            if let Some(last) = app.messages.last() {
+            let tab = &mut app.tabs[0]; // always push to Chat tab
+            if let Some(last) = tab.messages.last() {
                 if last == "open_crust: Thinking..." || last.starts_with("open_crust: Executing tool") {
-                    app.messages.pop();
+                    tab.messages.pop();
                 }
             }
-            app.messages.push(response);
+            tab.messages.push(response);
         }
 
         terminal.draw(|f| ui::draw(f, &app))?;
@@ -211,14 +213,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         if let Some(tx) = &app.approval_tx {
                             let _ = tx.try_send(true);
                         }
-                        app.messages.push(String::from("You: y (Approved)"));
+                        app.tabs[0].messages.push(String::from("You: y (Approved)"));
                     }
                     KeyCode::Char('n') | KeyCode::Char('N') => {
                         app.waiting_for_approval = false;
                         if let Some(tx) = &app.approval_tx {
                             let _ = tx.try_send(false);
                         }
-                        app.messages.push(String::from("You: n (Denied)"));
+                        app.tabs[0].messages.push(String::from("You: n (Denied)"));
                     }
                     _ => {}
                 }
@@ -228,6 +230,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     app.should_quit = true;
                 }
 
+                // Global keys
+                if key.modifiers == crossterm::event::KeyModifiers::CONTROL && key.code == KeyCode::Char('b') {
+                    app.show_sidebar = !app.show_sidebar;
+                    continue;
+                }
+
                 match app.mode {
                     Mode::Normal => match key.code {
                         KeyCode::Char('i') => {
@@ -235,6 +243,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         KeyCode::Char('s') => {
                             app.mode = Mode::Servers;
+                        }
+                        KeyCode::Tab => {
+                            app.active_tab = (app.active_tab + 1) % app.tabs.len();
                         }
                         _ => {}
                     },
@@ -252,6 +263,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
                                 }
+                                KeyCode::Up => {
+                                    app.history_up();
+                                }
+                                KeyCode::Down => {
+                                    app.history_down();
+                                }
                                 _ => {}
                             }
                         }
@@ -262,14 +279,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             if let Some(tx) = &app.approval_tx {
                                 let _ = tx.try_send(true);
                             }
-                            app.messages.push(String::from("You: a (Approved Change)"));
+                            app.tabs[0].messages.push(String::from("You: a (Approved Change)"));
                         }
                         KeyCode::Char('d') | KeyCode::Char('D') => {
                             app.mode = Mode::Normal;
                             if let Some(tx) = &app.approval_tx {
                                 let _ = tx.try_send(false);
                             }
-                            app.messages.push(String::from("You: d (Denied Change)"));
+                            app.tabs[0].messages.push(String::from("You: d (Denied Change)"));
                         }
                         _ => {}
                     },
@@ -295,7 +312,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                         enabled: true,
                                     });
                                     app.config.save();
-                                    app.messages.push(format!("System: Added MCP server '{}'", name));
+                                    app.tabs[0].messages.push(format!("System: Added MCP server '{}'", name));
                                     app.mcp_input.clear();
                                 }
                             }

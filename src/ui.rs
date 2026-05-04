@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Modifier},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Clear, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Clear, Wrap, Tabs},
     Frame,
 };
 
@@ -15,33 +15,76 @@ pub fn draw(f: &mut Frame, app: &App) {
     let accent_color = parse_color(theme.map(|t| t.accent.as_str()).unwrap_or("#007acc"));
     let border_color = parse_color(theme.map(|t| t.border.as_str()).unwrap_or("#333333"));
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([
-            Constraint::Min(1),
-            Constraint::Length(3),
-            Constraint::Length(1),
-        ].as_ref())
-        .split(f.area());
-
     // Background
     let bg_block = Block::default().style(Style::default().bg(bg_color));
     f.render_widget(bg_block, f.area());
 
-    // Messages
-    let messages: Vec<ListItem> = app
-        .messages
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(3), // Tabs
+            Constraint::Min(1),    // Main content
+            Constraint::Length(3), // Input
+            Constraint::Length(1), // Status
+        ].as_ref())
+        .split(f.area());
+
+    // Tabs
+    let tab_titles: Vec<Line> = app.tabs.iter()
+        .map(|t| Line::from(t.name.as_str()))
+        .collect();
+    let tabs_widget = Tabs::new(tab_titles)
+        .block(Block::default().borders(Borders::ALL).title(" Views ")
+            .border_style(Style::default().fg(border_color)))
+        .select(app.active_tab)
+        .highlight_style(Style::default().fg(accent_color).add_modifier(Modifier::BOLD));
+    f.render_widget(tabs_widget, chunks[0]);
+
+    let main_area = if app.show_sidebar {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(25),
+                Constraint::Min(0),
+            ].as_ref())
+            .split(chunks[1])
+    } else {
+        Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(0),
+                Constraint::Min(0),
+            ].as_ref())
+            .split(chunks[1])
+    };
+
+    // Sidebar
+    if app.show_sidebar {
+        let sidebar_items: Vec<ListItem> = app.sidebar_items.iter()
+            .map(|i| ListItem::new(Line::from(Span::raw(format!(" {} ", i)))))
+            .collect();
+        let sidebar_list = List::new(sidebar_items)
+            .block(Block::default().borders(Borders::ALL).title(" Files ")
+            .border_style(Style::default().fg(border_color)));
+        f.render_widget(sidebar_list, main_area[0]);
+    }
+
+    // Active tab messages
+    let active_messages = app.tabs.get(app.active_tab)
+        .map(|t| t.messages.as_slice())
+        .unwrap_or(&[]);
+    let messages: Vec<ListItem> = active_messages
         .iter()
         .map(|m| ListItem::new(Line::from(Span::raw(m))))
         .collect();
     let messages_list = List::new(messages)
         .block(Block::default()
             .borders(Borders::ALL)
-            .title(" Conversation ")
+            .title(format!(" {} ", app.tabs.get(app.active_tab).map(|t| t.name.as_str()).unwrap_or("Chat")))
             .border_style(Style::default().fg(border_color))
             .style(Style::default().fg(fg_color)));
-    f.render_widget(messages_list, chunks[0]);
+    f.render_widget(messages_list, main_area[1]);
 
     // Input Box
     let input = Paragraph::new(app.input.as_str())
@@ -60,16 +103,16 @@ pub fn draw(f: &mut Frame, app: &App) {
                 Mode::Review => Style::default().fg(border_color),
                 Mode::Servers => Style::default().fg(border_color),
             }));
-    f.render_widget(input, chunks[1]);
-    
-    // Status
+    f.render_widget(input, chunks[2]);
+
+    // Status bar
     let mode_str = match app.mode {
-        Mode::Normal => "NORMAL",
-        Mode::Insert => "INSERT",
-        Mode::Review => "REVIEW",
+        Mode::Normal  => "NORMAL",
+        Mode::Insert  => "INSERT",
+        Mode::Review  => "REVIEW",
         Mode::Servers => "SERVERS",
     };
-    
+
     let stats = app.llm_client.usage_stats.try_lock();
     let stats_str = if let Ok(s) = stats {
         format!(" | Tokens: {}/{} | Cost: ${:.4}", s.input_tokens, s.output_tokens, s.total_cost)
@@ -77,15 +120,15 @@ pub fn draw(f: &mut Frame, app: &App) {
         String::new()
     };
 
-    let status = Paragraph::new(format!("-- {} --{}", mode_str, stats_str))
+    let status = Paragraph::new(format!("-- {} -- | Ctrl+B: Sidebar | Tab: Switch view{}", mode_str, stats_str))
         .style(Style::default().fg(accent_color));
-    f.render_widget(status, chunks[2]);
-    
+    f.render_widget(status, chunks[3]);
+
     // Cursor handling
     if let Mode::Insert = app.mode {
         let input_len = app.input.len() as u16;
         f.set_cursor_position((
-            chunks[1].x + input_len + 1, chunks[1].y + 1
+            chunks[2].x + input_len + 1, chunks[2].y + 1
         ));
     }
 
@@ -100,7 +143,7 @@ fn draw_review_popup(f: &mut Frame, app: &App) {
     if let Some(change) = app.proposed_changes.last() {
         let area = centered_rect(80, 80, f.area());
         f.render_widget(Clear, area);
-        
+
         let diff_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -115,7 +158,7 @@ fn draw_review_popup(f: &mut Frame, app: &App) {
 
         f.render_widget(original, diff_chunks[0]);
         f.render_widget(proposed, diff_chunks[1]);
-        
+
         let hint = Paragraph::new(" [A]pprove | [D]eny ")
             .style(Style::default().bg(Color::Blue).fg(Color::White))
             .block(Block::default().borders(Borders::BOTTOM));
@@ -130,7 +173,7 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
         .title(" Server Management ")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(accent_color));
-    
+
     let area = centered_rect(80, 80, f.area());
     f.render_widget(Clear, area);
 
@@ -145,7 +188,7 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
     ];
 
     for (name, _) in &app.config.mcp {
-        text.push(Line::from(format!("- {} (Active)", name)));
+        text.push(Line::from(format!("  {} (Active)", name)));
     }
 
     text.push(Line::from(""));
@@ -153,7 +196,7 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
         Span::styled("LSP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
     ]));
     for (name, _) in &app.config.lsp {
-        text.push(Line::from(format!("- {} (Active)", name)));
+        text.push(Line::from(format!("  {} (Active)", name)));
     }
 
     text.push(Line::from(""));
