@@ -1,0 +1,141 @@
+use serde_json::Value;
+use std::fs;
+use std::process::Command;
+
+pub fn execute_tool(name: &str, arguments: &Value) -> String {
+    match name {
+        "bash" => {
+            let command = arguments.get("command").and_then(|v| v.as_str()).unwrap_or("");
+            match Command::new("sh").arg("-c").arg(command).output() {
+                Ok(output) => {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    format!("Stdout:\n{}\nStderr:\n{}", stdout, stderr)
+                }
+                Err(e) => format!("Error executing command: {}", e),
+            }
+        }
+        "read" => {
+            let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
+            match fs::read_to_string(path) {
+                Ok(content) => content,
+                Err(e) => format!("Error reading file: {}", e),
+            }
+        }
+        "write" => {
+            let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
+            let content = arguments.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            match fs::write(path, content) {
+                Ok(_) => format!("Successfully wrote to {}", path),
+                Err(e) => format!("Error writing file: {}", e),
+            }
+        }
+        _ => format!("Unknown tool: {}", name),
+    }
+}
+
+pub fn get_tools_schema() -> Value {
+    serde_json::json!([
+        {
+            "type": "function",
+            "function": {
+                "name": "bash",
+                "description": "Execute a bash command on the local system.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The command to run"
+                        }
+                    },
+                    "required": ["command"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "read",
+                "description": "Read the contents of a local file.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "The absolute or relative path to the file"
+                        }
+                    },
+                    "required": ["path"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "write",
+                "description": "Write text content to a local file, creating or overwriting it.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "The path to the file"
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "The content to write"
+                        }
+                    },
+                    "required": ["path", "content"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_goto_definition",
+                "description": "Jump to the definition of a symbol using LSP.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "File path" },
+                        "line": { "type": "integer", "description": "Line number (0-indexed)" },
+                        "character": { "type": "integer", "description": "Character position (0-indexed)" }
+                    },
+                    "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_hover",
+                "description": "Get hover information for a symbol using LSP.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "File path" },
+                        "line": { "type": "integer", "description": "Line number (0-indexed)" },
+                        "character": { "type": "integer", "description": "Character position (0-indexed)" }
+                    },
+                    "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "skill",
+                "description": "Load the full content of a reusable skill.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "The name of the skill to load" }
+                    },
+                    "required": ["name"]
+                }
+            }
+        }
+    ])
+}
