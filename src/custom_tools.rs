@@ -24,7 +24,7 @@ impl CustomToolManager {
 
     pub fn discover(&mut self) {
         let paths = vec![
-            PathBuf::from(".opencode/tools"),
+            PathBuf::from(".opencrust/tools"),
             dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("open_crust/tools"),
         ];
 

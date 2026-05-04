@@ -1,3 +1,4 @@
+#![deny(warnings)]
 mod app;
 mod config;
 mod events;
@@ -181,7 +182,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 let parts: Vec<&str> = response.strip_prefix("[DIFF_REQUIRED]").unwrap().splitn(3, '|').collect();
                 if parts.len() == 3 {
                     app.proposed_changes.push(crate::app::ProposedChange {
-                        path: parts[0].to_string(),
                         original: parts[1].to_string(),
                         proposed: parts[2].to_string(),
                     });

@@ -9,7 +9,7 @@ impl RagManager {
 
     pub fn semantic_search(&self, query: &str) -> String {
         // High-quality placeholder for Semantic Search
-        // In a real RAG system, this would use embeddings and a vector DB.
+        // TODO: this would use embeddings and a vector DB.
         // For now, we perform a weighted keyword search to simulate semantic retrieval.
         
         let output = Command::new("grep")

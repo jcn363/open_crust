@@ -2772,3 +2772,327 @@ Stack backtrace:
 2026-05-04T11:36:00.521632Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
 2026-05-04T11:36:00.521755Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
 2026-05-04T11:36:00.521795Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:36:39.736904Z DEBUG            main bacon_ls::lsp: src/lsp.rs:266: client sent didSave request
+2026-05-04T11:36:39.737101Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:36:39.737265Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:36:40.152373Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:36:40.184477Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:36:40.184553Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:36:40.184641Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:36:40.184714Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:36:40.184844Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:36:40.184884Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:36:40.185046Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:36:40.185080Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:36:40.185193Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:36:40.185403Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:36:40.185465Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:36:40.185513Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:36:43.525493Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:36:43.525703Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:36:44.011881Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:36:44.049285Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:36:44.052965Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:36:44.053033Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:36:44.053147Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:36:44.053184Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:36:44.053322Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:36:44.053347Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:36:44.053499Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:36:44.053531Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:36:44.053678Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:36:44.053719Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:36:44.053844Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:36:44.053872Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:36:44.397528Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:36:44.824213Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:36:44.888292Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:36:51.177958Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:36:51.178127Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:36:51.684003Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:36:51.718753Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:36:51.718817Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:36:51.719050Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:36:51.719100Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:36:51.719256Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:36:51.719283Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:36:51.719337Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:36:51.719366Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:36:51.719438Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:36:51.719491Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:36:51.719777Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:36:51.719832Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:12.136930Z DEBUG            main bacon_ls::lsp: src/lsp.rs:266: client sent didSave request
+2026-05-04T11:37:12.136976Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:12.137821Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:12.953849Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:13.297110Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:13.297181Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:13.297289Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:13.297381Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:13.297621Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:13.297664Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:13.297800Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:13.297836Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:13.297931Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:13.298000Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:13.298165Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:13.298209Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:37:30.445761Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:30.445887Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:31.024106Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:31.662874Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:31.747408Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:31.747516Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:31.747541Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:31.747638Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:31.749317Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:31.749399Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:37:31.749573Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:31.749629Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:31.750476Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:31.750627Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:31.751175Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:31.751312Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:31.773888Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:34.557445Z DEBUG            main tower_lsp_server::service::pending: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tower-lsp-server-0.23.0/src/service/pending.rs:62: client asked to cancel request 158, but no such pending request exists, ignoring
+2026-05-04T11:37:35.598793Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:35.598977Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:36.107828Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:36.148196Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:36.148532Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:36.148561Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:36.148657Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:36.148988Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:37:36.149020Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:36.149065Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:36.149128Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:36.149353Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:36.149386Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:36.149720Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:36.149781Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:39.311510Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:39.311820Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:39.721430Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:39.837386Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:39.883484Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:39.883739Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:39.883774Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:39.883869Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:39.884292Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:39.884432Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:39.884805Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:39.884923Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:39.885168Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:39.885211Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:37:39.885502Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:39.885610Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:40.009526Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:40.253441Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:40.385534Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:40.441447Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:40.534479Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:42.418481Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:42.418568Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:42.947948Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:42.955372Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:42.985306Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:42.985473Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:42.985506Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:42.985588Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:37:42.986317Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:42.986367Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:42.986595Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:42.986634Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:42.987153Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:42.987201Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:42.987370Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:42.987463Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:43.108122Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:43.257288Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:43.293885Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:37:49.201510Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:37:49.201685Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:37:49.724485Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:37:49.755631Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:37:49.755758Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:37:49.755788Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:37:49.755831Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:37:49.756002Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:37:49.756043Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:37:49.756275Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:37:49.756359Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:37:49.756500Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:37:49.756548Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:37:49.756676Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:37:49.756796Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:39:51.953473Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:39:51.953574Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:39:52.279288Z DEBUG            main bacon_ls::lsp: src/lsp.rs:266: client sent didSave request
+2026-05-04T11:39:52.279349Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:39:52.279401Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:39:52.280701Z  INFO            main bacon_ls: src/lib.rs:1123: cargo run cancelled by newer request
+2026-05-04T11:39:52.303463Z DEBUG            main bacon_ls::lsp: src/lsp.rs:266: client sent didSave request
+2026-05-04T11:39:52.303521Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:39:52.303576Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:39:52.304510Z  INFO            main bacon_ls: src/lib.rs:1123: cargo run cancelled by newer request
+2026-05-04T11:39:53.147025Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:39:53.495822Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:39:53.495901Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:39:53.496085Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:39:53.496168Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:39:53.496359Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:39:53.496399Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:39:53.496493Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:39:53.496529Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:39:53.496701Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:39:53.496749Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:39:53.496820Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:39:53.496861Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:40:23.318767Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:23.318893Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:24.644950Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:26.332587Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:40:26.332660Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:26.332793Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/config.rs"
+2026-05-04T11:40:26.332834Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:40:26.333173Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:40:26.333207Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:40:26.333228Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:26.333259Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:40:26.333413Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:26.333502Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:26.333699Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:26.333799Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:40:29.231240Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:29.231379Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:30.190348Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:30.573521Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:40:30.573570Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:30.573682Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:40:30.573803Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:30.573957Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:30.573989Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:40:30.574112Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:40:30.574136Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:30.574254Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:30.574303Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:40:30.574362Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:40:40.973298Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:40.973395Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:41.813899Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:42.291377Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:40:42.291443Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:42.291586Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:42.291635Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:40:42.291885Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/acp.rs"
+2026-05-04T11:40:42.292052Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:40:42.292095Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:40:42.292165Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:40:42.292178Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:42.292399Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:42.292422Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:46.118090Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:46.118191Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:47.154505Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:47.398360Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:40:47.398425Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:47.398485Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:47.398541Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/web.rs"
+2026-05-04T11:40:47.398595Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:40:47.398660Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:47.398883Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:40:47.398899Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:47.398915Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:51.279579Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:51.279670Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:52.295861Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:52.479899Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:40:52.479959Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:52.480073Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:52.480149Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:52.480302Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/planner.rs"
+2026-05-04T11:40:52.480321Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:52.480365Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:52.480386Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 5 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:40:57.887064Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:40:57.887213Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:40:58.915692Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:40:59.112378Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:40:59.112467Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:40:59.112648Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:40:59.112755Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/app.rs"
+2026-05-04T11:40:59.112865Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:40:59.112904Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:40:59.112975Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:40:59.113014Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:40:59.113267Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/sessions.rs"
+2026-05-04T11:41:25.078936Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:41:25.079017Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:41:26.076158Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:41:26.897598Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:41:27.250787Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:41:27.250934Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:41:27.250958Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:41:27.250975Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:41:27.251013Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:41:27.436186Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:41:50.942496Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:41:50.942833Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:41:52.040273Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:41:53.102253Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:41:53.102319Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:41:53.102526Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:41:53.102552Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/mcp.rs"
+2026-05-04T11:41:53.102577Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:41:53.102634Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:41:58.030540Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:41:58.736410Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:41:58.763441Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:41:58.793551Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:04.017453Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:04.847897Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:05.817541Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:42:05.817635Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:42:06.624612Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:42:08.165365Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:42:08.165420Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:42:08.165510Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:42:08.165528Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:42:08.165542Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:42:08.165568Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/lsp.rs"
+2026-05-04T11:42:17.430139Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:17.609918Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:18.250275Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:18.284470Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:29.546797Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:29.924066Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:30.859535Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:30.891992Z DEBUG            main bacon_ls::lsp: src/lsp.rs:410: client doesn't support diagnostic data
+2026-05-04T11:42:51.567372Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:42:51.567536Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:42:52.365415Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:42:53.926721Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:42:53.926802Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:42:53.926906Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:42:53.926934Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:42:53.926956Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:43:02.217124Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:43:02.217268Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:43:03.019899Z DEBUG tokio-rt-worker bacon_ls: src/lib.rs:1096: first diagnostic published; switching to refresh-interval cadence
+2026-05-04T11:43:04.980949Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 101
+2026-05-04T11:43:04.981034Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:43:04.981180Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 2 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:43:04.981243Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 3 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:43:04.981275Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 1 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:44:13.622976Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:44:13.623075Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:44:14.114424Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:44:14.114486Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics
+2026-05-04T11:44:14.114658Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/ui.rs"
+2026-05-04T11:44:14.114705Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/skills.rs"
+2026-05-04T11:44:14.114761Z DEBUG            main bacon_ls: src/lib.rs:1200: sent 0 cargo diagnostics uri="file:///home/user/Desktop/open_crust/src/main.rs"
+2026-05-04T11:44:19.403498Z  INFO            main bacon_ls: src/lib.rs:934: starting cargo diagnostics run live=false
+2026-05-04T11:44:19.403645Z  INFO            main bacon_ls::native: src/native.rs:416: running cargo check --message-format=json-diagnostic-rendered-ansi cwd="/home/user/Desktop/open_crust"
+2026-05-04T11:44:19.808716Z  INFO            main bacon_ls::native: src/native.rs:516: cargo finished with status exit status: 0
+2026-05-04T11:44:19.808838Z  INFO            main bacon_ls: src/lib.rs:1151: cargo run finished, collecting diagnostics

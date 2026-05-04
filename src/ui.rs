@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Modifier},
-    text::{Line, Span, Text},
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Clear, Wrap},
     Frame,
 };
@@ -131,7 +131,7 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(accent_color));
     
-    let area = centered_rect(80, 80, f.size());
+    let area = centered_rect(80, 80, f.area());
     f.render_widget(Clear, area);
 
     let mut text = vec![

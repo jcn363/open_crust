@@ -1,63 +1,64 @@
 # OpenCrust
 
-**OpenCrust** is a production-grade, agentic AI assistant built in Rust. It follows the **OpenCode** specifications for interoperability, safety, and extensibility.
+**OpenCrust** is a production-grade, TUI-native agentic coding platform built in Rust. It empowers developers with a high-intelligence, secure, and fully observable AI partner for complex software engineering tasks.
 
-## Features
+## 🚀 Key Features
 
-- **Agentic Core**: Multi-step reasoning with tool-use capabilities.
-- **MCP Integration**: Connect to any Model Context Protocol server for expanded tools.
-- **LSP Intelligence**: Built-in support for Language Server Protocol (Goto Definition, Hover, References).
-- **Rules Engine**: Dynamic project-specific instructions discovered from `.opencode/rules/`.
-- **Custom Skills**: Reusable agent instructions from `.opencode/skills/`.
-- **Custom Script Tools**: Extend the agent with your own scripts in `.opencode/tools/`.
-- **ACP Mode**: Integrated Agent Client Protocol for seamless use within editors like Zed or Neovim.
-- **Safety First**: Granular permission system (Allow/Ask/Deny) for all tool executions.
-- **Customizable TUI**: Fully configurable keybindings and themes.
+### 🧠 Advanced Intelligence
 
-## Installation
+- **Recursive Subagents**: Solves complex problems by spawning and managing specialized sub-agents.
+- **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`.
+- **Semantic Search**: Concept-based retrieval using local heuristic-driven RAG.
+- **Web Intelligence**: Integrated search and automated Markdown conversion for live research.
+
+### 🛠️ Industrial Tooling
+
+- **Full MCP & LSP Support**: Native integration with any Model Context Protocol and Language Server Protocol servers.
+- **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.).
+- **Global Refactoring**: Perform codebase-wide regex transformations with safety-guaranteed inclusion globs.
+
+### 🛡️ Security & Observability
+
+- **Granular Permissions**: Fine-grained control over file access and command execution.
+- **Network Gating**: Domain-level whitelisting for all external web requests.
+- **Persistent Auditing**: Every tool call is logged with timestamps, inputs, and results.
+- **Usage Tracking**: Real-time token counts and cost estimation in USD.
+
+### ⌨️ Professional UX
+
+- **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer.
+- **Context Pinning**: Permanently lock critical files into the agent's context.
+- **Customizable TUI**: Fully configurable keybinds and theme engine with RGB support.
+
+## 📦 Installation
 
 ```bash
+git clone https://github.com/opencrust/open_crust.git
+cd open_crust
 cargo install --path .
 ```
 
-## Configuration
+## ⚙️ Configuration
 
-Configuration is stored in `~/.config/open_crust/`:
+Configure your environment in `~/.config/open_crust/config.json`:
 
-- `config.json`: Provider settings, model choice, and MCP/LSP server definitions.
-- `tui.json`: Keyboard shortcuts.
-- `theme.json`: TUI colors and aesthetics.
-
-## Usage
-
-### TUI Mode
-
-Simply run:
-
-```bash
-open_crust
+```json
+{
+  "provider": "ollama",
+  "model": "llama3",
+  "mcp": {
+    "weather": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-weather"], "enabled": true }
+  },
+  "allowed_domains": ["api.brave.com", "github.com"]
+}
 ```
 
-- Press `i` to enter Insert Mode.
-- Press `Esc` to return to Normal Mode.
-- Press `Ctrl+C` to exit.
+## ⌨️ Quick Start Keybinds
 
-### ACP Mode (Editor Integration)
+- `i`: Enter Insert Mode
+- `s`: Open Server Management
+- `Esc`: Back to Normal Mode
+- `Ctrl+C`: Exit App (with Telemetry Export)
 
-```bash
-open_crust acp
-```
-
-## Architecture
-
-OpenCrust is designed with modularity at its core:
-
-- `LlmClient`: Orchestrates the conversation and tool execution loop.
-- `McpManager`: Handles connections to external MCP servers.
-- `LspManager`: Manages interactions with language servers.
-- `PermissionManager`: Gates tool calls based on user policy.
-- `CustomToolManager`: Discovers and executes script-based extensions.
-
-## Contributing
-
-We follow the OpenCode standard. Contributions are welcome!
+---
+Built with 🦀 by the OpenCrust Team.

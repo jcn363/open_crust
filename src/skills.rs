@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use serde::Deserialize;
 use std::collections::HashMap;
 use directories::ProjectDirs;
@@ -13,7 +13,6 @@ pub struct SkillMetadata {
 pub struct Skill {
     pub metadata: SkillMetadata,
     pub content: String,
-    pub path: PathBuf,
 }
 
 pub struct SkillManager {
@@ -34,7 +33,7 @@ impl SkillManager {
         if let Ok(current_dir) = std::env::current_dir() {
             let mut curr = current_dir.as_path();
             loop {
-                search_paths.push(curr.join(".opencode/skills"));
+                search_paths.push(curr.join(".opencrust/skills"));
                 search_paths.push(curr.join(".claude/skills"));
                 search_paths.push(curr.join(".agents/skills"));
 
@@ -46,7 +45,7 @@ impl SkillManager {
                 
                 // Stop at git root if possible (optional optimization)
                 if curr.join(".git").exists() {
-                    search_paths.push(curr.join(".opencode/skills"));
+                    search_paths.push(curr.join(".opencrust/skills"));
                     search_paths.push(curr.join(".claude/skills"));
                     search_paths.push(curr.join(".agents/skills"));
                     break;
@@ -59,7 +58,7 @@ impl SkillManager {
             search_paths.push(proj_dirs.config_dir().join("skills"));
         }
         if let Some(home) = dirs::home_dir() {
-            search_paths.push(home.join(".config/opencode/skills"));
+            search_paths.push(home.join(".config/opencrust/skills"));
             search_paths.push(home.join(".claude/skills"));
             search_paths.push(home.join(".agents/skills"));
         }
@@ -86,7 +85,6 @@ impl SkillManager {
                                 self.skills.insert(name, Skill {
                                     metadata,
                                     content: body.to_string(),
-                                    path: skill_file,
                                 });
                             }
                         }

@@ -11,7 +11,6 @@ pub enum Mode {
 
 #[derive(Clone, Debug)]
 pub struct ProposedChange {
-    pub path: String,
     pub original: String,
     pub proposed: String,
 }
@@ -26,7 +25,6 @@ pub struct App {
     pub approval_tx: Option<mpsc::Sender<bool>>,
     pub waiting_for_approval: bool,
     pub proposed_changes: Vec<ProposedChange>,
-    pub pinned_files: Vec<String>,
     pub llm_client: crate::llm::LlmClient,
     pub mcp_input: String,
 }
@@ -43,13 +41,10 @@ impl App {
             approval_tx: Some(approval_tx),
             waiting_for_approval: false,
             proposed_changes: Vec::new(),
-            pinned_files: Vec::new(),
             llm_client,
             mcp_input: String::new(),
         }
     }
-
-    pub fn on_tick(&mut self) {}
 
     pub fn enter_insert_mode(&mut self) {
         self.mode = Mode::Insert;

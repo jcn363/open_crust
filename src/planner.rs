@@ -46,7 +46,7 @@ impl Planner {
                 
                 // Update plan.md
                 let mut md = format!("# {}\n\n", plan.title);
-                for (i, step) in plan.steps.iter().enumerate() {
+                for (_i, step) in plan.steps.iter().enumerate() {
                     let mark = if step.completed { "x" } else { " " };
                     md.push_str(&format!("- [{}] {}\n", mark, step.description));
                 }

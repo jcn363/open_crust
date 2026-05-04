@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use crate::config::McpConfig;
 
 pub struct McpServer {
-    pub name: String,
     child: Child,
     id_counter: u64,
 }
@@ -35,7 +34,6 @@ impl McpServer {
         let child = cmd.spawn().map_err(|e| format!("Failed to spawn MCP server {}: {}", name, e))?;
 
         Ok(Self {
-            name: name.to_string(),
             child,
             id_counter: 0,
         })

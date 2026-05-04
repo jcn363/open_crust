@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     pub id: String,
@@ -12,7 +13,7 @@ pub struct Session {
 }
 
 pub struct SessionManager {
-    cache_dir: PathBuf,
+    _cache_dir: PathBuf,
 }
 
 impl SessionManager {
@@ -25,24 +26,24 @@ impl SessionManager {
             fs::create_dir_all(&cache_dir).expect("Failed to create cache dir");
         }
 
-        Self { cache_dir }
+        Self { _cache_dir: cache_dir }
     }
 
-    pub fn save_session(&self, id: &str, messages: &[Value]) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn _save_session(&self, id: &str, messages: &[Value]) -> Result<(), Box<dyn std::error::Error>> {
         let session = Session {
             id: id.to_string(),
             timestamp: Utc::now(),
             messages: messages.to_vec(),
         };
 
-        let session_path = self.cache_dir.join(format!("{}.json", id));
+        let session_path = self._cache_dir.join(format!("{}.json", id));
         let content = serde_json::to_string_pretty(&session)?;
         fs::write(session_path, content)?;
         Ok(())
     }
 
-    pub fn list_sessions(&self) -> Vec<String> {
-        if let Ok(entries) = fs::read_dir(&self.cache_dir) {
+    pub fn _list_sessions(&self) -> Vec<String> {
+        if let Ok(entries) = fs::read_dir(&self._cache_dir) {
             entries.flatten()
                 .filter(|e| e.path().extension().map_or(false, |ext| ext == "json"))
                 .filter_map(|e| e.path().file_stem().map(|s| s.to_string_lossy().to_string()))
@@ -52,8 +53,8 @@ impl SessionManager {
         }
     }
 
-    pub fn load_session(&self, id: &str) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
-        let session_path = self.cache_dir.join(format!("{}.json", id));
+    pub fn _load_session(&self, id: &str) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
+        let session_path = self._cache_dir.join(format!("{}.json", id));
         let content = fs::read_to_string(session_path)?;
         let session: Session = serde_json::from_str(&content)?;
         Ok(session.messages)

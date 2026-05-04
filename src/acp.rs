@@ -2,7 +2,6 @@ use std::io::{self, BufRead};
 use serde_json::{json, Value};
 use crate::llm::LlmClient;
 use tokio::sync::mpsc;
-use std::error::Error;
 
 pub async fn run_acp_loop(llm_client: LlmClient) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let stdin = io::stdin();

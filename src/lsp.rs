@@ -7,7 +7,6 @@ use crate::config::LspConfig;
 use std::env;
 
 pub struct LspServer {
-    pub name: String,
     child: Child,
     id_counter: u64,
 }
@@ -36,7 +35,6 @@ impl LspServer {
         let child = cmd.spawn().map_err(|e| format!("Failed to spawn LSP server {}: {}", name, e))?;
 
         let mut server = Self {
-            name: name.to_string(),
             child,
             id_counter: 0,
         };
