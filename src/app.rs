@@ -1,9 +1,18 @@
 use crate::config::Config;
 use tokio::sync::mpsc;
 
+#[derive(Clone, Copy, Debug)]
 pub enum Mode {
     Normal,
     Insert,
+    Review,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProposedChange {
+    pub path: String,
+    pub original: String,
+    pub proposed: String,
 }
 
 pub struct App {
@@ -15,10 +24,13 @@ pub struct App {
     pub prompt_tx: Option<mpsc::Sender<String>>,
     pub approval_tx: Option<mpsc::Sender<bool>>,
     pub waiting_for_approval: bool,
+    pub proposed_changes: Vec<ProposedChange>,
+    pub pinned_files: Vec<String>,
+    pub llm_client: crate::llm::LlmClient,
 }
 
 impl App {
-    pub fn new(config: Config, prompt_tx: mpsc::Sender<String>, approval_tx: mpsc::Sender<bool>) -> Self {
+    pub fn new(config: Config, prompt_tx: mpsc::Sender<String>, approval_tx: mpsc::Sender<bool>, llm_client: crate::llm::LlmClient) -> Self {
         Self {
             config,
             mode: Mode::Normal,
@@ -28,6 +40,9 @@ impl App {
             prompt_tx: Some(prompt_tx),
             approval_tx: Some(approval_tx),
             waiting_for_approval: false,
+            proposed_changes: Vec::new(),
+            pinned_files: Vec::new(),
+            llm_client,
         }
     }
 

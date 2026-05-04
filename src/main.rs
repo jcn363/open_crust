@@ -17,6 +17,7 @@ mod sessions;
 mod web;
 mod formatters;
 mod audit;
+mod stats;
 
 use app::{App, Mode};
 use clap::{Parser, Subcommand};
@@ -166,13 +167,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     io::stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
 
-    let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx);
+    let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, llm_client.clone());
 
     loop {
         while let Ok(response) = response_rx.try_recv() {
             if response.contains("[APPROVAL_REQUIRED]") {
                 app.waiting_for_approval = true;
+            } else if response.starts_with("[DIFF_REQUIRED]") {
+                let parts: Vec<&str> = response.strip_prefix("[DIFF_REQUIRED]").unwrap().splitn(3, '|').collect();
+                if parts.len() == 3 {
+                    app.proposed_changes.push(crate::app::ProposedChange {
+                        path: parts[0].to_string(),
+                        original: parts[1].to_string(),
+                        proposed: parts[2].to_string(),
+                    });
+                    app.mode = crate::app::Mode::Review;
+                }
             }
+            
             if let Some(last) = app.messages.last() {
                 if last == "open_crust: Thinking..." || last.starts_with("open_crust: Executing tool") {
                     app.messages.pop();
@@ -236,6 +248,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 _ => {}
                             }
                         }
+                    },
+                    Mode::Review => match key.code {
+                        KeyCode::Char('a') | KeyCode::Char('A') => {
+                            app.mode = Mode::Normal;
+                            if let Some(tx) = &app.approval_tx {
+                                let _ = tx.try_send(true);
+                            }
+                            app.messages.push(String::from("You: a (Approved Change)"));
+                        }
+                        KeyCode::Char('d') | KeyCode::Char('D') => {
+                            app.mode = Mode::Normal;
+                            if let Some(tx) = &app.approval_tx {
+                                let _ = tx.try_send(false);
+                            }
+                            app.messages.push(String::from("You: d (Denied Change)"));
+                        }
+                        _ => {}
                     },
                 }
             }

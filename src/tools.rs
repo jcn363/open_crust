@@ -203,6 +203,34 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
+                "name": "pin",
+                "description": "Pin a file to the context so it stays in the prompt.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The path to the file to pin" }
+                    },
+                    "required": ["path"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "unpin",
+                "description": "Unpin a file from the context.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The path to the file to unpin" }
+                    },
+                    "required": ["path"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "skill",
                 "description": "Load the full content of a reusable skill.",
                 "parameters": {

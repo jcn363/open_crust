@@ -17,6 +17,7 @@ use crate::permissions::PermissionManager;
 use crate::custom_tools::CustomToolManager;
 use crate::web::WebManager;
 use crate::audit::AuditLogger;
+use crate::stats::UsageStats;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use async_recursion::async_recursion;
@@ -32,6 +33,8 @@ pub struct LlmClient {
     pub permission_manager: Arc<PermissionManager>,
     pub web_manager: Arc<WebManager>,
     pub audit_logger: Arc<AuditLogger>,
+    pub usage_stats: Arc<Mutex<UsageStats>>,
+    pub pinned_files: Arc<Mutex<Vec<String>>>,
 }
 
 impl LlmClient {
@@ -45,6 +48,8 @@ impl LlmClient {
         let permission_manager = Arc::new(PermissionManager::new(config.clone()));
         let web_manager = Arc::new(WebManager::new());
         let audit_logger = Arc::new(AuditLogger::new());
+        let usage_stats = Arc::new(Mutex::new(UsageStats::new()));
+        let pinned_files = Arc::new(Mutex::new(Vec::new()));
         Self {
             client: Client::new(),
             config,
@@ -55,6 +60,8 @@ impl LlmClient {
             permission_manager,
             web_manager,
             audit_logger,
+            usage_stats,
+            pinned_files,
         }
     }
     
@@ -79,6 +86,19 @@ impl LlmClient {
                 system_prompt.push_str(&available_skills);
             }
 
+            // Pinned files integration
+            {
+                let pinned = self.pinned_files.lock().await;
+                if !pinned.is_empty() {
+                    system_prompt.push_str("\n\n## Pinned Context\n");
+                    for path in pinned.iter() {
+                        if let Ok(content) = std::fs::read_to_string(path) {
+                            system_prompt.push_str(&format!("<file path=\"{}\">\n{}\n</file>\n", path, content));
+                        }
+                    }
+                }
+            }
+
             messages_history.push(json!({
                 "role": "system",
                 "content": system_prompt
@@ -89,6 +109,15 @@ impl LlmClient {
             "role": "user",
             "content": prompt
         }));
+
+        // Context Pruning: keep system prompt + last 20 messages if history gets too long
+        if messages_history.len() > 22 {
+            let _ = progress_tx.send(String::from("open_crust: Pruning old context to stay within limits...")).await;
+            let system_prompt = messages_history.remove(0);
+            let last_messages = messages_history.split_off(messages_history.len() - 20);
+            *messages_history = vec![system_prompt];
+            messages_history.extend(last_messages);
+        }
 
         loop {
             let res = match self.config.provider {
@@ -118,7 +147,14 @@ impl LlmClient {
                         PermissionAction::Allow => true,
                         PermissionAction::Deny => false,
                         PermissionAction::Ask => {
-                            let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
+                            if name == "write" {
+                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                let proposed = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+                                let original = std::fs::read_to_string(path).unwrap_or_default();
+                                let _ = progress_tx.send(format!("[DIFF_REQUIRED]{}|{}|{}", path, original, proposed)).await;
+                            } else {
+                                let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
+                            }
                             approval_rx.recv().await.unwrap_or(false)
                         }
                     };
@@ -197,6 +233,26 @@ impl LlmClient {
                                     format!("Permission Denied: Domain not whitelisted for URL '{}'", url)
                                 }
                             }
+                            "pin" => {
+                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                let mut pinned = self.pinned_files.lock().await;
+                                if !pinned.contains(&path.to_string()) {
+                                    pinned.push(path.to_string());
+                                    format!("Pinned {}", path)
+                                } else {
+                                    format!("{} is already pinned", path)
+                                }
+                            }
+                            "unpin" => {
+                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                let mut pinned = self.pinned_files.lock().await;
+                                if let Some(pos) = pinned.iter().position(|x| x == path) {
+                                    pinned.remove(pos);
+                                    format!("Unpinned {}", path)
+                                } else {
+                                    format!("{} was not pinned", path)
+                                }
+                            }
                             "skill" => {
                                 let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");
                                 let skills = self.skill_manager.lock().await;
@@ -270,6 +326,14 @@ impl LlmClient {
             .await?;
 
         let res_json: Value = res.json().await?;
+        
+        if let Some(usage) = res_json.get("usage") {
+            let input = usage.get("prompt_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            let output = usage.get("completion_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            let mut stats = self.usage_stats.lock().await;
+            stats.add_usage(&self.config.model, input, output);
+        }
+
         Ok(res_json.get("message").cloned().unwrap_or(json!({})))
     }
 
@@ -298,6 +362,14 @@ impl LlmClient {
             .await?;
 
         let res_json: Value = res.json().await?;
+
+        if let Some(usage) = res_json.get("usage") {
+            let input = usage.get("prompt_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            let output = usage.get("completion_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
+            let mut stats = self.usage_stats.lock().await;
+            stats.add_usage(&self.config.model, input, output);
+        }
+
         Ok(res_json.get("choices")
             .and_then(|c| c.get(0))
             .and_then(|c| c.get("message"))

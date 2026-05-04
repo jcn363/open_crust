@@ -1,8 +1,8 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Style, Modifier},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Clear},
     Frame,
 };
 
@@ -48,6 +48,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         .style(match app.mode {
             Mode::Normal => Style::default().fg(fg_color),
             Mode::Insert => Style::default().fg(accent_color),
+            Mode::Review => Style::default().fg(fg_color),
         })
         .block(Block::default()
             .borders(Borders::ALL)
@@ -55,6 +56,7 @@ pub fn draw(f: &mut Frame, app: &App) {
             .border_style(match app.mode {
                 Mode::Normal => Style::default().fg(border_color),
                 Mode::Insert => Style::default().fg(accent_color),
+                Mode::Review => Style::default().fg(border_color),
             }));
     f.render_widget(input, chunks[1]);
     
@@ -62,8 +64,17 @@ pub fn draw(f: &mut Frame, app: &App) {
     let mode_str = match app.mode {
         Mode::Normal => "NORMAL",
         Mode::Insert => "INSERT",
+        Mode::Review => "REVIEW",
     };
-    let status = Paragraph::new(format!("-- {} --", mode_str))
+    
+    let stats = app.llm_client.usage_stats.try_lock();
+    let stats_str = if let Ok(s) = stats {
+        format!(" | In: {} | Out: {} | Cost: ${:.4}", s.input_tokens, s.output_tokens, s.total_cost)
+    } else {
+        String::new()
+    };
+
+    let status = Paragraph::new(format!("-- {} --{}", mode_str, stats_str))
         .style(Style::default().bg(accent_color).fg(fg_color));
     f.render_widget(status, chunks[2]);
     
@@ -74,6 +85,55 @@ pub fn draw(f: &mut Frame, app: &App) {
             chunks[1].x + input_len + 1, chunks[1].y + 1
         ));
     }
+
+    if let Mode::Review = app.mode {
+        if let Some(change) = app.proposed_changes.last() {
+            let area = centered_rect(80, 80, f.area());
+            f.render_widget(Clear, area);
+            
+            let diff_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(area);
+
+            let original = Paragraph::new(change.original.as_str())
+                .block(Block::default().borders(Borders::ALL).title(" Original ")
+                .border_style(Style::default().fg(Color::Red)));
+            let proposed = Paragraph::new(change.proposed.as_str())
+                .block(Block::default().borders(Borders::ALL).title(" Proposed ")
+                .border_style(Style::default().fg(Color::Green)));
+
+            f.render_widget(original, diff_chunks[0]);
+            f.render_widget(proposed, diff_chunks[1]);
+            
+            let hint = Paragraph::new(" [A]pprove | [D]eny ")
+                .style(Style::default().bg(accent_color).fg(fg_color))
+                .block(Block::default().borders(Borders::BOTTOM));
+            // Render hint at the bottom of the popup
+            let hint_area = Rect::new(area.x, area.y + area.height - 1, area.width, 1);
+            f.render_widget(hint, hint_area);
+        }
+    }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ].as_ref())
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ].as_ref())
+        .split(popup_layout[1])[1]
 }
 
 fn parse_color(s: &str) -> Color {
