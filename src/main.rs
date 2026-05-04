@@ -18,6 +18,8 @@ mod web;
 mod formatters;
 mod audit;
 mod stats;
+mod planner;
+mod rag;
 
 use app::{App, Mode};
 use clap::{Parser, Subcommand};
@@ -229,6 +231,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::Char('i') => {
                             app.enter_insert_mode();
                         }
+                        KeyCode::Char('s') => {
+                            app.mode = Mode::Servers;
+                        }
                         _ => {}
                     },
                     Mode::Insert => {
@@ -263,6 +268,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 let _ = tx.try_send(false);
                             }
                             app.messages.push(String::from("You: d (Denied Change)"));
+                        }
+                        _ => {}
+                    },
+                    Mode::Servers => match key.code {
+                        KeyCode::Esc => {
+                            app.mode = Mode::Normal;
                         }
                         _ => {}
                     },

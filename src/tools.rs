@@ -231,6 +231,53 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
+                "name": "create_plan",
+                "description": "Create a multi-step plan for a complex task.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": { "type": "string", "description": "The title of the plan" },
+                        "steps": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "A list of steps to complete the task"
+                        }
+                    },
+                    "required": ["title", "steps"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "mark_step_complete",
+                "description": "Mark a step of the current plan as complete.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "index": { "type": "integer", "description": "The 0-indexed position of the step to complete" }
+                    },
+                    "required": ["index"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "semantic_search",
+                "description": "Perform a semantic search across the codebase to find relevant snippets.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": { "type": "string", "description": "The search query or concept to find" }
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "skill",
                 "description": "Load the full content of a reusable skill.",
                 "parameters": {

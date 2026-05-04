@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Modifier},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Clear},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Clear, Wrap},
     Frame,
 };
 
@@ -49,6 +49,7 @@ pub fn draw(f: &mut Frame, app: &App) {
             Mode::Normal => Style::default().fg(fg_color),
             Mode::Insert => Style::default().fg(accent_color),
             Mode::Review => Style::default().fg(fg_color),
+            Mode::Servers => Style::default().fg(fg_color),
         })
         .block(Block::default()
             .borders(Borders::ALL)
@@ -57,6 +58,7 @@ pub fn draw(f: &mut Frame, app: &App) {
                 Mode::Normal => Style::default().fg(border_color),
                 Mode::Insert => Style::default().fg(accent_color),
                 Mode::Review => Style::default().fg(border_color),
+                Mode::Servers => Style::default().fg(border_color),
             }));
     f.render_widget(input, chunks[1]);
     
@@ -65,17 +67,18 @@ pub fn draw(f: &mut Frame, app: &App) {
         Mode::Normal => "NORMAL",
         Mode::Insert => "INSERT",
         Mode::Review => "REVIEW",
+        Mode::Servers => "SERVERS",
     };
     
     let stats = app.llm_client.usage_stats.try_lock();
     let stats_str = if let Ok(s) = stats {
-        format!(" | In: {} | Out: {} | Cost: ${:.4}", s.input_tokens, s.output_tokens, s.total_cost)
+        format!(" | Tokens: {}/{} | Cost: ${:.4}", s.input_tokens, s.output_tokens, s.total_cost)
     } else {
         String::new()
     };
 
     let status = Paragraph::new(format!("-- {} --{}", mode_str, stats_str))
-        .style(Style::default().bg(accent_color).fg(fg_color));
+        .style(Style::default().fg(accent_color));
     f.render_widget(status, chunks[2]);
     
     // Cursor handling
@@ -87,33 +90,77 @@ pub fn draw(f: &mut Frame, app: &App) {
     }
 
     if let Mode::Review = app.mode {
-        if let Some(change) = app.proposed_changes.last() {
-            let area = centered_rect(80, 80, f.area());
-            f.render_widget(Clear, area);
-            
-            let diff_chunks = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-                .split(area);
-
-            let original = Paragraph::new(change.original.as_str())
-                .block(Block::default().borders(Borders::ALL).title(" Original ")
-                .border_style(Style::default().fg(Color::Red)));
-            let proposed = Paragraph::new(change.proposed.as_str())
-                .block(Block::default().borders(Borders::ALL).title(" Proposed ")
-                .border_style(Style::default().fg(Color::Green)));
-
-            f.render_widget(original, diff_chunks[0]);
-            f.render_widget(proposed, diff_chunks[1]);
-            
-            let hint = Paragraph::new(" [A]pprove | [D]eny ")
-                .style(Style::default().bg(accent_color).fg(fg_color))
-                .block(Block::default().borders(Borders::BOTTOM));
-            // Render hint at the bottom of the popup
-            let hint_area = Rect::new(area.x, area.y + area.height - 1, area.width, 1);
-            f.render_widget(hint, hint_area);
-        }
+        draw_review_popup(f, app);
+    } else if let Mode::Servers = app.mode {
+        draw_servers_popup(f, app);
     }
+}
+
+fn draw_review_popup(f: &mut Frame, app: &App) {
+    if let Some(change) = app.proposed_changes.last() {
+        let area = centered_rect(80, 80, f.area());
+        f.render_widget(Clear, area);
+        
+        let diff_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(area);
+
+        let original = Paragraph::new(change.original.as_str())
+            .block(Block::default().borders(Borders::ALL).title(" Original ")
+            .border_style(Style::default().fg(Color::Red)));
+        let proposed = Paragraph::new(change.proposed.as_str())
+            .block(Block::default().borders(Borders::ALL).title(" Proposed ")
+            .border_style(Style::default().fg(Color::Green)));
+
+        f.render_widget(original, diff_chunks[0]);
+        f.render_widget(proposed, diff_chunks[1]);
+        
+        let hint = Paragraph::new(" [A]pprove | [D]eny ")
+            .style(Style::default().bg(Color::Blue).fg(Color::White))
+            .block(Block::default().borders(Borders::BOTTOM));
+        let hint_area = Rect::new(area.x, area.y + area.height - 1, area.width, 1);
+        f.render_widget(hint, hint_area);
+    }
+}
+
+fn draw_servers_popup(f: &mut Frame, app: &App) {
+    let accent_color = Color::Cyan;
+    let block = Block::default()
+        .title(" Server Management ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(accent_color));
+    
+    let area = centered_rect(80, 80, f.size());
+    f.render_widget(Clear, area);
+
+    let mut text = vec![
+        Line::from(vec![
+            Span::styled("Runtime Server Management", Style::default().add_modifier(Modifier::BOLD)),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("MCP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
+        ]),
+    ];
+
+    for (name, _) in &app.config.mcp {
+        text.push(Line::from(format!("- {} (Active)", name)));
+    }
+
+    text.push(Line::from(""));
+    text.push(Line::from(vec![
+        Span::styled("LSP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
+    ]));
+    for (name, _) in &app.config.lsp {
+        text.push(Line::from(format!("- {} (Active)", name)));
+    }
+
+    text.push(Line::from(""));
+    text.push(Line::from("Press [Esc] to return. Full management coming soon."));
+
+    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+    f.render_widget(paragraph, area);
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {

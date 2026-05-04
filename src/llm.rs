@@ -18,6 +18,8 @@ use crate::custom_tools::CustomToolManager;
 use crate::web::WebManager;
 use crate::audit::AuditLogger;
 use crate::stats::UsageStats;
+use crate::planner::Planner;
+use crate::rag::RagManager;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use async_recursion::async_recursion;
@@ -35,6 +37,8 @@ pub struct LlmClient {
     pub audit_logger: Arc<AuditLogger>,
     pub usage_stats: Arc<Mutex<UsageStats>>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
+    pub planner: Arc<Mutex<Planner>>,
+    pub rag_manager: Arc<RagManager>,
 }
 
 impl LlmClient {
@@ -50,6 +54,8 @@ impl LlmClient {
         let audit_logger = Arc::new(AuditLogger::new());
         let usage_stats = Arc::new(Mutex::new(UsageStats::new()));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
+        let planner = Arc::new(Mutex::new(Planner::new()));
+        let rag_manager = Arc::new(RagManager::new());
         Self {
             client: Client::new(),
             config,
@@ -62,6 +68,8 @@ impl LlmClient {
             audit_logger,
             usage_stats,
             pinned_files,
+            planner,
+            rag_manager,
         }
     }
     
@@ -252,6 +260,23 @@ impl LlmClient {
                                 } else {
                                     format!("{} was not pinned", path)
                                 }
+                            }
+                            "create_plan" => {
+                                let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("Untitled Plan");
+                                let steps = args.get("steps").and_then(|v| v.as_array())
+                                    .map(|a| a.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect())
+                                    .unwrap_or_else(Vec::new);
+                                let mut planner = self.planner.lock().await;
+                                planner.create_plan(title, steps)
+                            }
+                            "mark_step_complete" => {
+                                let index = args.get("index").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                                let mut planner = self.planner.lock().await;
+                                planner.mark_step_complete(index)
+                            }
+                            "semantic_search" => {
+                                let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+                                self.rag_manager.semantic_search(query)
                             }
                             "skill" => {
                                 let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");

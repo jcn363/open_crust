@@ -6,6 +6,7 @@ pub enum Mode {
     Normal,
     Insert,
     Review,
+    Servers,
 }
 
 #[derive(Clone, Debug)]
