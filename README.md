@@ -84,22 +84,22 @@ Configure your environment in `~/.config/open_crust/config.json`:
 
 ## ⌨️ Keybinds
 
-| Key | Action |
-|-----|--------|
-| `i` | Enter Insert (input) mode |
-| `Esc` | Return to Normal mode |
-| `Tab` | Cycle between Chat / Tasks views |
-| `Ctrl+B` | Toggle file tree sidebar |
-| `↑` / `↓` | Navigate command history (in Insert mode) |
-| `s` | Open Server Management panel |
-| `Enter` | Submit message |
-| `a` | Approve proposed change |
-| `d` | Deny proposed change |
-| `Ctrl+C` / `Ctrl+D` | Quit |
+| Key                 | Action                                    |
+|---------------------|-------------------------------------------|
+| `i`                 | Enter Insert (input) mode                 |
+| `Esc`               | Return to Normal mode                     |
+| `Tab`               | Cycle between Chat / Tasks views          |
+| `Ctrl+B`            | Toggle file tree sidebar                  |
+| `↑` / `↓`           | Navigate command history (in Insert mode) |
+| `s`                 | Open Server Management panel              |
+| `Enter`             | Submit message                            |
+| `a`                 | Approve proposed change                   |
+| `d`                 | Deny proposed change                      |
+| `Ctrl+C` / `Ctrl+D` | Quit                                      |
 
 ## 🏗️ Architecture
 
-```
+```text
 open_crust/
 ├── src/
 │   ├── main.rs        # Entry point, TUI event loop
