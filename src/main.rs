@@ -20,8 +20,10 @@ mod audit;
 mod stats;
 mod planner;
 mod rag;
+mod telemetry;
 
 use app::{App, Mode};
+use chrono;
 use clap::{Parser, Subcommand};
 use crossterm::{
     event::{Event, KeyCode},
@@ -275,6 +277,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::Esc => {
                             app.mode = Mode::Normal;
                         }
+                        KeyCode::Char(c) => {
+                            app.mcp_input.push(c);
+                        }
+                        KeyCode::Backspace => {
+                            app.mcp_input.pop();
+                        }
+                        KeyCode::Enter => {
+                            if !app.mcp_input.is_empty() {
+                                let parts: Vec<&str> = app.mcp_input.splitn(2, '=').collect();
+                                if parts.len() == 2 {
+                                    let name = parts[0].trim();
+                                    let command = parts[1].trim();
+                                    app.config.mcp.insert(name.to_string(), crate::config::McpConfig {
+                                        command: vec![command.to_string()],
+                                        environment: Some(std::collections::HashMap::new()),
+                                        enabled: true,
+                                    });
+                                    app.config.save();
+                                    app.messages.push(format!("System: Added MCP server '{}'", name));
+                                    app.mcp_input.clear();
+                                }
+                            }
+                        }
                         _ => {}
                     },
                 }
@@ -288,6 +313,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     disable_raw_mode()?;
     io::stdout().execute(LeaveAlternateScreen)?;
+
+    let telemetry = telemetry::TelemetryExporter::new(app.llm_client.usage_stats.clone());
+    telemetry.export().await;
 
     Ok(())
 }

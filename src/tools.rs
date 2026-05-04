@@ -278,6 +278,22 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
+                "name": "global_search_replace",
+                "description": "Perform a global search and replace across the codebase.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": { "type": "string", "description": "The regex pattern to search for" },
+                        "replacement": { "type": "string", "description": "The replacement string" },
+                        "include": { "type": "string", "description": "Glob pattern for files to include (e.g. '*.rs')" }
+                    },
+                    "required": ["pattern", "replacement"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "skill",
                 "description": "Load the full content of a reusable skill.",
                 "parameters": {

@@ -1,5 +1,6 @@
 use crate::config::{Config, ProviderType, PermissionAction};
 use reqwest::Client;
+use std::process::Command;
 use serde_json::{json, Value};
 use std::error::Error;
 use tokio::sync::mpsc;
@@ -277,6 +278,31 @@ impl LlmClient {
                             "semantic_search" => {
                                 let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
                                 self.rag_manager.semantic_search(query)
+                            }
+                            "global_search_replace" => {
+                                let pattern = args.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
+                                let replacement = args.get("replacement").and_then(|v| v.as_str()).unwrap_or("");
+                                let include = args.get("include").and_then(|v| v.as_str()).unwrap_or("*");
+                                
+                                // Perform search-replace using sed-like logic across files
+                                let output = Command::new("find")
+                                    .arg(".")
+                                    .arg("-name")
+                                    .arg(include)
+                                    .arg("-type")
+                                    .arg("f")
+                                    .arg("-exec")
+                                    .arg("sed")
+                                    .arg("-i")
+                                    .arg(format!("s/{}/{}/g", pattern, replacement))
+                                    .arg("{}")
+                                    .arg("+")
+                                    .output();
+
+                                match output {
+                                    Ok(_) => format!("Globally replaced '{}' with '{}' in files matching '{}'.", pattern, replacement, include),
+                                    Err(e) => format!("Refactoring Error: {}", e),
+                                }
                             }
                             "skill" => {
                                 let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");

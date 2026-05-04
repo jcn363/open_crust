@@ -157,7 +157,12 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
     }
 
     text.push(Line::from(""));
-    text.push(Line::from("Press [Esc] to return. Full management coming soon."));
+    text.push(Line::from(vec![
+        Span::styled("Add MCP Server (name=command):", Style::default().add_modifier(Modifier::UNDERLINED)),
+    ]));
+    text.push(Line::from(app.mcp_input.as_str()));
+    text.push(Line::from(""));
+    text.push(Line::from("Type 'name=command' and press [Enter] to add. [Esc] to return."));
 
     let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
     f.render_widget(paragraph, area);

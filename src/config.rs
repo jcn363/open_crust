@@ -129,48 +129,22 @@ impl Default for Config {
 
 impl Config {
     pub fn load() -> Self {
-        let config_dir = dirs::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("open_crust");
-        
+        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
         let config_path = config_dir.join("config.json");
-        let tui_path = config_dir.join("tui.json");
-        let theme_path = config_dir.join("theme.json");
-
-        let mut config = if config_path.exists() {
-            let content = fs::read_to_string(config_path).expect("Failed to read config");
-            serde_json::from_str(&content).expect("Failed to parse config")
+        
+        if config_path.exists() {
+            let content = fs::read_to_string(config_path).unwrap_or_default();
+            serde_json::from_str(&content).unwrap_or_else(|_| Self::default())
         } else {
-            Config::default()
-        };
-
-        if tui_path.exists() {
-            let content = fs::read_to_string(tui_path).expect("Failed to read tui config");
-            let tui_config: TuiConfig = serde_json::from_str(&content).expect("Failed to parse tui config");
-            config.tui = Some(tui_config);
+            Self::default()
         }
-
-        if theme_path.exists() {
-            let content = fs::read_to_string(theme_path).expect("Failed to read theme config");
-            let theme_config: ThemeConfig = serde_json::from_str(&content).expect("Failed to parse theme config");
-            config.theme = Some(theme_config);
-        }
-
-        config
     }
 
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let config_dir = dirs::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("open_crust");
-        
-        if !config_dir.exists() {
-            fs::create_dir_all(&config_dir)?;
-        }
-
+    pub fn save(&self) {
+        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
+        let _ = fs::create_dir_all(&config_dir);
         let config_path = config_dir.join("config.json");
-        let content = serde_json::to_string_pretty(self)?;
-        fs::write(config_path, content)?;
-        Ok(())
+        let content = serde_json::to_string_pretty(self).unwrap_or_default();
+        let _ = fs::write(config_path, content);
     }
 }

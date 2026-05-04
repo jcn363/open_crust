@@ -28,6 +28,7 @@ pub struct App {
     pub proposed_changes: Vec<ProposedChange>,
     pub pinned_files: Vec<String>,
     pub llm_client: crate::llm::LlmClient,
+    pub mcp_input: String,
 }
 
 impl App {
@@ -36,7 +37,7 @@ impl App {
             config,
             mode: Mode::Normal,
             input: String::new(),
-            messages: vec![String::from("Welcome to open_crust. Press 'i' to enter insert mode, 'q' to quit.")],
+            messages: vec![String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.")],
             should_quit: false,
             prompt_tx: Some(prompt_tx),
             approval_tx: Some(approval_tx),
@@ -44,6 +45,7 @@ impl App {
             proposed_changes: Vec::new(),
             pinned_files: Vec::new(),
             llm_client,
+            mcp_input: String::new(),
         }
     }
 
