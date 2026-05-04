@@ -181,7 +181,7 @@ impl LspManager {
 
     fn find_server_for_path(&mut self, _path: &str) -> Result<&mut LspServer, String> {
         // For now, just return the first server if it exists.
-        // In a real app, we'd check extensions.
+        // TODO: we'd check extensions.
         self.servers.values_mut().next().ok_or("No LSP server available".to_string())
     }
 }

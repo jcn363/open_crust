@@ -15,6 +15,8 @@ use crate::lsp::LspManager;
 use crate::skills::SkillManager;
 use crate::permissions::PermissionManager;
 use crate::custom_tools::CustomToolManager;
+use crate::web::WebManager;
+use crate::audit::AuditLogger;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use async_recursion::async_recursion;
@@ -28,6 +30,8 @@ pub struct LlmClient {
     pub skill_manager: Arc<Mutex<SkillManager>>,
     pub custom_tool_manager: Arc<Mutex<CustomToolManager>>,
     pub permission_manager: Arc<PermissionManager>,
+    pub web_manager: Arc<WebManager>,
+    pub audit_logger: Arc<AuditLogger>,
 }
 
 impl LlmClient {
@@ -39,6 +43,8 @@ impl LlmClient {
         custom_tool_manager: Arc<Mutex<CustomToolManager>>,
     ) -> Self {
         let permission_manager = Arc::new(PermissionManager::new(config.clone()));
+        let web_manager = Arc::new(WebManager::new());
+        let audit_logger = Arc::new(AuditLogger::new());
         Self {
             client: Client::new(),
             config,
@@ -47,6 +53,8 @@ impl LlmClient {
             skill_manager,
             custom_tool_manager,
             permission_manager,
+            web_manager,
+            audit_logger,
         }
     }
     
@@ -114,6 +122,8 @@ impl LlmClient {
                             approval_rx.recv().await.unwrap_or(false)
                         }
                     };
+                    
+                    self.audit_logger.log_action(name, input_summary, approved);
 
                     let result = if approved {
                         let _ = progress_tx.send(format!("open_crust: Executing tool '{}'...", name)).await;
@@ -167,6 +177,24 @@ impl LlmClient {
                                 match self.send_message(&mut history, sub_prompt, p_tx, &mut a_rx).await {
                                     Ok(res) => format!("Subtask completed: {}", res),
                                     Err(e) => format!("Subtask failed: {}", e),
+                                }
+                            }
+                            "web_search" => {
+                                let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
+                                match self.web_manager.search(query).await {
+                                    Ok(res) => res,
+                                    Err(e) => format!("Web Search Error: {}", e),
+                                }
+                            }
+                            "fetch_url" => {
+                                let url = args.get("url").and_then(|v| v.as_str()).unwrap_or("");
+                                if self.permission_manager.check_network_permission(url) {
+                                    match self.web_manager.fetch_url(url).await {
+                                        Ok(res) => res,
+                                        Err(e) => format!("Fetch Error: {}", e),
+                                    }
+                                } else {
+                                    format!("Permission Denied: Domain not whitelisted for URL '{}'", url)
                                 }
                             }
                             "skill" => {

@@ -23,10 +23,13 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "write" => {
-            let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
+            let path_str = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
             let content = arguments.get("content").and_then(|v| v.as_str()).unwrap_or("");
-            match fs::write(path, content) {
-                Ok(_) => format!("Successfully wrote to {}", path),
+            match fs::write(path_str, content) {
+                Ok(_) => {
+                    crate::formatters::format_file(std::path::Path::new(path_str));
+                    format!("Successfully wrote to {}", path_str)
+                }
                 Err(e) => format!("Error writing file: {}", e),
             }
         }
@@ -120,6 +123,80 @@ pub fn get_tools_schema() -> Value {
                         "character": { "type": "integer", "description": "Character position (0-indexed)" }
                     },
                     "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_find_references",
+                "description": "Find all references to a symbol using LSP.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "File path" },
+                        "line": { "type": "integer", "description": "Line number" },
+                        "character": { "type": "integer", "description": "Character position" }
+                    },
+                    "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_type_definition",
+                "description": "Go to the type definition of a symbol using LSP.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "File path" },
+                        "line": { "type": "integer", "description": "Line number" },
+                        "character": { "type": "integer", "description": "Character position" }
+                    },
+                    "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "task",
+                "description": "Spawn a subagent to solve a specific sub-problem.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "prompt": { "type": "string", "description": "The specific instruction for the subagent" }
+                    },
+                    "required": ["prompt"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "web_search",
+                "description": "Search the web for information.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": { "type": "string", "description": "The search query" }
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "fetch_url",
+                "description": "Fetch content from a URL and convert it to markdown.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": { "type": "string", "description": "The URL to fetch" }
+                    },
+                    "required": ["url"]
                 }
             }
         },

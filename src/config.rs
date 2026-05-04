@@ -87,6 +87,8 @@ pub struct Config {
     pub instructions: Vec<String>,
     #[serde(default = "default_permissions")]
     pub permission: std::collections::HashMap<String, PermissionRule>,
+    #[serde(default)]
+    pub allowed_domains: Vec<String>,
     pub tui: Option<TuiConfig>,
     pub theme: Option<ThemeConfig>,
 }
@@ -118,6 +120,7 @@ impl Default for Config {
             lsp: std::collections::HashMap::new(),
             instructions: Vec::new(),
             permission: default_permissions(),
+            allowed_domains: Vec::new(),
             tui: None,
             theme: None,
         }

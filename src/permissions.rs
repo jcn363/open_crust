@@ -44,4 +44,17 @@ impl PermissionManager {
 
         PermissionAction::Ask
     }
+
+    pub fn check_network_permission(&self, url_str: &str) -> bool {
+        if self.config.allowed_domains.is_empty() {
+            return true;
+        }
+
+        if let Ok(parsed_url) = url::Url::parse(url_str) {
+            if let Some(host) = parsed_url.host_str() {
+                return self.config.allowed_domains.iter().any(|domain| host.ends_with(domain));
+            }
+        }
+        false
+    }
 }

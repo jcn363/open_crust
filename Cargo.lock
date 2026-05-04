@@ -1433,11 +1433,13 @@ dependencies = [
  "dirs",
  "glob",
  "ratatui",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
  "tokio",
+ "url",
 ]
 
 [[package]]

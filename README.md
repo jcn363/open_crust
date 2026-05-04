@@ -31,15 +31,19 @@ Configuration is stored in `~/.config/open_crust/`:
 ## Usage
 
 ### TUI Mode
+
 Simply run:
+
 ```bash
 open_crust
 ```
+
 - Press `i` to enter Insert Mode.
 - Press `Esc` to return to Normal Mode.
 - Press `Ctrl+C` to exit.
 
 ### ACP Mode (Editor Integration)
+
 ```bash
 open_crust acp
 ```

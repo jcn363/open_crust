@@ -14,6 +14,9 @@ mod acp;
 mod permissions;
 mod custom_tools;
 mod sessions;
+mod web;
+mod formatters;
+mod audit;
 
 use app::{App, Mode};
 use clap::{Parser, Subcommand};
