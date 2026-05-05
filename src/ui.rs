@@ -169,46 +169,129 @@ fn draw_review_popup(f: &mut Frame, app: &App) {
 
 fn draw_servers_popup(f: &mut Frame, app: &App) {
     let accent_color = Color::Cyan;
-    let block = Block::default()
-        .title(" Server Management ")
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(accent_color));
-
-    let area = centered_rect(80, 80, f.area());
+    let fg_color = Color::White;
+    
+    let area = centered_rect(90, 80, f.area());
     f.render_widget(Clear, area);
-
-    let mut text = vec![
-        Line::from(vec![
-            Span::styled("Runtime Server Management", Style::default().add_modifier(Modifier::BOLD)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("MCP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
-        ]),
-    ];
     
-    for name in app.config.mcp.keys() {
-        text.push(Line::from(format!("  {} (Active)", name)));
+    // Split into title, content, and status bar
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),   // Title
+            Constraint::Min(1),      // Content
+            Constraint::Length(3),   // Status bar
+        ].as_ref())
+        .split(area);
+    
+    // Title
+    let title = Paragraph::new("MCP Server Browser")
+        .style(Style::default().fg(accent_color).add_modifier(Modifier::BOLD))
+        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(accent_color)));
+    f.render_widget(title, chunks[0]);
+    
+    // Content area - split into left (list) and right (details)
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(40),
+            Constraint::Percentage(60),
+        ].as_ref())
+        .split(chunks[1]);
+    
+    // Left panel: Available MCP Servers list
+    let available_servers: Vec<ListItem> = app.mcp_browser_items
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _desc, _))| {
+            let is_installed = app.config.mcp.contains_key(name);
+            let prefix = if i == app.mcp_browser_selected { "> " } else { "  " };
+            let suffix = if is_installed { " [INSTALLED]" } else { "" };
+            let style = if i == app.mcp_browser_selected {
+                Style::default().fg(accent_color).add_modifier(Modifier::BOLD)
+            } else if is_installed {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(fg_color)
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{}{}{}", prefix, name, suffix), style),
+            ]))
+        })
+        .collect();
+    
+    let list_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Available Servers ")
+        .border_style(Style::default().fg(accent_color));
+    
+    let list = List::new(available_servers)
+        .block(list_block);
+    f.render_widget(list, content_chunks[0]);
+    
+    // Right panel: Selected server details
+    if let Some((name, desc, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
+        let is_installed = app.config.mcp.contains_key(name);
+        let cmd_str = cmd.join(" ");
+        
+        let details = vec![
+            Line::from(vec![
+                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled(name, Style::default().fg(fg_color).add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Description: ", Style::default().fg(Color::Yellow)),
+            ]),
+            Line::from(desc.as_str()),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Command: ", Style::default().fg(Color::Yellow)),
+            ]),
+            Line::from(cmd_str),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if is_installed { "Installed" } else { "Not installed" },
+                    Style::default().fg(if is_installed { Color::Green } else { Color::Red })
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if is_installed { "Restart open_crust to use this server." } else { "Press [Enter] to install." },
+                    Style::default().fg(fg_color)
+                ),
+            ]),
+        ];
+        
+        let details_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Server Details ")
+            .border_style(Style::default().fg(accent_color));
+        
+        let details_para = Paragraph::new(details)
+            .block(details_block)
+            .wrap(Wrap { trim: true });
+        f.render_widget(details_para, content_chunks[1]);
     }
     
-    text.push(Line::from(""));
-    text.push(Line::from(vec![
-        Span::styled("LSP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
-    ]));
-    for name in app.config.lsp.keys() {
-        text.push(Line::from(format!("  {} (Active)", name)));
-    }
-
-    text.push(Line::from(""));
-    text.push(Line::from(vec![
-        Span::styled("Add MCP Server (name=command):", Style::default().add_modifier(Modifier::UNDERLINED)),
-    ]));
-    text.push(Line::from(app.mcp_input.as_str()));
-    text.push(Line::from(""));
-    text.push(Line::from("Type 'name=command' and press [Enter] to add. [Esc] to return."));
-
-    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
-    f.render_widget(paragraph, area);
+    // Status bar
+    let status_text = if app.config.mcp.contains_key(
+        &app.mcp_browser_items.get(app.mcp_browser_selected)
+            .map(|(name, _, _)| name.clone())
+            .unwrap_or_default()
+    ) {
+        " [↑/↓] Navigate | [Esc] Close "
+    } else {
+        " [↑/↓] Navigate | [Enter] Install | [Esc] Close "
+    };
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(accent_color).fg(Color::Black))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
 }
 
 fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {

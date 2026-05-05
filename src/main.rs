@@ -369,28 +369,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::Esc => {
                             app.mode = Mode::Normal;
                         }
+                        KeyCode::Up => {
+                            if app.mcp_browser_selected > 0 {
+                                app.mcp_browser_selected -= 1;
+                            }
+                            // Adjust scroll if needed
+                            if app.mcp_browser_selected < app.mcp_browser_scroll {
+                                app.mcp_browser_scroll = app.mcp_browser_selected;
+                            }
+                        }
+                        KeyCode::Down => {
+                            if app.mcp_browser_selected < app.mcp_browser_items.len() - 1 {
+                                app.mcp_browser_selected += 1;
+                            }
+                            // Adjust scroll if needed (assuming 20 visible items)
+                            if app.mcp_browser_selected >= app.mcp_browser_scroll + 20 {
+                                app.mcp_browser_scroll = app.mcp_browser_selected - 19;
+                            }
+                        }
+                        KeyCode::Enter => {
+                            // Install the selected server
+                            if let Some((name, _, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
+                                if !app.config.mcp.contains_key(name) {
+                                    let mcp_config = config::McpConfig {
+                                        command: cmd.clone(),
+                                        environment: None,
+                                        enabled: true,
+                                    };
+                                    app.config.mcp.insert(name.clone(), mcp_config);
+                                    app.config.save();
+                                    app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart open_crust to use it.", name));
+                                }
+                            }
+                        }
                         KeyCode::Char(c) => {
                             app.mcp_input.push(c);
                         }
                         KeyCode::Backspace => {
                             app.mcp_input.pop();
-                        }
-                        KeyCode::Enter => {
-                            if !app.mcp_input.is_empty() {
-                                let parts: Vec<&str> = app.mcp_input.splitn(2, '=').collect();
-                                if parts.len() == 2 {
-                                    let name = parts[0].trim();
-                                    let command = parts[1].trim();
-                                    app.config.mcp.insert(name.to_string(), crate::config::McpConfig {
-                                        command: vec![command.to_string()],
-                                        environment: Some(std::collections::HashMap::new()),
-                                        enabled: true,
-                                    });
-                                    app.config.save();
-                                    app.tabs[0].messages.push(format!("System: Added MCP server '{}'", name));
-                                    app.mcp_input.clear();
-                                }
-                            }
                         }
                         _ => {}
                     },

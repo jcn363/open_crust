@@ -38,6 +38,10 @@ pub struct App {
     pub sidebar_items: Vec<String>,
     pub history: Vec<String>,
     pub history_index: Option<usize>,
+    // MCP Browser state
+    pub mcp_browser_items: Vec<(String, String, Vec<String>)>, // (name, description, command)
+    pub mcp_browser_selected: usize,
+    pub mcp_browser_scroll: usize,
 }
 
 impl App {
@@ -68,6 +72,19 @@ impl App {
             sidebar_items: Vec::new(),
             history: Vec::new(),
             history_index: None,
+            // MCP Browser initialization
+            mcp_browser_items: vec![
+                ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
+                ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
+                ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
+                ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
+                ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
+                ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
+                ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
+                ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
+            ],
+            mcp_browser_selected: 0,
+            mcp_browser_scroll: 0,
         };
         app.load_history();
         app
