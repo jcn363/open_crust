@@ -53,6 +53,19 @@ enum Commands {
     Acp,
     /// Run a single command and exit
     Run { command: String },
+    /// MCP server management
+    Mcp {
+        #[command(subcommand)]
+        cmd: McpCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum McpCommands {
+    /// List available MCP servers
+    List,
+    /// Install an MCP server by name
+    Install { server: String },
 }
 
 #[tokio::main]
@@ -96,6 +109,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     if let Some(Commands::Run { command }) = args.command {
         println!("Running command: {}", command);
+        return Ok(());
+    }
+
+    if let Some(Commands::Mcp { cmd }) = &args.command {
+        match cmd {
+            McpCommands::List => {
+                println!("Available MCP servers (curated list):");
+                println!("  github    - GitHub integration (npx -y @modelcontextprotocol/server-github)");
+                println!("  slack      - Slack integration (npx -y @modelcontextprotocol/server-slack)");
+                println!("  filesystem - File system access (npx -y @modelcontextprotocol/server-filesystem)");
+                println!("  postgres   - PostgreSQL database (npx -y @modelcontextprotocol/server-postgres)");
+                println!("  google-drive - Google Drive (npx -y @modelcontextprotocol/server-google-drive)");
+                println!("\nUse `opencrust mcp install <name>` to add a server.");
+                println!("For more servers, visit: https://github.com/modelcontextprotocol/servers");
+            }
+            McpCommands::Install { server } => {
+                let config = config::Config::load();
+                let mut new_config = config.clone();
+                let (command, description) = match server.as_str() {
+                    "github" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()], "GitHub integration"),
+                    "slack" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()], "Slack integration"),
+                    "filesystem" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()], "File system access"),
+                    "postgres" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()], "PostgreSQL database"),
+                    "google-drive" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()], "Google Drive"),
+                    _ => {
+                        eprintln!("Unknown MCP server: {}. Use `opencrust mcp list` to see available servers.", server);
+                        return Ok(());
+                    }
+                };
+                let mcp_config = config::McpConfig {
+                    command,
+                    environment: None,
+                    enabled: true,
+                };
+                new_config.mcp.insert(server.clone(), mcp_config);
+                new_config.save();
+                println!("Installed MCP server '{}' ({}). Restart open_crust to use it.", server, description);
+            }
+        }
         return Ok(());
     }
 

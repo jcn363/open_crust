@@ -1,6 +1,15 @@
 # OpenCrust
 
-**OpenCrust** is a production-grade, TUI-native agentic coding platform built in Rust. It empowers developers with a high-intelligence, secure, and fully observable AI partner for complex software engineering tasks.
+**The fastest, most secure AI coding agent** — built in Rust for terminal-native development.
+
+OpenCrust empowers developers with a high-intelligence, secure, and fully observable AI partner for complex software engineering tasks. Unlike Python or Node.js-based alternatives, OpenCrust leverages Rust's zero-cost abstractions and memory safety to deliver blazing performance with minimal resource footprint.
+
+### Why Rust?
+
+- **⚡ Blazing Fast**: Native compilation means instant startup, sub-millisecond tool execution, and efficient concurrency for multi-agent workflows
+- **🛡️ Memory Safe**: Rust's ownership model eliminates entire classes of vulnerabilities (buffer overflows, use-after-free) inherent in C/C++ tools
+- **🔒 Security First**: Granular permissions, network gating, and persistent auditing — baked into the architecture, not bolted on
+- **📦 Minimal Footprint**: Single static binary, no runtime dependencies, ideal for remote servers and containers
 
 ## 🚀 Key Features
 
@@ -124,6 +133,36 @@ open_crust/
 │   ├── web.rs         # Web search integration
 │   └── acp.rs         # ACP stdio interface
 ```
+
+## 🔌 MCP Ecosystem Integration
+
+OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **2,300+ community servers** for databases, APIs, productivity tools, and more.
+
+### Quick Start
+
+```bash
+# List popular MCP servers
+opencrust mcp list
+
+# Install a server (e.g., GitHub integration)
+opencrust mcp install github
+
+# Restart open_crust to load the new server
+```
+
+### Popular MCP Servers
+
+| Server | Description |
+|--------|-------------|
+| `github` | GitHub API integration for repo management |
+| `slack` | Slack messaging and channel management |
+| `filesystem` | Extended file system operations |
+| `postgres` | PostgreSQL database queries |
+| `google-drive` | Google Drive file access |
+
+Browse all servers at [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
+
+---
 
 ## 🔌 Adding Skills
 
