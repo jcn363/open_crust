@@ -47,12 +47,18 @@ pub struct Keybinds {
     pub app_exit: String,
     #[serde(default = "default_input_submit")]
     pub input_submit: String,
+    #[serde(default = "default_paste")]
+    pub paste: String,
+    #[serde(default = "default_copy")]
+    pub copy: String,
     // Add more as needed, following the pattern
 }
 
 fn default_leader() -> String { "ctrl+x".to_string() }
-fn default_app_exit() -> String { "ctrl+c,ctrl+d".to_string() }
+fn default_app_exit() -> String { "ctrl+q".to_string() }
 fn default_input_submit() -> String { "return".to_string() }
+fn default_paste() -> String { "ctrl+v".to_string() }
+fn default_copy() -> String { "ctrl+c".to_string() }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TuiConfig {
@@ -101,6 +107,8 @@ impl Default for Keybinds {
             leader: default_leader(),
             app_exit: default_app_exit(),
             input_submit: default_input_submit(),
+            paste: default_paste(),
+            copy: default_copy(),
         }
     }
 }

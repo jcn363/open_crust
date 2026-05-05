@@ -25,8 +25,10 @@ mod rag;
 mod telemetry;
 mod security;
 mod tool_executor;
+mod clipboard;
 
 use app::{App, Mode};
+use clipboard::ClipboardManager;
 use clap::{Parser, Subcommand};
 use crossterm::{
     event::{Event, KeyCode},
@@ -250,6 +252,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, llm_client.clone());
     app.refresh_sidebar();
 
+    // Initialize clipboard manager
+    let mut clipboard = ClipboardManager::new();
+
+    // Get copy/paste keybinds from config
+    let keybinds = app.config.tui.as_ref().map(|t| &t.keybinds);
+    let copy_key = keybinds.map(|k| k.copy.clone()).unwrap_or_else(|| "ctrl+c".to_string());
+    let paste_key = keybinds.map(|k| k.paste.clone()).unwrap_or_else(|| "ctrl+v".to_string());
+    let exit_keys = keybinds.map(|k| k.app_exit.clone()).unwrap_or_else(|| "ctrl+q".to_string());
+    let submit_keys = keybinds.map(|k| k.input_submit.clone()).unwrap_or_else(|| "return".to_string());
+
     loop {
         while let Ok(response) = response_rx.try_recv() {
             if response.contains("[APPROVAL_REQUIRED]") {
@@ -277,9 +289,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         terminal.draw(|f| ui::draw(f, &app))?;
 
         if let Some(Event::Key(key)) = events::next_event().await? {
-            let keybinds = app.config.tui.as_ref().map(|t| &t.keybinds);
-            let exit_keys = keybinds.map(|k| k.app_exit.as_str()).unwrap_or("ctrl+c,ctrl+d");
-            let submit_keys = keybinds.map(|k| k.input_submit.as_str()).unwrap_or("return");
+            // Check for Copy (Ctrl+C) - copy current input to clipboard
+            if check_key_match(&key, &copy_key) {
+                if !app.input.is_empty() {
+                    if clipboard.copy(&app.input) {
+                        app.tabs[0].messages.push(String::from("Copied to clipboard"));
+                    }
+                }
+                continue;
+            }
+
+            // Check for Paste (Ctrl+V) - paste from clipboard to input
+            if check_key_match(&key, &paste_key) {
+                if let Some(text) = clipboard.paste() {
+                    app.input.push_str(&text);
+                }
+                continue;
+            }
 
             if app.waiting_for_approval {
                 match key.code {
@@ -301,7 +327,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             } else {
                 // Check for exit keys
-                if check_key_match(&key, exit_keys) {
+                if check_key_match(&key, &exit_keys) {
                     app.should_quit = true;
                 }
 
@@ -325,7 +351,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         _ => {}
                     },
                     Mode::Insert => {
-                        if check_key_match(&key, submit_keys) {
+                        if check_key_match(&key, &submit_keys) {
                             app.submit_message();
                         } else {
                             match key.code {
