@@ -23,6 +23,8 @@ mod stats;
 mod planner;
 mod rag;
 mod telemetry;
+mod security;
+mod tool_executor;
 
 use app::{App, Mode};
 use clap::{Parser, Subcommand};

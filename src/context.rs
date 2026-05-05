@@ -1,4 +1,5 @@
 use std::fs;
+use crate::security::validate_path;
 
 pub fn inject_file_context(prompt: &str) -> String {
     let mut enriched_prompt = String::from(prompt);
@@ -9,8 +10,17 @@ pub fn inject_file_context(prompt: &str) -> String {
             let path = &word[1..];
             let path = path.trim_end_matches(&[',', '.', ';', ':', '?', '!'][..]);
             
-            if fs::metadata(path).is_ok() && !files_to_inject.contains(&path.to_string()) {
-                files_to_inject.push(path.to_string());
+            // Validate the path before adding
+            match validate_path(path) {
+                Ok(valid_path) => {
+                    let path_str = valid_path.to_string_lossy().to_string();
+                    if fs::metadata(&valid_path).is_ok() && !files_to_inject.contains(&path_str) {
+                        files_to_inject.push(path_str);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Warning: Skipping invalid path '@{}': {}", path, e);
+                }
             }
         }
     }

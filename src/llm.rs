@@ -1,11 +1,10 @@
 use crate::config::{Config, ProviderType, PermissionAction};
 use reqwest::Client;
-use std::process::Command;
 use serde_json::{json, Value};
 use std::error::Error;
 use tokio::sync::mpsc;
-use crate::tools;
 use crate::rules;
+use crate::tool_executor::ToolExecutor;
 
 const BASE_SYSTEM_PROMPT: &str = "You are open_crust, a pure Rust terminal-based AI coding agent. 
 You have access to tools to interact with the local filesystem and execute bash commands.
@@ -30,16 +29,13 @@ pub struct LlmClient {
     client: Client,
     pub config: Config,
     pub mcp_manager: Arc<Mutex<McpManager>>,
-    pub lsp_manager: Arc<Mutex<LspManager>>,
     pub skill_manager: Arc<Mutex<SkillManager>>,
     pub custom_tool_manager: Arc<Mutex<CustomToolManager>>,
     pub permission_manager: Arc<PermissionManager>,
-    pub web_manager: Arc<WebManager>,
     pub audit_logger: Arc<AuditLogger>,
     pub usage_stats: Arc<Mutex<UsageStats>>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
-    pub planner: Arc<Mutex<Planner>>,
-    pub rag_manager: Arc<RagManager>,
+    pub tool_executor: Arc<ToolExecutor>,
 }
 
 impl LlmClient {
@@ -51,26 +47,33 @@ impl LlmClient {
         custom_tool_manager: Arc<Mutex<CustomToolManager>>,
     ) -> Self {
         let permission_manager = Arc::new(PermissionManager::new(config.clone()));
-        let web_manager = Arc::new(WebManager::new());
         let audit_logger = Arc::new(AuditLogger::new());
         let usage_stats = Arc::new(Mutex::new(UsageStats::new()));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
-        let planner = Arc::new(Mutex::new(Planner::new()));
-        let rag_manager = Arc::new(RagManager::new());
+        
+        // Create ToolExecutor with all the managers
+        let tool_executor = Arc::new(ToolExecutor::new(
+            mcp_manager.clone(),
+            lsp_manager.clone(),
+            skill_manager.clone(),
+            custom_tool_manager.clone(),
+            permission_manager.clone(),
+            Arc::new(WebManager::new()),
+            Arc::new(Mutex::new(Planner::new())),
+            Arc::new(RagManager::new()),
+        ));
+        
         Self {
             client: Client::new(),
             config,
             mcp_manager,
-            lsp_manager,
             skill_manager,
             custom_tool_manager,
             permission_manager,
-            web_manager,
             audit_logger,
             usage_stats,
             pinned_files,
-            planner,
-            rag_manager,
+            tool_executor,
         }
     }
     
@@ -135,7 +138,7 @@ impl LlmClient {
                 ProviderType::OpenAI => self.generate_openai(messages_history).await?,
             };
 
-            if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
+        if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
                 messages_history.push(res.clone());
                 
                 for tool_call in tool_calls {
@@ -144,19 +147,21 @@ impl LlmClient {
                     let args_str = tool_call.get("function").and_then(|f| f.get("arguments")).and_then(|a| a.as_str()).unwrap_or("{}");
                     let args: Value = serde_json::from_str(args_str).unwrap_or(json!({}));
                     
+                    // Get input summary for permission check and audit
                     let input_summary = match name {
                         "bash" => args.get("command").and_then(|v| v.as_str()).unwrap_or(""),
                         "write" => args.get("path").and_then(|v| v.as_str()).unwrap_or(""),
                         "read" => args.get("path").and_then(|v| v.as_str()).unwrap_or(""),
-                        "edit" => args.get("path").and_then(|v| v.as_str()).unwrap_or(""),
                         _ => args_str,
                     };
-
+                    
+                    // Check if tool requires approval
                     let permission = self.permission_manager.check_permission(name, input_summary);
                     let approved = match permission {
                         PermissionAction::Allow => true,
                         PermissionAction::Deny => false,
                         PermissionAction::Ask => {
+                            // Handle tools that need user approval
                             if name == "write" {
                                 let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
                                 let proposed = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
@@ -170,167 +175,14 @@ impl LlmClient {
                     };
                     
                     self.audit_logger.log_action(name, input_summary, approved);
-
+                    
                     let result = if approved {
                         let _ = progress_tx.send(format!("open_crust: Executing tool '{}'...", name)).await;
                         
-                        match name {
-                            "lsp_goto_definition" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let mut lsp = self.lsp_manager.lock().await;
-                                match lsp.goto_definition(path, line, character).await {
-                                    Ok(res) => res,
-                                    Err(e) => format!("LSP Error: {}", e),
-                                }
-                            }
-                            "lsp_hover" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let mut lsp = self.lsp_manager.lock().await;
-                                match lsp.hover(path, line, character).await {
-                                    Ok(res) => res,
-                                    Err(e) => format!("LSP Error: {}", e),
-                                }
-                            }
-                            "lsp_find_references" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let mut lsp = self.lsp_manager.lock().await;
-                                match lsp.find_references(path, line, character).await {
-                                    Ok(res) => res,
-                                    Err(e) => format!("LSP Error: {}", e),
-                                }
-                            }
-                            "lsp_type_definition" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                                let mut lsp = self.lsp_manager.lock().await;
-                                match lsp.type_definition(path, line, character).await {
-                                    Ok(res) => res,
-                                    Err(e) => format!("LSP Error: {}", e),
-                                }
-                            }
-                            "task" => {
-                                let sub_prompt = args.get("prompt").and_then(|v| v.as_str()).unwrap_or("");
-                                let (p_tx, _) = mpsc::channel(100);
-                                let (_, mut a_rx) = mpsc::channel(1);
-                                let mut history = Vec::new();
-                                match self.send_message(&mut history, sub_prompt, p_tx, &mut a_rx).await {
-                                    Ok(res) => format!("Subtask completed: {}", res),
-                                    Err(e) => format!("Subtask failed: {}", e),
-                                }
-                            }
-                            "web_search" => {
-                                let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
-                                match self.web_manager.search(query).await {
-                                    Ok(res) => res,
-                                    Err(e) => format!("Web Search Error: {}", e),
-                                }
-                            }
-                            "fetch_url" => {
-                                let url = args.get("url").and_then(|v| v.as_str()).unwrap_or("");
-                                if self.permission_manager.check_network_permission(url) {
-                                    match self.web_manager.fetch_url(url).await {
-                                        Ok(res) => res,
-                                        Err(e) => format!("Fetch Error: {}", e),
-                                    }
-                                } else {
-                                    format!("Permission Denied: Domain not whitelisted for URL '{}'", url)
-                                }
-                            }
-                            "pin" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let mut pinned = self.pinned_files.lock().await;
-                                if !pinned.contains(&path.to_string()) {
-                                    pinned.push(path.to_string());
-                                    format!("Pinned {}", path)
-                                } else {
-                                    format!("{} is already pinned", path)
-                                }
-                            }
-                            "unpin" => {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let mut pinned = self.pinned_files.lock().await;
-                                if let Some(pos) = pinned.iter().position(|x| x == path) {
-                                    pinned.remove(pos);
-                                    format!("Unpinned {}", path)
-                                } else {
-                                    format!("{} was not pinned", path)
-                                }
-                            }
-                            "create_plan" => {
-                                let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("Untitled Plan");
-                                let steps = args.get("steps").and_then(|v| v.as_array())
-                                    .map(|a| a.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect())
-                                    .unwrap_or_default();
-                                let mut planner = self.planner.lock().await;
-                                planner.create_plan(title, steps)
-                            }
-                            "mark_step_complete" => {
-                                let index = args.get("index").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
-                                let mut planner = self.planner.lock().await;
-                                planner.mark_step_complete(index)
-                            }
-                            "semantic_search" => {
-                                let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
-                                self.rag_manager.semantic_search(query)
-                            }
-                            "global_search_replace" => {
-                                let pattern = args.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
-                                let replacement = args.get("replacement").and_then(|v| v.as_str()).unwrap_or("");
-                                let include = args.get("include").and_then(|v| v.as_str()).unwrap_or("*");
-                                
-                                // Perform search-replace using sed-like logic across files
-                                let output = Command::new("find")
-                                    .arg(".")
-                                    .arg("-name")
-                                    .arg(include)
-                                    .arg("-type")
-                                    .arg("f")
-                                    .arg("-exec")
-                                    .arg("sed")
-                                    .arg("-i")
-                                    .arg(format!("s/{}/{}/g", pattern, replacement))
-                                    .arg("{}")
-                                    .arg("+")
-                                    .output();
-
-                                match output {
-                                    Ok(_) => format!("Globally replaced '{}' with '{}' in files matching '{}'.", pattern, replacement, include),
-                                    Err(e) => format!("Refactoring Error: {}", e),
-                                }
-                            }
-                            "skill" => {
-                                let name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                                let skills = self.skill_manager.lock().await;
-                                match skills.skills.get(name) {
-                                    Some(skill) => skill.content.clone(),
-                                    None => format!("Skill '{}' not found.", name),
-                                }
-                            }
-                            _ => {
-                                // Try Custom tool first
-                                let custom = self.custom_tool_manager.lock().await;
-                                match custom.call_tool(name, &args).await {
-                                    Ok(res) => res,
-                                    Err(_) => {
-                                        // Try MCP tool
-                                        let mut mcp = self.mcp_manager.lock().await;
-                                        match mcp.call_tool(name, &args).await {
-                                            Ok(res) => res,
-                                            Err(_) => {
-                                                // Fallback to built-in tools
-                                                tools::execute_tool(name, &args)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        // Use ToolExecutor to execute the tool
+                        match self.tool_executor.execute(name, &args).await {
+                            Ok(res) => res,
+                            Err(e) => format!("Error executing tool '{}': {}", name, e),
                         }
                     } else {
                         let _ = progress_tx.send(format!("open_crust: Tool '{}' denied by user.", name)).await;
@@ -360,15 +212,11 @@ impl LlmClient {
         url: &str,
         auth_header: Option<(&str, String)>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
-        // Assemble tool schemas from built-in tools, MCP servers, and custom tools
-        let mut tools_schema = tools::get_tools_schema();
-        let mut mcp = self.mcp_manager.lock().await;
-        let mcp_tools = mcp.list_tools().await;
-        if let Some(tools_array) = tools_schema.as_array_mut() {
-            tools_array.extend(mcp_tools);
-            let custom = self.custom_tool_manager.lock().await;
-            tools_array.extend(custom.get_tools_schema());
-        }
+        // Assemble tool schemas using ToolExecutor
+        let tools_schema = crate::tool_executor::get_all_tool_schemas(
+            &self.mcp_manager,
+            &self.custom_tool_manager,
+        ).await;
         
         // Build request body
         let body = json!({
