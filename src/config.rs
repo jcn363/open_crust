@@ -6,6 +6,7 @@ pub enum ProviderType {
     Ollama,
     OpenRouter,
     OpenAI,
+    Gemini,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -91,6 +92,7 @@ pub struct Config {
     pub tui: Option<TuiConfig>,
     pub theme: Option<ThemeConfig>,
     pub openai_key: Option<String>,
+    pub gemini_api_key: Option<String>,
 }
 
 impl Default for Keybinds {
@@ -124,6 +126,7 @@ impl Default for Config {
             tui: None,
             theme: None,
             openai_key: None,
+            gemini_api_key: None,
         }
     }
 }
@@ -176,6 +179,11 @@ impl Config {
             ProviderType::OpenAI => {
                 if self.openai_key.is_none() || self.openai_key.as_ref().unwrap().is_empty() {
                     eprintln!("Warning: OpenAI provider selected but openai_key is not set");
+                }
+            }
+            ProviderType::Gemini => {
+                if self.gemini_api_key.is_none() || self.gemini_api_key.as_ref().unwrap().is_empty() {
+                    eprintln!("Warning: Gemini provider selected but gemini_api_key is not set");
                 }
             }
         }

@@ -136,6 +136,7 @@ impl LlmClient {
                 ProviderType::Ollama => self.generate_ollama(messages_history).await?,
                 ProviderType::OpenRouter => self.generate_openrouter(messages_history).await?,
                 ProviderType::OpenAI => self.generate_openai(messages_history).await?,
+                ProviderType::Gemini => self.generate_gemini(messages_history).await?,
             };
 
         if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
@@ -273,6 +274,21 @@ impl LlmClient {
         let res_json = self.generate_completion(
             messages,
             "https://api.openai.com/v1/chat/completions",
+            Some(("Authorization", format!("Bearer {}", api_key))),
+        ).await?;
+        Ok(res_json.get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_gemini(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.gemini_api_key.as_deref().unwrap_or("");
+        // Use Google's OpenAI-compatible endpoint for easier integration
+        let res_json = self.generate_completion(
+            messages,
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
             Some(("Authorization", format!("Bearer {}", api_key))),
         ).await?;
         Ok(res_json.get("choices")

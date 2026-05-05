@@ -49,8 +49,9 @@ Configure your environment in `~/.config/open_crust/config.json`:
 
 ```json
 {
-  "provider": "ollama",
-  "model": "llama3",
+  "provider": "gemini",
+  "model": "gemini-pro",
+  "gemini_api_key": "YOUR_GEMINI_API_KEY",
   "ollama_url": "http://localhost:11434",
   "mcp": {
     "weather": {
@@ -81,6 +82,8 @@ Configure your environment in `~/.config/open_crust/config.json`:
   }
 }
 ```
+
+Supported providers: `ollama`, `openrouter`, `openai`, `gemini`.
 
 ## ⌨️ Keybinds
 
