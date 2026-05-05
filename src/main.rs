@@ -10,6 +10,7 @@ mod context;
 mod rules;
 mod mcp;
 mod lsp;
+mod jsonrpc;
 mod skills;
 mod acp;
 mod permissions;

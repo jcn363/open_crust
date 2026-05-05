@@ -1,14 +1,13 @@
 use std::process::Stdio;
-use tokio::process::{Child, Command};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::Command;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use crate::config::LspConfig;
+use crate::jsonrpc::JsonRpcClient;
 use std::env;
 
 pub struct LspServer {
-    child: Child,
-    id_counter: u64,
+    rpc: JsonRpcClient,
 }
 
 impl LspServer {
@@ -33,19 +32,15 @@ impl LspServer {
         }
 
         let child = cmd.spawn().map_err(|e| format!("Failed to spawn LSP server {}: {}", name, e))?;
-
-        let mut server = Self {
-            child,
-            id_counter: 0,
-        };
+        let mut rpc = JsonRpcClient::new(child);
 
         // Perform LSP initialization
-        server.initialize().await?;
+        Self::initialize(&mut rpc).await?;
 
-        Ok(server)
+        Ok(Self { rpc })
     }
 
-    async fn initialize(&mut self) -> Result<(), String> {
+    async fn initialize(rpc: &mut JsonRpcClient) -> Result<(), String> {
         let root_dir = env::current_dir().unwrap_or_default();
         let root_uri = format!("file://{}", root_dir.display());
 
@@ -61,63 +56,13 @@ impl LspServer {
             }
         });
 
-        self.call("initialize", params).await?;
-        self.notify("initialized", json!({})).await?;
+        rpc.call("initialize", params).await?;
+        rpc.notify("initialized", json!({})).await?;
         Ok(())
     }
 
     pub async fn call(&mut self, method: &str, params: Value) -> Result<Value, String> {
-        self.id_counter += 1;
-        let id = self.id_counter;
-
-        let request = json!({
-            "jsonrpc": "2.0",
-            "id": id,
-            "method": method,
-            "params": params
-        });
-
-        let mut request_str = serde_json::to_string(&request).map_err(|e| e.to_string())?;
-        request_str.push('\n');
-
-        let stdin = self.child.stdin.as_mut().ok_or("No stdin for LSP server")?;
-        stdin.write_all(request_str.as_bytes()).await.map_err(|e| e.to_string())?;
-        stdin.flush().await.map_err(|e| e.to_string())?;
-
-        let stdout = self.child.stdout.as_mut().ok_or("No stdout for LSP server")?;
-        let mut reader = BufReader::new(stdout).lines();
-
-        while let Some(line) = reader.next_line().await.map_err(|e| e.to_string())? {
-            // LSP uses Content-Length headers, but many simple servers also just emit JSON lines.
-            // For a robust implementation, we'd need to parse the headers.
-            // Here we assume standard JSON-RPC over stdio.
-            if let Ok(response) = serde_json::from_str::<Value>(&line) {
-                if response.get("id").and_then(|v| v.as_u64()) == Some(id) {
-                    if let Some(error) = response.get("error") {
-                        return Err(format!("LSP Error: {}", error));
-                    }
-                    return Ok(response.get("result").cloned().unwrap_or(Value::Null));
-                }
-            }
-        }
-
-        Err("LSP server closed stdout unexpectedly".into())
-    }
-
-    async fn notify(&mut self, method: &str, params: Value) -> Result<(), String> {
-        let request = json!({
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params
-        });
-
-        let mut request_str = serde_json::to_string(&request).map_err(|e| e.to_string())?;
-        request_str.push('\n');
-
-        let stdin = self.child.stdin.as_mut().ok_or("No stdin for LSP server")?;
-        stdin.write_all(request_str.as_bytes()).await.map_err(|e| e.to_string())?;
-        stdin.flush().await.map_err(|e| e.to_string())?;
-        Ok(())
+        self.rpc.call(method, params).await
     }
 }
 

@@ -5,6 +5,7 @@ use std::fs;
 pub enum ProviderType {
     Ollama,
     OpenRouter,
+    OpenAI,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -89,6 +90,7 @@ pub struct Config {
     pub allowed_domains: Vec<String>,
     pub tui: Option<TuiConfig>,
     pub theme: Option<ThemeConfig>,
+    pub openai_key: Option<String>,
 }
 
 impl Default for Keybinds {
@@ -121,6 +123,7 @@ impl Default for Config {
             allowed_domains: Vec::new(),
             tui: None,
             theme: None,
+            openai_key: None,
         }
     }
 }

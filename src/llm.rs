@@ -132,6 +132,7 @@ impl LlmClient {
             let res = match self.config.provider {
                 ProviderType::Ollama => self.generate_ollama(messages_history).await?,
                 ProviderType::OpenRouter => self.generate_openrouter(messages_history).await?,
+                ProviderType::OpenAI => self.generate_openai(messages_history).await?,
             };
 
             if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
@@ -352,9 +353,14 @@ impl LlmClient {
             }
         }
     }
-
-    async fn generate_ollama(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
-        let ollama_url = self.config.ollama_url.as_deref().unwrap_or("http://localhost:11434");
+    
+    async fn generate_completion(
+        &self,
+        messages: &[Value],
+        url: &str,
+        auth_header: Option<(&str, String)>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        // Assemble tool schemas from built-in tools, MCP servers, and custom tools
         let mut tools_schema = tools::get_tools_schema();
         let mut mcp = self.mcp_manager.lock().await;
         let mcp_tools = mcp.list_tools().await;
@@ -363,64 +369,64 @@ impl LlmClient {
             let custom = self.custom_tool_manager.lock().await;
             tools_array.extend(custom.get_tools_schema());
         }
-
+        
+        // Build request body
         let body = json!({
             "model": self.config.model,
             "messages": messages,
-            "stream": false,
             "tools": tools_schema
         });
-
-        let res = self.client.post(format!("{}/api/chat", ollama_url))
-            .json(&body)
-            .send()
-            .await?;
-
+        
+        // Make HTTP request with optional auth header
+        let mut request = self.client.post(url).json(&body);
+        if let Some((header_name, header_value)) = auth_header {
+            request = request.header(header_name, header_value);
+        }
+        let res = request.send().await?;
         let res_json: Value = res.json().await?;
         
+        // Extract and track usage stats
         if let Some(usage) = res_json.get("usage") {
             let input = usage.get("prompt_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
             let output = usage.get("completion_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
             let mut stats = self.usage_stats.lock().await;
             stats.add_usage(&self.config.model, input, output);
         }
-
+        
+        Ok(res_json)
+    }
+    
+    async fn generate_ollama(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let ollama_url = self.config.ollama_url.as_deref().unwrap_or("http://localhost:11434");
+        let res_json = self.generate_completion(
+            messages,
+            &format!("{}/api/chat", ollama_url),
+            None,
+        ).await?;
         Ok(res_json.get("message").cloned().unwrap_or(json!({})))
     }
 
     async fn generate_openrouter(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.openrouter_key.as_deref().unwrap_or("");
-        
-        let mut tools_schema = tools::get_tools_schema();
-        let mut mcp = self.mcp_manager.lock().await;
-        let mcp_tools = mcp.list_tools().await;
-        if let Some(tools_array) = tools_schema.as_array_mut() {
-            tools_array.extend(mcp_tools);
-            let custom = self.custom_tool_manager.lock().await;
-            tools_array.extend(custom.get_tools_schema());
-        }
+        let res_json = self.generate_completion(
+            messages,
+            "https://openrouter.ai/api/v1/chat/completions",
+            Some(("Authorization", format!("Bearer {}", api_key))),
+        ).await?;
+        Ok(res_json.get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
 
-        let body = json!({
-            "model": self.config.model,
-            "messages": messages,
-            "tools": tools_schema
-        });
-
-        let res = self.client.post("https://openrouter.ai/api/v1/chat/completions")
-            .header("Authorization", format!("Bearer {}", api_key))
-            .json(&body)
-            .send()
-            .await?;
-
-        let res_json: Value = res.json().await?;
-
-        if let Some(usage) = res_json.get("usage") {
-            let input = usage.get("prompt_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
-            let output = usage.get("completion_tokens").and_then(|t| t.as_u64()).unwrap_or(0);
-            let mut stats = self.usage_stats.lock().await;
-            stats.add_usage(&self.config.model, input, output);
-        }
-
+    async fn generate_openai(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.openai_key.as_deref().unwrap_or("");
+        let res_json = self.generate_completion(
+            messages,
+            "https://api.openai.com/v1/chat/completions",
+            Some(("Authorization", format!("Bearer {}", api_key))),
+        ).await?;
         Ok(res_json.get("choices")
             .and_then(|c| c.get(0))
             .and_then(|c| c.get("message"))

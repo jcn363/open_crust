@@ -1,13 +1,12 @@
 use std::process::Stdio;
-use tokio::process::{Child, Command};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::Command;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use crate::config::McpConfig;
+use crate::jsonrpc::JsonRpcClient;
 
 pub struct McpServer {
-    child: Child,
-    id_counter: u64,
+    rpc: JsonRpcClient,
 }
 
 impl McpServer {
@@ -32,47 +31,13 @@ impl McpServer {
         }
 
         let child = cmd.spawn().map_err(|e| format!("Failed to spawn MCP server {}: {}", name, e))?;
+        let rpc = JsonRpcClient::new(child);
 
-        Ok(Self {
-            child,
-            id_counter: 0,
-        })
+        Ok(Self { rpc })
     }
 
     pub async fn call(&mut self, method: &str, params: Value) -> Result<Value, String> {
-        self.id_counter += 1;
-        let id = self.id_counter;
-
-        let request = json!({
-            "jsonrpc": "2.0",
-            "id": id,
-            "method": method,
-            "params": params
-        });
-
-        let mut request_str = serde_json::to_string(&request).map_err(|e| e.to_string())?;
-        request_str.push('\n');
-
-        let stdin = self.child.stdin.as_mut().ok_or("No stdin for MCP server")?;
-        stdin.write_all(request_str.as_bytes()).await.map_err(|e| e.to_string())?;
-        stdin.flush().await.map_err(|e| e.to_string())?;
-
-        let stdout = self.child.stdout.as_mut().ok_or("No stdout for MCP server")?;
-        let mut reader = BufReader::new(stdout).lines();
-
-        if let Some(line) = reader.next_line().await.map_err(|e| e.to_string())? {
-            let response: Value = serde_json::from_str(&line).map_err(|e| e.to_string())?;
-            if response.get("id").and_then(|v| v.as_u64()) == Some(id) {
-                if let Some(error) = response.get("error") {
-                    return Err(format!("MCP Error: {}", error));
-                }
-                return Ok(response.get("result").cloned().unwrap_or(Value::Null));
-            } else {
-                return Err("Mismatched MCP response ID".into());
-            }
-        }
-
-        Err("MCP server closed stdout unexpectedly".into())
+        self.rpc.call(method, params).await
     }
 }
 
