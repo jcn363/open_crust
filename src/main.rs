@@ -45,6 +45,14 @@ use tokio::sync::Mutex;
 struct Args {
     #[command(subcommand)]
     command: Option<Commands>,
+
+    /// Run with multiple agents in parallel (format: provider:model, e.g., ollama:llama3)
+    #[arg(long, value_name = "AGENT", num_args = 0..)]
+    agents: Vec<String>,
+
+    /// Prompt to send to multiple agents (use with --agent)
+    #[arg(long, value_name = "PROMPT")]
+    multi_prompt: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -72,6 +80,19 @@ enum McpCommands {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     let config = config::Config::load();
+
+    // Check for multi-agent mode early (before config is moved)
+    if !args.agents.is_empty() {
+        let prompt = match &args.multi_prompt {
+            Some(p) => p.clone(),
+            None => {
+                eprintln!("Error: --multi-prompt is required when using --agent");
+                eprintln!("Usage: opencrust --agent ollama:llama3 --agent gemini:gemini-pro --multi-prompt \"Your question\"");
+                return Ok(());
+            }
+        };
+        return run_multi_agent(&args.agents, &prompt, &config).await;
+    }
 
     // Shared managers
     let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
@@ -424,4 +445,123 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
         }
     }
     false
+}
+
+/// Parse agent spec (format: "provider:model" or just "provider")
+fn parse_agent_spec(spec: &str) -> Result<(config::ProviderType, String), Box<dyn std::error::Error + Send + Sync>> {
+    if spec.contains(':') {
+        let parts: Vec<&str> = spec.splitn(2, ':').collect();
+        let provider = match parts[0].to_lowercase().as_str() {
+            "ollama" => config::ProviderType::Ollama,
+            "openrouter" => config::ProviderType::OpenRouter,
+            "openai" => config::ProviderType::OpenAI,
+            "gemini" => config::ProviderType::Gemini,
+            _ => return Err(format!("Unknown provider: {}", parts[0]).into()),
+        };
+        Ok((provider, parts[1].to_string()))
+    } else {
+        let provider = match spec.to_lowercase().as_str() {
+            "ollama" => config::ProviderType::Ollama,
+            "openrouter" => config::ProviderType::OpenRouter,
+            "openai" => config::ProviderType::OpenAI,
+            "gemini" => config::ProviderType::Gemini,
+            _ => return Err(format!("Unknown provider: {}", spec).into()),
+        };
+        let model = match provider {
+            config::ProviderType::Ollama => "llama3".to_string(),
+            config::ProviderType::OpenRouter => "openai/gpt-4".to_string(),
+            config::ProviderType::OpenAI => "gpt-4".to_string(),
+            config::ProviderType::Gemini => "gemini-pro".to_string(),
+        };
+        Ok((provider, model))
+    }
+}
+
+/// Run multiple agents in parallel and collect responses
+async fn run_multi_agent(
+    agent_specs: &[String],
+    prompt: &str,
+    base_config: &config::Config,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Parse agent specs
+    let agents: Vec<(config::ProviderType, String)> = agent_specs
+        .iter()
+        .map(|spec| parse_agent_spec(spec))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if agents.is_empty() {
+        return Ok(());
+    }
+
+    // Create shared managers
+    let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
+    mcp_manager.lock().await.load_from_config(&base_config.mcp).await;
+
+    let lsp_manager = Arc::new(Mutex::new(lsp::LspManager::new()));
+    lsp_manager.lock().await.load_from_config(&base_config.lsp).await;
+
+    let skill_manager = Arc::new(Mutex::new(skills::SkillManager::new()));
+    {
+        let mut skills = skill_manager.lock().await;
+        skills.discover();
+    }
+
+    let custom_tool_manager = Arc::new(Mutex::new(custom_tools::CustomToolManager::new()));
+    {
+        let mut custom = custom_tool_manager.lock().await;
+        custom.discover();
+    }
+
+    // Spawn a task for each agent
+    let mut handles = vec![];
+
+    for (provider, model) in agents {
+        let mut config = base_config.clone();
+        config.provider = provider.clone();
+        config.model = model.clone();
+
+        let mcp_mgr = mcp_manager.clone();
+        let lsp_mgr = lsp_manager.clone();
+        let skill_mgr = skill_manager.clone();
+        let custom_mgr = custom_tool_manager.clone();
+        let prompt = prompt.to_string();
+
+        let handle = tokio::spawn(async move {
+            let llm_client = llm::LlmClient::new(
+                config,
+                mcp_mgr,
+                lsp_mgr,
+                skill_mgr,
+                custom_mgr,
+            );
+
+            let provider_name = format!("{:?}", provider);
+            print!("Agent {} ({}) thinking...\n", provider_name, model);
+
+            match llm_client.query_simple(&prompt).await {
+                Ok(response) => (provider_name, model, Ok(response)),
+                Err(e) => (provider_name, model, Err(e.to_string())),
+            }
+        });
+        handles.push(handle);
+    }
+
+    // Wait for all agents and print results
+    println!("\n=== Multi-Agent Results ===\n");
+
+    for handle in handles {
+        match handle.await {
+            Ok((provider, model, result)) => {
+                println!("## {} ({})", provider, model);
+                match result {
+                    Ok(response) => println!("{}\n", response),
+                    Err(e) => eprintln!("Error: {}\n", e),
+                }
+                println!("{}", "-".repeat(50));
+            }
+            Err(e) => eprintln!("Task error: {}", e),
+        }
+    }
+
+    Ok(())
 }

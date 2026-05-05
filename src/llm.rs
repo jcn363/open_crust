@@ -223,7 +223,8 @@ impl LlmClient {
         let body = json!({
             "model": self.config.model,
             "messages": messages,
-            "tools": tools_schema
+            "tools": tools_schema,
+            "stream": false
         });
         
         // Make HTTP request with optional auth header
@@ -247,12 +248,8 @@ impl LlmClient {
     
     async fn generate_ollama(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let ollama_url = self.config.ollama_url.as_deref().unwrap_or("http://localhost:11434");
-        let res_json = self.generate_completion(
-            messages,
-            &format!("{}/api/chat", ollama_url),
-            None,
-        ).await?;
-        Ok(res_json.get("message").cloned().unwrap_or(json!({})))
+        // Use Ollama-native endpoint
+        self.generate_completion(messages, &format!("{}/api/chat", ollama_url), None).await
     }
 
     async fn generate_openrouter(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
@@ -296,5 +293,44 @@ impl LlmClient {
             .and_then(|c| c.get("message"))
             .cloned()
             .unwrap_or(json!({})))
+    }
+
+    /// Simple query without tool execution - for multi-agent comparison
+    pub async fn query_simple(&self, prompt: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let messages = vec![
+            json!({"role": "user", "content": prompt})
+        ];
+        
+        let res = match self.config.provider {
+            ProviderType::Ollama => self.generate_ollama(&messages).await?,
+            ProviderType::OpenRouter => self.generate_openrouter(&messages).await?,
+            ProviderType::OpenAI => self.generate_openai(&messages).await?,
+            ProviderType::Gemini => self.generate_gemini(&messages).await?,
+        };
+        
+        // Extract content from response - handle multiple formats:
+        // 1. Direct "content" field (some APIs)
+        // 2. OpenAI-compatible: choices[0].message.content
+        // 3. Ollama-native: message.content
+        if let Some(content) = res.get("content").and_then(|c| c.as_str()) {
+            Ok(content.to_string())
+        } else if let Some(choices) = res.get("choices").and_then(|c| c.as_array()) {
+            if let Some(first_choice) = choices.get(0) {
+                if let Some(message) = first_choice.get("message") {
+                    if let Some(content) = message.get("content").and_then(|c| c.as_str()) {
+                        return Ok(content.to_string());
+                    }
+                }
+            }
+            Err("No content in response".into())
+        } else if let Some(message) = res.get("message") {
+            // Ollama-native format
+            if let Some(content) = message.get("content").and_then(|c| c.as_str()) {
+                return Ok(content.to_string());
+            }
+            Err("No content in message".into())
+        } else {
+            Err("No content in response".into())
+        }
     }
 }
