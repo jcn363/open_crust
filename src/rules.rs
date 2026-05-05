@@ -14,12 +14,11 @@ pub fn load_rules(instructions: &[String]) -> String {
                     rules.push_str(&content);
                 }
             }
-        } else if Path::new(pattern).exists() {
-            if let Ok(content) = fs::read_to_string(pattern) {
+        } else if Path::new(pattern).exists()
+            && let Ok(content) = fs::read_to_string(pattern) {
                 rules.push_str(&format!("\n\n### Instruction: {}\n", pattern));
                 rules.push_str(&content);
             }
-        }
     }
 
     // 2. Project Rules (Traverse up from current dir)
@@ -29,19 +28,17 @@ pub fn load_rules(instructions: &[String]) -> String {
             let agents_md = dir.join("AGENTS.md");
             let claude_md = dir.join("CLAUDE.md");
 
-            if agents_md.exists() {
-                if let Ok(content) = fs::read_to_string(agents_md) {
+            if agents_md.exists()
+                && let Ok(content) = fs::read_to_string(agents_md) {
                     rules.push_str("\n\n### Project Rules (AGENTS.md)\n");
                     rules.push_str(&content);
                     break;
-                }
-            } else if claude_md.exists() {
-                if let Ok(content) = fs::read_to_string(claude_md) {
+                } else if claude_md.exists()
+                && let Ok(content) = fs::read_to_string(claude_md) {
                     rules.push_str("\n\n### Project Rules (CLAUDE.md fallback)\n");
                     rules.push_str(&content);
                     break;
                 }
-            }
 
             if let Some(parent) = dir.parent() {
                 dir = parent.to_path_buf();
@@ -55,12 +52,11 @@ pub fn load_rules(instructions: &[String]) -> String {
     if let Some(user_dirs) = directories::UserDirs::new() {
         let home = user_dirs.home_dir();
         let global_rules = home.join(".config").join("open_crust").join("AGENTS.md");
-        if global_rules.exists() {
-            if let Ok(content) = fs::read_to_string(global_rules) {
+        if global_rules.exists()
+            && let Ok(content) = fs::read_to_string(global_rules) {
                 rules.push_str("\n\n### Global Rules\n");
                 rules.push_str(&content);
             }
-        }
     }
 
     rules
