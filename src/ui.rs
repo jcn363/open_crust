@@ -186,16 +186,16 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
             Span::styled("MCP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
         ]),
     ];
-
-    for (name, _) in &app.config.mcp {
+    
+    for name in app.config.mcp.keys() {
         text.push(Line::from(format!("  {} (Active)", name)));
     }
-
+    
     text.push(Line::from(""));
     text.push(Line::from(vec![
         Span::styled("LSP Servers:", Style::default().add_modifier(Modifier::UNDERLINED)),
     ]));
-    for (name, _) in &app.config.lsp {
+    for name in app.config.lsp.keys() {
         text.push(Line::from(format!("  {} (Active)", name)));
     }
 
@@ -232,14 +232,13 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 fn parse_color(s: &str) -> Color {
-    if s.starts_with('#') && s.len() == 7 {
-        if let (Ok(r), Ok(g), Ok(b)) = (
+    if s.starts_with('#') && s.len() == 7
+        && let (Ok(r), Ok(g), Ok(b)) = (
             u8::from_str_radix(&s[1..3], 16),
             u8::from_str_radix(&s[3..5], 16),
             u8::from_str_radix(&s[5..7], 16),
         ) {
-            return Color::Rgb(r, g, b);
-        }
+        return Color::Rgb(r, g, b);
     }
     Color::Reset
 }

@@ -134,10 +134,8 @@ impl App {
 
     fn load_history(&mut self) {
         let path = Self::history_path();
-        if path.exists() {
-            if let Ok(content) = std::fs::read_to_string(path) {
-                self.history = content.lines().map(|l| l.to_string()).collect();
-            }
+        if path.exists() && let Ok(content) = std::fs::read_to_string(path) {
+            self.history = content.lines().map(|l| l.to_string()).collect();
         }
     }
 

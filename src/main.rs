@@ -25,7 +25,6 @@ mod rag;
 mod telemetry;
 
 use app::{App, Mode};
-use chrono;
 use clap::{Parser, Subcommand};
 use crossterm::{
     event::{Event, KeyCode},

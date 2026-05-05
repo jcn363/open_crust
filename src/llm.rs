@@ -267,7 +267,7 @@ impl LlmClient {
                                 let title = args.get("title").and_then(|v| v.as_str()).unwrap_or("Untitled Plan");
                                 let steps = args.get("steps").and_then(|v| v.as_array())
                                     .map(|a| a.iter().filter_map(|s| s.as_str().map(|s| s.to_string())).collect())
-                                    .unwrap_or_else(Vec::new);
+                                    .unwrap_or_default();
                                 let mut planner = self.planner.lock().await;
                                 planner.create_plan(title, steps)
                             }
