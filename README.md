@@ -17,7 +17,7 @@ OpenCrust empowers developers with a high-intelligence, secure, and fully observ
 
 - **Recursive Subagents**: Solves complex problems by spawning and managing specialized sub-agents.
 - **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`.
-- **Semantic Search**: Concept-based retrieval using local heuristic-driven RAG.
+- **Semantic Search**: Vector-based code search using Ollama embeddings (`nomic-embed-text`). Index with `index_codebase`, then search with `semantic_search`.
 - **Web Intelligence**: Integrated search and automated Markdown conversion for live research.
 - **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping.
 - **Sequential Thinking**: Structured reasoning and step-by-step problem decomposition (MCP).
@@ -25,6 +25,7 @@ OpenCrust empowers developers with a high-intelligence, secure, and fully observ
 ### 🛠️ Industrial Tooling
 
 - **Full MCP & LSP Support**: Native integration with 2,500+ Model Context Protocol and Language Server Protocol servers.
+- **LSP Features**: Code completion, diagnostics (errors/warnings), and code formatting via `textDocument/*` methods.
 - **Runtime Server Addition**: Add new MCP servers interactively without restarting.
 - **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.).
 - **Code Analysis**: AST-based refactoring and code smell detection with Octocode MCP.
