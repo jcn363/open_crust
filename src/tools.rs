@@ -547,6 +547,20 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
+                "name": "index_codebase",
+                "description": "Index the codebase for semantic search using vector embeddings. Must be called before semantic_search will return results.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "root": { "type": "string", "description": "Root directory to index (default: current directory)" }
+                    },
+                    "required": []
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "global_search_replace",
                 "description": "Perform a global search and replace across the codebase.",
                 "parameters": {

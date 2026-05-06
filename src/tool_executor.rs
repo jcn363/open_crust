@@ -33,7 +33,7 @@ pub struct ToolExecutor {
     pub permission_manager: Arc<PermissionManager>,
     pub web_manager: Arc<WebManager>,
     pub planner: Arc<Mutex<Planner>>,
-    pub rag_manager: Arc<RagManager>,
+    pub rag_manager: Arc<Mutex<RagManager>>,
 }
 
 impl ToolExecutor {
@@ -46,7 +46,7 @@ impl ToolExecutor {
         permission_manager: Arc<PermissionManager>,
         web_manager: Arc<WebManager>,
         planner: Arc<Mutex<Planner>>,
-        rag_manager: Arc<RagManager>,
+        rag_manager: Arc<Mutex<RagManager>>,
     ) -> Self {
         Self {
             mcp_manager,
@@ -89,6 +89,7 @@ impl ToolExecutor {
             
             // Search tools
             "semantic_search" => self.execute_semantic_search(args).await,
+            "index_codebase" => self.execute_index_codebase(args).await,
             "global_search_replace" => self.execute_global_search_replace(args).await,
             
             // Skill tool
@@ -321,7 +322,18 @@ impl ToolExecutor {
     async fn execute_semantic_search(&self, args: &Value) -> ToolResult {
         let query = args.get("query").and_then(|v| v.as_str()).unwrap_or("");
         let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
-        Ok(self.rag_manager.semantic_search(query, top_k).await)
+        let rag = self.rag_manager.lock().await;
+        Ok(rag.semantic_search(query, top_k).await)
+    }
+
+    async fn execute_index_codebase(&self, args: &Value) -> ToolResult {
+        let root = args.get("root").and_then(|v| v.as_str()).unwrap_or(".");
+        
+        let mut rag = self.rag_manager.lock().await;
+        match rag.index_codebase(root).await {
+            Ok((files, chunks)) => Ok(format!("Indexed {} files with {} chunks", files, chunks)),
+            Err(e) => Ok(format!("Index error: {}", e)),
+        }
     }
 
     async fn execute_global_search_replace(&self, args: &Value) -> ToolResult {

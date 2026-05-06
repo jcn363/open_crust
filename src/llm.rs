@@ -60,7 +60,7 @@ impl LlmClient {
             permission_manager.clone(),
             Arc::new(WebManager::new()),
             Arc::new(Mutex::new(Planner::new())),
-            Arc::new(RagManager::new(&config)),
+            Arc::new(Mutex::new(RagManager::new(&config))),
         ));
         
         Self {
