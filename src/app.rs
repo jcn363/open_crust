@@ -9,10 +9,27 @@ pub enum Mode {
     Servers,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
+pub enum PlanMode {
+    Disabled,    // Normal execution
+    Planning,    // LLM is planning
+    Reviewing,   // User reviewing diffs
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ChangeStatus {
+    Pending,
+    Approved,
+    Denied,
+}
+
 #[derive(Clone, Debug)]
 pub struct ProposedChange {
+    pub path: String,
     pub original: String,
     pub proposed: String,
+    pub status: ChangeStatus,
 }
 
 #[derive(Clone, Debug)]
@@ -42,6 +59,10 @@ pub struct App {
     pub mcp_browser_items: Vec<(String, String, Vec<String>)>, // (name, description, command)
     pub mcp_browser_selected: usize,
     pub mcp_browser_scroll: usize,
+    // Plan mode state
+    #[allow(dead_code)]
+    pub plan_mode: PlanMode,
+    pub plan_review_index: usize, // Which file in the plan being reviewed
 }
 
 impl App {
@@ -85,6 +106,9 @@ impl App {
             ],
             mcp_browser_selected: 0,
             mcp_browser_scroll: 0,
+            // Plan mode initialization
+            plan_mode: PlanMode::Disabled,
+            plan_review_index: 0,
         };
         app.load_history();
         app

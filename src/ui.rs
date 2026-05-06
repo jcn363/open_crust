@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::app::{App, Mode};
+use crate::app::{App, Mode, ChangeStatus};
 
 pub fn draw(f: &mut Frame, app: &App) {
     let theme = app.config.theme.as_ref();
@@ -152,31 +152,88 @@ pub fn draw(f: &mut Frame, app: &App) {
 }
 
 fn draw_review_popup(f: &mut Frame, app: &App) {
-    if let Some(change) = app.proposed_changes.last() {
-        let area = centered_rect(80, 80, f.area());
-        f.render_widget(Clear, area);
-
+    if app.proposed_changes.is_empty() {
+        return;
+    }
+    
+    let area = centered_rect(90, 90, f.area());
+    f.render_widget(Clear, area);
+    
+    // Split into: file list (left), diff view (right), status bar (bottom)
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(1),      // Main content
+            Constraint::Length(3),   // Status bar
+        ].as_ref())
+        .split(area);
+    
+    let main_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(30),  // File list
+            Constraint::Percentage(70),  // Diff view
+        ].as_ref())
+        .split(chunks[0]);
+    
+    // File list (left panel)
+    let file_list: Vec<ListItem> = app.proposed_changes
+        .iter()
+        .enumerate()
+        .map(|(i, change)| {
+            let status_icon = match change.status {
+                ChangeStatus::Pending => "○",
+                ChangeStatus::Approved => "✓",
+                ChangeStatus::Denied => "✗",
+            };
+            let style = match change.status {
+                ChangeStatus::Pending => Style::default().fg(Color::Yellow),
+                ChangeStatus::Approved => Style::default().fg(Color::Green),
+                ChangeStatus::Denied => Style::default().fg(Color::Red),
+            };
+            let prefix = if i == app.plan_review_index { "> " } else { "  " };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{}{} {}", prefix, status_icon, change.path), style)
+            ]))
+        })
+        .collect();
+    
+    let file_list_widget = List::new(file_list)
+        .block(Block::default().borders(Borders::ALL).title(" Files ").border_style(Style::default().fg(Color::Cyan)))
+        .highlight_style(Style::default().bg(Color::DarkGray));
+    f.render_widget(file_list_widget, main_chunks[0]);
+    
+    // Diff view (right panel) - show selected file
+    if let Some(change) = app.proposed_changes.get(app.plan_review_index) {
         let diff_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(area);
-
+            .split(main_chunks[1]);
+        
         let original = Paragraph::new(change.original.as_str())
             .block(Block::default().borders(Borders::ALL).title(" Original ")
-            .border_style(Style::default().fg(Color::Red)));
+                .border_style(Style::default().fg(Color::Red)));
         let proposed = Paragraph::new(change.proposed.as_str())
             .block(Block::default().borders(Borders::ALL).title(" Proposed ")
-            .border_style(Style::default().fg(Color::Green)));
-
+                .border_style(Style::default().fg(Color::Green)));
+        
         f.render_widget(original, diff_chunks[0]);
         f.render_widget(proposed, diff_chunks[1]);
-
-        let hint = Paragraph::new(" [A]pprove | [D]eny ")
-            .style(Style::default().bg(Color::Blue).fg(Color::White))
-            .block(Block::default().borders(Borders::BOTTOM));
-        let hint_area = Rect::new(area.x, area.y + area.height - 1, area.width, 1);
-        f.render_widget(hint, hint_area);
     }
+    
+    // Status bar
+    let approved_count = app.proposed_changes.iter().filter(|c| c.status == ChangeStatus::Approved).count();
+    let denied_count = app.proposed_changes.iter().filter(|c| c.status == ChangeStatus::Denied).count();
+    let pending_count = app.proposed_changes.iter().filter(|c| c.status == ChangeStatus::Pending).count();
+    
+    let status_text = format!(
+        " [↑/↓] Navigate | [A]pprove [D]eny | [Shift+A] Approve All | [Enter] Execute Approved | [Esc] Cancel | Pending: {} Approved: {} Denied: {} ",
+        pending_count, approved_count, denied_count
+    );
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(Color::Blue).fg(Color::White))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[1]);
 }
 
 fn draw_servers_popup(f: &mut Frame, app: &App) {
