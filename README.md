@@ -20,12 +20,15 @@ OpenCrust empowers developers with a high-intelligence, secure, and fully observ
 - **Semantic Search**: Concept-based retrieval using local heuristic-driven RAG.
 - **Web Intelligence**: Integrated search and automated Markdown conversion for live research.
 - **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping.
+- **Sequential Thinking**: Structured reasoning and step-by-step problem decomposition (MCP).
 
 ### 🛠️ Industrial Tooling
 
-- **Full MCP & LSP Support**: Native integration with any Model Context Protocol and Language Server Protocol servers.
+- **Full MCP & LSP Support**: Native integration with 2,500+ Model Context Protocol and Language Server Protocol servers.
 - **Runtime Server Addition**: Add new MCP servers interactively without restarting.
 - **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.).
+- **Code Analysis**: AST-based refactoring and code smell detection with Octocode MCP.
+- **Browser Automation**: E2E testing and web automation with Playwright MCP.
 
 ### 🛡️ Security & Observability
 
@@ -43,6 +46,13 @@ OpenCrust empowers developers with a high-intelligence, secure, and fully observ
 - **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer.
 - **Context Pinning**: Permanently lock critical files into the agent's context.
 - **Customizable TUI**: Configurable keybinds and theme engine with RGB support.
+
+### 🖥️ Desktop Integration (Linux Mint Cinnamon)
+
+- **Smart Notifications**: DBus-first notifications with notify-send fallback for maximum compatibility.
+- **Native File Pickers**: Nemo (Cinnamon), Zenity, or KDialog backends with automatic detection.
+- **Desktop Detection**: Automatic Cinnamon/MATE/GNOME/Plasma environment detection with theme extraction.
+- **CLI Commands**: `opencrust desktop` and `opencrust session` for terminal-native workflows.
 
 ## 📦 Installation
 
@@ -131,13 +141,12 @@ open_crust/
 │   ├── telemetry.rs   # Session telemetry export
 │   ├── permissions.rs # Permission enforcement
 │   ├── web.rs         # Web search integration
-│   └── acp.rs         # ACP stdio interface
-│
-│   ├── desktop/       # Cinnamon desktop integration
-│   │   ├── mod.rs     # Module entry point
-│   │   ├── detection.rs    # Desktop environment detection
-│   │   ├── notifications.rs # System notifications
-│   │   └── file_picker.rs  # Native file pickers
+│   ├── acp.rs         # ACP stdio interface
+│   └── desktop/       # Desktop integration module
+│       ├── mod.rs     # Module entry point
+│       ├── detection.rs    # Desktop environment detection
+│       ├── notifications.rs # System notifications
+│       └── file_picker.rs  # Native file pickers
 ```
 
 ## 🔌 MCP Ecosystem Integration
@@ -192,6 +201,11 @@ OpenCrust ships with specialized skills that enhance AI behavior for specific ta
 | `security-auditor` | OWASP Top 10 detection, vulnerability scanning, audit compliance |
 | `git-workflow` | Branch management, conventional commits, PR preparation |
 | `code-refactorer` | Pattern-based transformations, technical debt identification |
+| `api-integrator` | REST/GraphQL client generation, auth flows, SDK integration |
+| `test-generator` | Unit/integration test scaffolding, coverage analysis, fuzzing harnesses |
+| `docs-writer` | API reference generation, architecture docs, README automation |
+| `perf-profiler` | Criterion benchmarks, flamegraph generation, bottleneck analysis |
+| `dep-manager` | Cargo dependency auditing, license compliance, version conflict resolution |
 
 ### Adding Custom Skills
 
@@ -211,4 +225,68 @@ The agent should follow these steps to accomplish the task...
 See `docs/skills.md` for detailed skill creation guide.
 
 ---
+
+## 🔧 Custom Tools & Linters
+
+OpenCrust auto-discovers executable tools in `.opencrust/tools/`. Built-in linter tools include:
+
+| Tool | Description |
+|------|-------------|
+| `clippy-check` | Runs `cargo clippy -- -D warnings` for strict lint compliance |
+| `fmt-check` | Verifies code formatting with `cargo fmt -- --check` |
+
+Add your own tools by creating an executable script with a comment header:
+
+```bash
+#!/bin/bash
+# name: my-tool
+# description: What it does
+
+echo "Running my tool..."
+```
+
+---
+
+## 🖥️ CLI Commands
+
+OpenCrust provides terminal-native CLI subcommands for desktop integration and session management.
+
+### Desktop Commands
+
+```bash
+# Detect desktop environment (Cinnamon/MATE/GNOME/Plasma)
+opencrust desktop detect
+
+# Send a notification
+opencrust desktop notify "Build complete!" --title "OpenCrust"
+
+# Open native file picker
+opencrust desktop file-picker --directory
+```
+
+### Session Commands
+
+```bash
+# List all saved sessions
+opencrust session list
+
+# Show a specific session
+opencrust session show <session-id>
+
+# Delete a session
+opencrust session delete <session-id>
+
+# Save current session
+opencrust session save --name "my-session"
+```
+
+---
+
+## 📚 Documentation
+
+- **MCP Servers Guide**: `docs/MCP_SERVERS.md` - Complete reference for all 12,000+ MCP servers
+- **Skills Guide**: `docs/skills.md` - How to create and customize skills
+
+---
+
 Built with 🦀 by the OpenCrust Team.
