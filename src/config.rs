@@ -103,6 +103,8 @@ pub struct Config {
     pub gemini_api_key: Option<String>,
     pub mistral_api_key: Option<String>,
     pub anthropic_api_key: Option<String>,
+    #[serde(default)]
+    pub context_budget: Option<u64>,
 }
 
 impl Default for Keybinds {
@@ -141,6 +143,7 @@ impl Default for Config {
             gemini_api_key: None,
             mistral_api_key: None,
             anthropic_api_key: None,
+            context_budget: None,
         }
     }
 }
@@ -240,6 +243,32 @@ impl Config {
             validate_hex_color(&theme.foreground, "theme.foreground");
             validate_hex_color(&theme.accent, "theme.accent");
             validate_hex_color(&theme.border, "theme.border");
+        }
+    }
+
+    /// Returns the context window limit for a given provider and model
+    /// If the user has set a custom context_budget in config, that takes precedence
+    pub fn context_limit(&self) -> u64 {
+        // User override takes precedence
+        if let Some(budget) = self.context_budget {
+            return budget;
+        }
+        
+        // Default limits based on provider and model
+        match self.provider {
+            ProviderType::Anthropic => {
+                if self.model.contains("opus") { 200_000 }
+                else if self.model.contains("sonnet") { 200_000 }
+                else { 100_000 }
+            }
+            ProviderType::OpenAI => 128_000,
+            ProviderType::Gemini => {
+                if self.model.contains("gemini-2.5") { 1_000_000 }
+                else { 128_000 }
+            }
+            ProviderType::Ollama => 8_000, // configurable, but default is small
+            ProviderType::OpenRouter => 128_000, // depends on the model routed
+            ProviderType::Mistral => 32_000,
         }
     }
 }

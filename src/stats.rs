@@ -12,6 +12,11 @@ impl UsageStats {
         Self::default()
     }
 
+    /// Total tokens used (input + output)
+    pub fn total_tokens(&self) -> u64 {
+        self.input_tokens + self.output_tokens
+    }
+
     pub fn add_usage(&mut self, model: &str, input: u64, output: u64) {
         self.input_tokens += input;
         self.output_tokens += output;
