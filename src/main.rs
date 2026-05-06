@@ -73,6 +73,16 @@ enum Commands {
         #[command(subcommand)]
         cmd: McpCommands,
     },
+    /// Desktop integration features (file picker, notifications)
+    Desktop {
+        #[command(subcommand)]
+        cmd: DesktopCommands,
+    },
+    /// Session management
+    Session {
+        #[command(subcommand)]
+        cmd: SessionCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -81,6 +91,52 @@ enum McpCommands {
     List,
     /// Install an MCP server by name
     Install { server: String },
+}
+
+#[derive(Subcommand, Debug)]
+enum DesktopCommands {
+    /// Open file picker dialog
+    FilePicker {
+        /// Mode: open, open-multiple, save, directory
+        #[arg(short, long, default_value = "open")]
+        mode: String,
+        /// Initial directory
+        #[arg(short, long)]
+        dir: Option<String>,
+        /// Window title
+        #[arg(short, long)]
+        title: Option<String>,
+    },
+    /// Send a desktop notification
+    Notify {
+        /// Notification title
+        #[arg(short, long)]
+        title: String,
+        /// Notification body
+        #[arg(short, long)]
+        body: String,
+        /// Urgency: low, normal, critical
+        #[arg(short, long, default_value = "normal")]
+        urgency: String,
+    },
+    /// Detect desktop environment
+    Detect,
+}
+
+#[derive(Subcommand, Debug)]
+enum SessionCommands {
+    /// List all sessions
+    List,
+    /// Show a specific session
+    Show { id: String },
+    /// Delete a session
+    Delete { id: String },
+    /// Save current session (requires messages JSON)
+    Save {
+        id: String,
+        #[arg(short, long)]
+        messages: String,
+    },
 }
 
 #[tokio::main]
@@ -126,9 +182,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let lsp_manager = Arc::new(Mutex::new(lsp::LspManager::new()));
     lsp_manager.lock().await.load_from_config(&config.lsp).await;
 
-    let _session_manager = Arc::new(Mutex::new(sessions::SessionManager::new()));
-    let _session_id = format!("session_{}", chrono::Utc::now().timestamp());
-
     let skill_manager = Arc::new(Mutex::new(skills::SkillManager::new()));
     {
         let mut skills = skill_manager.lock().await;
@@ -163,21 +216,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             McpCommands::List => {
                 println!("Available MCP servers (curated list):");
                 println!("\n=== Tier 1: Essential ===");
-                println!("  context7     - Version-accurate library docs (eliminates API hallucinations)");
-                println!("  github      - GitHub integration (repos, issues, PRs, CI/CD)");
-                println!("  postgres    - PostgreSQL database queries");
-                println!("  brave-search - Web search (privacy-focused)");
-                println!("  filesystem  - Enhanced file system access");
+                println!("  context7         - Version-accurate library docs (eliminates API hallucinations)");
+                println!("  github          - GitHub integration (repos, issues, PRs, CI/CD)");
+                println!("  postgres        - PostgreSQL database queries");
+                println!("  brave-search    - Web search (privacy-focused)");
+                println!("  filesystem      - Enhanced file system access");
+                println!("  sequentialthinking - Structured thinking and reasoning");
                 println!("\n=== Tier 2: High Value ===");
-                println!("  playwright  - Browser automation & E2E testing");
-                println!("  supabase    - RLS-aware database access");
-                println!("  sentry      - Error monitoring integration");
-                println!("  linear      - Issue tracking");
-                println!("  e2b         - Secure cloud sandbox for code execution");
+                println!("  playwright      - Browser automation & E2E testing");
+                println!("  supabase        - RLS-aware database access");
+                println!("  sentry          - Error monitoring integration");
+                println!("  linear          - Issue tracking");
+                println!("  e2b             - Secure cloud sandbox for code execution");
+                println!("  octocode        - Code analysis and refactoring");
                 println!("\n=== Tier 3: Production ===");
-                println!("  slack       - Slack messaging");
-                println!("  google-drive - Google Drive file access");
-                println!("  stripe      - Payment integration (requires OAuth)");
+                println!("  slack           - Slack messaging");
+                println!("  google-drive    - Google Drive file access");
+                println!("  stripe          - Payment integration (requires OAuth)");
                 println!("\nUse `opencrust mcp install <name>` to add a server.");
                 println!("For more servers, visit: https://github.com/modelcontextprotocol/servers");
                 println!("Or browse: https://mcpdirectory.app/ (2,500+ servers)");
@@ -218,6 +273,136 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 println!("  Description: {}", description);
                 println!("  Setup: {}", env_help);
                 println!("\nRestart open_crust to use the server.");
+            }
+        }
+        return Ok(());
+    }
+
+    // Desktop integration commands
+    if let Some(Commands::Desktop { cmd }) = &args.command {
+        match cmd {
+            DesktopCommands::FilePicker { mode, dir, title } => {
+                use desktop::file_picker::{FilePickerMode, FilePickerOptions, FilePickerBackend, detect_file_picker_backend, file_picker};
+                
+                let backend = detect_file_picker_backend();
+                if backend == FilePickerBackend::None {
+                    eprintln!("Error: No file picker backend available (need nemo, zenity, or kdialog)");
+                    return Ok(());
+                }
+                
+                let mode = match mode.as_str() {
+                    "open" => FilePickerMode::OpenFile,
+                    "open-multiple" => FilePickerMode::OpenMultiple,
+                    "save" => FilePickerMode::Save,
+                    "directory" => FilePickerMode::Directory,
+                    _ => {
+                        eprintln!("Invalid mode: {}. Use: open, open-multiple, save, directory", mode);
+                        return Ok(());
+                    }
+                };
+                
+                let options = FilePickerOptions {
+                    initial_dir: dir.as_ref().map(|d| std::path::PathBuf::from(d)),
+                    title: title.clone(),
+                    ..Default::default()
+                };
+                
+                let result = file_picker(mode, &options);
+                if result.cancelled {
+                    println!("Cancelled");
+                } else {
+                    for path in result.paths {
+                        println!("{}", path.display());
+                    }
+                }
+            }
+            DesktopCommands::Notify { title, body, urgency } => {
+                use desktop::notifications::{Notification, NotificationUrgency, send_notification_smart};
+                
+                let urgency = NotificationUrgency::from_str(urgency);
+                let notification = Notification::new(title, body).with_urgency(urgency);
+                
+                match send_notification_smart(&notification) {
+                    Ok(_) => println!("Notification sent: {} - {}", title, body),
+                    Err(e) => eprintln!("Failed to send notification: {}", e),
+                }
+            }
+            DesktopCommands::Detect => {
+                use desktop::detection::{detect_desktop, is_supported_desktop, get_cinnamon_info};
+                
+                let desktop = detect_desktop();
+                println!("Desktop environment: {}", desktop);
+                println!("Supported: {}", is_supported_desktop());
+                
+                if desktop.is_cinnamon() {
+                    let info = get_cinnamon_info();
+                    println!("\nCinnamon Info:");
+                    println!("  Version: {}", info.version.as_deref().unwrap_or("unknown"));
+                    println!("  Theme: background={}, foreground={}", info.theme.background, info.theme.foreground);
+                    println!("  Accent: {}", info.theme.accent);
+                    println!("  Icon theme: {}", info.icon_theme);
+                    println!("  Cursor theme: {}", info.cursor_theme);
+                }
+            }
+        }
+        return Ok(());
+    }
+
+    // Session management commands
+    if let Some(Commands::Session { cmd }) = &args.command {
+        let session_manager = sessions::SessionManager::new();
+        
+        match cmd {
+            SessionCommands::List => {
+                let sessions = session_manager.list_sessions();
+                if sessions.is_empty() {
+                    println!("No sessions found.");
+                } else {
+                    println!("Sessions:");
+                    for session in sessions {
+                        println!("  {} - {} messages (created: {})", 
+                            session.id, 
+                            session.messages.len(),
+                            session.timestamp.format("%Y-%m-%d %H:%M:%S"));
+                    }
+                }
+            }
+            SessionCommands::Show { id } => {
+                match session_manager.load_session(id) {
+                    Ok(session) => {
+                        println!("Session: {}", session.id);
+                        println!("Created: {}", session.timestamp);
+                        println!("Messages: {}", session.messages.len());
+                        println!("\n--- Messages ---");
+                        for (i, msg) in session.messages.iter().enumerate() {
+                            let role = msg.get("role").and_then(|v| v.as_str()).unwrap_or("unknown");
+                            let content = msg.get("content")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .chars()
+                                .take(80)
+                                .collect::<String>();
+                            println!("{}. [{}] {}", i + 1, role, content);
+                        }
+                    }
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            SessionCommands::Delete { id } => {
+                match session_manager.delete_session(id) {
+                    Ok(_) => println!("Session deleted."),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            SessionCommands::Save { id, messages } => {
+                let msgs: Vec<Value> = serde_json::from_str(&messages)
+                    .map_err(|e| format!("Invalid JSON: {}", e))
+                    .unwrap_or_default();
+                
+                match session_manager.save_session(&id, &msgs) {
+                    Ok(_) => println!("Session '{}' saved ({} messages).", id, msgs.len()),
+                    Err(e) => eprintln!("Error: {}", e),
+                }
             }
         }
         return Ok(());
