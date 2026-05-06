@@ -247,12 +247,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     "postgres" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()], "PostgreSQL database queries".to_string(), "Set DATABASE_URL env var"),
                     "brave-search" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()], "Web search (privacy-focused)".to_string(), "Set BRAVE_API_KEY env var"),
                     "filesystem" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()], "Enhanced file system access".to_string(), "Set ALLOWED_DIRS env var"),
+                    "sequentialthinking" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sequential-thinking".to_string()], "Structured thinking and reasoning".to_string(), "No API key required"),
                     // Tier 2: High Value
                     "playwright" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-playwright".to_string()], "Browser automation & E2E testing".to_string(), "Run: npx playwright install"),
                     "supabase" => (vec!["npx".to_string(), "-y".to_string(), "@supabase/mcp-server-supabase".to_string()], "RLS-aware database access".to_string(), "Set SUPABASE_ACCESS_TOKEN env var"),
                     "sentry" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sentry".to_string()], "Error monitoring integration".to_string(), "Set SENTRY_AUTH_TOKEN env var"),
                     "linear" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-linear".to_string()], "Issue tracking".to_string(), "Set LINEAR_API_KEY env var"),
                     "e2b" => (vec!["npx".to_string(), "-y".to_string(), "@e2b/mcp-server".to_string()], "Secure cloud sandbox for code execution".to_string(), "Set E2B_API_KEY env var"),
+                    "octocode" => (vec!["npx".to_string(), "-y".to_string(), "@octocode/mcp-server".to_string()], "Code analysis and refactoring".to_string(), "No API key required"),
                     // Tier 3: Production
                     "slack" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()], "Slack messaging".to_string(), "Set SLACK_TOKEN env var"),
                     "google-drive" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()], "Google Drive file access".to_string(), "OAuth required"),
