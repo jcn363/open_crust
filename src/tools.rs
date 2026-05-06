@@ -45,7 +45,8 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             let notif = crate::desktop::notifications::Notification::new(title, body)
                 .with_urgency(crate::desktop::notifications::NotificationUrgency::from_str(urgency));
             
-            match notifications::send_notification(&notif) {
+            // Use smart backend selection: DBus (rich features) > notify-send (fallback)
+            match notifications::send_notification_smart(&notif) {
                 Ok(_) => format!("Notification sent: {} - {}", title, body),
                 Err(e) => format!("Failed to send notification: {}", e),
             }

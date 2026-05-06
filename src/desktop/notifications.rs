@@ -234,11 +234,8 @@ pub fn send_notification(notification: &Notification) -> Result<(), String> {
 
 /// Send a notification via DBus (enables rich notifications with actions)
 ///
-/// # Future Enhancement
-/// This function is planned for future implementation to support richer notification
-/// features via DBus (e.g., action buttons, persistent notifications). Currently not
-/// integrated into the main notification pipeline, but preserved for upcoming enhancements.
-#[allow(dead_code)]
+/// Uses dbus-send to invoke the Freedesktop Notifications DBus interface.
+/// This enables richer notifications with action buttons and persistence.
 pub fn send_notification_dbus(
     app_name: &str,
     notification: &Notification,
@@ -329,6 +326,23 @@ pub fn close_notification(id: u32) -> Result<(), String> {
         }
         Err(e) => Err(format!("DBus error: {}", e)),
     }
+}
+
+/// Send a notification using the best available backend (DBus > notify-send)
+///
+/// Attempts to use DBus for richer notification features (icons, urgency, timeouts).
+/// Falls back to notify-send if DBus is unavailable.
+/// This provides graceful degradation while maintaining maximum compatibility.
+pub fn send_notification_smart(notification: &Notification) -> Result<(), String> {
+    let app_name = "OpenCrust";
+    
+    // Try DBus first for richer features
+    if let Ok(_id) = send_notification_dbus(app_name, notification) {
+        return Ok(());
+    }
+    
+    // Fall back to notify-send if DBus fails
+    send_notification(notification)
 }
 
 /// Send a simple notification (convenience function)
