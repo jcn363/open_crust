@@ -1,4 +1,67 @@
+# Rust build artifacts
 /target
+Cargo.lock
+*.rs.bk
+*.pdb
+
+# Project-specific directories
 /thoughts
+/thoughts/**
+
+# Log files
 bacon-ls.log
+*.log
 telemetry.json
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.sublime-project
+.sublime-workspace
+*.iml
+*.code-workspace
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS-specific files
+Thumbs.db
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Node.js (if used for MCP servers)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python (if used for custom tools)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Temporary files
+*.tmp
+.tmp/
+*.bak
+*.swp
+
+# Development/debugging
+.gdb_history
+.lldb_history
+perf.data
+perf.data.old
+
+# Session files
+*.session
+.session/
