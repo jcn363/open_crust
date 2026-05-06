@@ -319,11 +319,10 @@ impl LlmClient {
         for msg in messages {
             let role = msg.get("role").and_then(|r| r.as_str());
             let content = msg.get("content").and_then(|c| c.as_str());
-            if let (Some(r), Some(c)) = (role, content) {
-                if r != "system" {
+            if let (Some(r), Some(c)) = (role, content)
+                && r != "system" {
                     anthropic_messages.push(json!({"role": r, "content": c}));
                 }
-            }
         }
         
         let body = json!({
@@ -371,13 +370,11 @@ impl LlmClient {
         if let Some(content) = res.get("content").and_then(|c| c.as_str()) {
             Ok(content.to_string())
         } else if let Some(choices) = res.get("choices").and_then(|c| c.as_array()) {
-            if let Some(first_choice) = choices.get(0) {
-                if let Some(message) = first_choice.get("message") {
-                    if let Some(content) = message.get("content").and_then(|c| c.as_str()) {
+            if let Some(first_choice) = choices.first()
+                && let Some(message) = first_choice.get("message")
+                    && let Some(content) = message.get("content").and_then(|c| c.as_str()) {
                         return Ok(content.to_string());
                     }
-                }
-            }
             Err("No content in response".into())
         } else if let Some(message) = res.get("message") {
             // Ollama-native format

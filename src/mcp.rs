@@ -71,20 +71,18 @@ impl McpManager {
     pub async fn list_tools(&mut self) -> Vec<Value> {
         let mut all_tools = Vec::new();
         for (name, server) in &mut self.servers {
-            if let Ok(result) = server.call("tools/list", json!({})).await {
-                if let Some(tools) = result.get("tools").and_then(|t| t.as_array()) {
+            if let Ok(result) = server.call("tools/list", json!({})).await
+                && let Some(tools) = result.get("tools").and_then(|t| t.as_array()) {
                     for tool in tools {
                         let mut tool_cloned = tool.clone();
                         // Prefix tool name with server name to avoid conflicts
-                        if let Some(tool_name) = tool_cloned.get_mut("name") {
-                            if let Some(s) = tool_name.as_str() {
+                        if let Some(tool_name) = tool_cloned.get_mut("name")
+                            && let Some(s) = tool_name.as_str() {
                                 *tool_name = json!(format!("{}_{}", name, s));
                             }
-                        }
                         all_tools.push(tool_cloned);
                     }
                 }
-            }
         }
         all_tools
     }

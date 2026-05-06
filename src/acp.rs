@@ -5,9 +5,9 @@ use tokio::sync::mpsc;
 
 pub async fn run_acp_loop(llm_client: LlmClient) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let stdin = io::stdin();
-    let mut reader = stdin.lock().lines();
+    let reader = stdin.lock().lines();
 
-    while let Some(line) = reader.next() {
+    for line in reader {
         let line = line?;
         if let Ok(request) = serde_json::from_str::<Value>(&line) {
             let id = request.get("id").cloned();

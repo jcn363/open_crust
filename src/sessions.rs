@@ -48,7 +48,7 @@ impl SessionManager {
     pub fn list_sessions(&self) -> Vec<Session> {
         if let Ok(entries) = fs::read_dir(&self.cache_dir) {
             entries.flatten()
-                .filter(|e| e.path().extension().map_or(false, |ext| ext == "json"))
+                .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
                 .filter_map(|e| {
                     let content = fs::read_to_string(e.path()).ok()?;
                     serde_json::from_str::<Session>(&content).ok()

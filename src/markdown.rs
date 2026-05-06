@@ -38,7 +38,7 @@ pub fn extract_code_blocks(md: &str) -> Vec<(Option<String>, String)> {
     let re = Regex::new(r"```(\w*)\n(.+?)```").unwrap();
     re.captures_iter(md)
         .map(|c| {
-            let lang = if c.get(1).map_or(false, |m| !m.as_str().is_empty()) {
+            let lang = if c.get(1).is_some_and(|m| !m.as_str().is_empty()) {
                 Some(c[1].to_string())
             } else {
                 None
@@ -150,6 +150,7 @@ pub fn extract_bold(md: &str) -> Vec<String> {
 
 /// Extract italic (*text* or _text_)
 pub fn extract_italic(md: &str) -> Vec<String> {
+    #[allow(clippy::invalid_regex)]
     let re = Regex::new(r"(?<!\*)\*(?!\*)(.+?)(??<!\*)\*(?!\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_)").unwrap();
     re.captures_iter(md)
         .map(|c| c.get(1).map_or("", |m| m.as_str()).to_string())

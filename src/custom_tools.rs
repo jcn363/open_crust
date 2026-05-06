@@ -29,18 +29,16 @@ impl CustomToolManager {
         ];
 
         for path in paths {
-            if path.exists() && path.is_dir() {
-                if let Ok(entries) = fs::read_dir(path) {
+            if path.exists() && path.is_dir()
+                && let Ok(entries) = fs::read_dir(path) {
                     for entry in entries.flatten() {
                         let p = entry.path();
-                        if p.is_file() {
-                            if let Some(tool) = self.parse_tool(&p) {
+                        if p.is_file()
+                            && let Some(tool) = self.parse_tool(&p) {
                                 self.tools.insert(tool.name.clone(), tool);
                             }
-                        }
                     }
                 }
-            }
         }
     }
 

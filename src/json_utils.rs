@@ -62,8 +62,7 @@ pub fn set_json_path(json_str: &str, path: &str, new_value: &str) -> Result<Stri
         let last_idx = parts.len() - 1;
         let mut current = &mut value;
         
-        for i in 0..last_idx {
-            let key = parts[i];
+        for key in parts.iter().take(last_idx) {
             // Try to parse as array index, otherwise use as object key
             if let Ok(idx) = key.parse::<usize>() {
                 current = current.get_mut(idx).ok_or_else(|| format!("Path not found: {}", key))?;

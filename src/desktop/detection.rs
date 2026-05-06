@@ -201,11 +201,10 @@ pub fn detect_desktop() -> DesktopEnvironment {
     }
 
     // Check for cinnamon-specific processes
-    if let Ok(proc_cmdline) = fs::read_to_string("/proc/1/cmdline") {
-        if proc_cmdline.to_lowercase().contains("cinnamon") {
+    if let Ok(proc_cmdline) = fs::read_to_string("/proc/1/cmdline")
+        && proc_cmdline.to_lowercase().contains("cinnamon") {
             return DesktopEnvironment::Cinnamon;
         }
-    }
 
     DesktopEnvironment::Unknown
 }

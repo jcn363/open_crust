@@ -19,7 +19,7 @@ pub enum NotificationUrgency {
 
 impl NotificationUrgency {
     /// Convert to notify-send argument
-    pub fn to_arg(&self) -> &str {
+    pub fn as_arg(&self) -> &str {
         match self {
             NotificationUrgency::Low => "low",
             NotificationUrgency::Normal => "normal",
@@ -149,8 +149,8 @@ pub fn check_notification_daemon() -> NotificationDaemon {
         ])
         .output();
 
-    if let Ok(output) = output {
-        if output.status.success() {
+    if let Ok(output) = output
+        && output.status.success() {
             let info = String::from_utf8_lossy(&output.stdout);
             // Parse response like: string "notify-osd" string "MATE" string "1.0" string "1.0"
             let parts: Vec<&str> = info.lines().filter(|l| !l.is_empty()).collect();
@@ -162,8 +162,7 @@ pub fn check_notification_daemon() -> NotificationDaemon {
                     supports_inline_reply: false,
                 };
             }
-        }
-    };
+        };
 
     // Fallback: check if notify-send exists
     let has_notify_send = Command::new("which")
@@ -193,7 +192,7 @@ pub fn is_notification_available() -> bool {
 pub fn send_notification(notification: &Notification) -> Result<(), String> {
     let mut args = vec![
         "-u".to_string(),
-        notification.options.urgency.to_arg().to_string(),
+        notification.options.urgency.as_arg().to_string(),
     ];
 
     // Add expire timeout if specified
@@ -286,13 +285,11 @@ pub fn send_notification_dbus(
                 // Parse the notification ID from response
                 let response = String::from_utf8_lossy(&output.stdout);
                 for line in response.lines() {
-                    if line.contains("uint32") {
-                        if let Some(id_str) = line.split_whitespace().last() {
-                            if let Ok(id) = id_str.parse::<u32>() {
+                    if line.contains("uint32")
+                        && let Some(id_str) = line.split_whitespace().last()
+                            && let Ok(id) = id_str.parse::<u32>() {
                                 return Ok(id);
                             }
-                        }
-                    }
                 }
                 Ok(0) // Return 0 as placeholder ID
             } else {
@@ -417,7 +414,7 @@ mod tests {
 
     #[test]
     fn test_urgency() {
-        assert_eq!(NotificationUrgency::Low.to_arg(), "low");
-        assert_eq!(NotificationUrgency::Critical.to_arg(), "critical");
+        assert_eq!(NotificationUrgency::Low.as_arg(), "low");
+        assert_eq!(NotificationUrgency::Critical.as_arg(), "critical");
     }
 }

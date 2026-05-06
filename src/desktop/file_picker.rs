@@ -269,11 +269,10 @@ pub fn zenity_file_picker(
     }
 
     // Add initial directory
-    if let Some(ref dir) = options.initial_dir {
-        if dir.exists() {
+    if let Some(ref dir) = options.initial_dir
+        && dir.exists() {
             args.push(format!( "--filename={}", dir.to_string_lossy()));
         }
-    }
 
     // Add filters
     for filter in &options.filters {
@@ -341,7 +340,7 @@ pub fn kdialog_file_picker(
     let filters_str = options
         .filters
         .iter()
-        .map(|f| f.name.replace(',', " *.").replace(' ', " *."))
+        .map(|f| f.name.replace([',', ' '], " *."))
         .collect::<Vec<_>>()
         .join(" *.");
     if !filters_str.is_empty() {
@@ -442,11 +441,10 @@ pub fn save_file(initial_dir: Option<PathBuf>, default_name: &str) -> Option<Pat
         confirm_overwrite: true,
         ..Default::default()
     };
-    if let Some(ref mut dir) = options.initial_dir {
-        if dir.exists() && !dir.is_file() {
+    if let Some(ref mut dir) = options.initial_dir
+        && dir.exists() && !dir.is_file() {
             dir.push(default_name);
         }
-    }
     let result = file_picker(FilePickerMode::Save, &options);
     if result.cancelled {
         None

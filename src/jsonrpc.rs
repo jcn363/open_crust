@@ -36,14 +36,13 @@ impl JsonRpcClient {
         let mut reader = BufReader::new(stdout).lines();
         
         while let Some(line) = reader.next_line().await.map_err(|e| e.to_string())? {
-            if let Ok(response) = serde_json::from_str::<Value>(&line) {
-                if response.get("id").and_then(|v| v.as_u64()) == Some(id) {
+            if let Ok(response) = serde_json::from_str::<Value>(&line)
+                && response.get("id").and_then(|v| v.as_u64()) == Some(id) {
                     if let Some(error) = response.get("error") {
                         return Err(format!("JSON-RPC Error: {}", error));
                     }
                     return Ok(response.get("result").cloned().unwrap_or(Value::Null));
                 }
-            }
         }
         
         Err("JSON-RPC server closed stdout unexpectedly".into())

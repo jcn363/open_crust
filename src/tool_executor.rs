@@ -37,6 +37,7 @@ pub struct ToolExecutor {
 }
 
 impl ToolExecutor {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         mcp_manager: Arc<Mutex<McpManager>>,
         lsp_manager: Arc<Mutex<LspManager>>,
@@ -302,21 +303,19 @@ impl ToolExecutor {
         let mut count = 0;
         for entry in WalkDir::new(".").into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
-            if let Some(ext) = path.extension() {
-                if !include.contains(&ext.to_string_lossy().to_string()) {
+            if let Some(ext) = path.extension()
+                && !include.contains(&ext.to_string_lossy().to_string()) {
                     continue;
                 }
-            }
             
-            if let Ok(content) = fs::read_to_string(path) {
-                if content.contains(pattern) {
+            if let Ok(content) = fs::read_to_string(path)
+                && content.contains(pattern) {
                     let new_content = content.replace(pattern, replacement);
                     if new_content != content {
                         fs::write(path, new_content)?;
                         count += 1;
                     }
                 }
-            }
         }
         
         Ok(format!("Replaced '{}' with '{}' in {} files", pattern, replacement, count))

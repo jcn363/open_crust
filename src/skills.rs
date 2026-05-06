@@ -78,17 +78,15 @@ impl SkillManager {
                 let skill_dir = entry.path();
                 if skill_dir.is_dir() {
                     let skill_file = skill_dir.join("SKILL.md");
-                    if skill_file.exists() {
-                        if let Ok(content) = fs::read_to_string(&skill_file) {
-                            if let Some((metadata, body)) = self.parse_skill(&content) {
+                    if skill_file.exists()
+                        && let Ok(content) = fs::read_to_string(&skill_file)
+                            && let Some((metadata, body)) = self.parse_skill(&content) {
                                 let name = metadata.name.clone();
                                 self.skills.insert(name, Skill {
                                     metadata,
                                     content: body.to_string(),
                                 });
                             }
-                        }
-                    }
                 }
             }
         }

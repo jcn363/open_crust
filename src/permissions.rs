@@ -23,11 +23,10 @@ impl PermissionManager {
                             result = action.clone();
                             continue;
                         }
-                        if let Ok(pattern) = Pattern::new(pattern_str) {
-                            if pattern.matches(input) {
+                        if let Ok(pattern) = Pattern::new(pattern_str)
+                            && pattern.matches(input) {
                                 result = action.clone();
                             }
-                        }
                     }
                     return result;
                 }
@@ -50,11 +49,10 @@ impl PermissionManager {
             return true;
         }
 
-        if let Ok(parsed_url) = url::Url::parse(url_str) {
-            if let Some(host) = parsed_url.host_str() {
+        if let Ok(parsed_url) = url::Url::parse(url_str)
+            && let Some(host) = parsed_url.host_str() {
                 return self.config.allowed_domains.iter().any(|domain| host.ends_with(domain));
             }
-        }
         false
     }
 }

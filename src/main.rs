@@ -304,7 +304,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 };
                 
                 let options = FilePickerOptions {
-                    initial_dir: dir.as_ref().map(|d| std::path::PathBuf::from(d)),
+                    initial_dir: dir.as_ref().map(std::path::PathBuf::from),
                     title: title.clone(),
                     ..Default::default()
                 };
@@ -400,11 +400,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             SessionCommands::Save { id, messages } => {
-                let msgs: Vec<Value> = serde_json::from_str(&messages)
+                let msgs: Vec<Value> = serde_json::from_str(messages)
                     .map_err(|e| format!("Invalid JSON: {}", e))
                     .unwrap_or_default();
                 
-                match session_manager.save_session(&id, &msgs) {
+                match session_manager.save_session(id, &msgs) {
                     Ok(_) => println!("Session '{}' saved ({} messages).", id, msgs.len()),
                     Err(e) => eprintln!("Error: {}", e),
                 }
@@ -434,13 +434,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 match new_provider.to_lowercase().as_str() {
                     "ollama" => {
                         client_clone.config.provider = config::ProviderType::Ollama;
-                        let _ = client_clone.config.save();
-                        let _ = response_tx.send(format!("open_crust: Provider switched to Ollama")).await;
+                        client_clone.config.save();
+                        let _ = response_tx.send("open_crust: Provider switched to Ollama".to_string()).await;
                     }
                     "openrouter" => {
                         client_clone.config.provider = config::ProviderType::OpenRouter;
-                        let _ = client_clone.config.save();
-                        let _ = response_tx.send(format!("open_crust: Provider switched to OpenRouter")).await;
+                        client_clone.config.save();
+                        let _ = response_tx.send("open_crust: Provider switched to OpenRouter".to_string()).await;
                     }
                     _ => {
                         let _ = response_tx.send(format!("open_crust: Unknown provider '{}'", new_provider)).await;
@@ -450,7 +450,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if prompt_str.starts_with("/model ") {
                 let new_model = prompt_str.trim_start_matches("/model ").trim();
                 client_clone.config.model = new_model.to_string();
-                let _ = client_clone.config.save();
+                client_clone.config.save();
                 let _ = response_tx.send(format!("open_crust: Model switched to '{}'", new_model)).await;
                 continue;
             } else if prompt_str == "/undo" {
@@ -517,11 +517,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
             
             let tab = &mut app.tabs[0]; // always push to Chat tab
-            if let Some(last) = tab.messages.last() {
-                if last == "open_crust: Thinking..." || last.starts_with("open_crust: Executing tool") {
+            if let Some(last) = tab.messages.last()
+                && (last == "open_crust: Thinking..." || last.starts_with("open_crust: Executing tool")) {
                     tab.messages.pop();
                 }
-            }
             tab.messages.push(response);
         }
 
@@ -530,11 +529,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if let Some(Event::Key(key)) = events::next_event().await? {
             // Check for Copy (Ctrl+C) - copy current input to clipboard
             if check_key_match(&key, &copy_key) {
-                if !app.input.is_empty() {
-                    if clipboard.copy(&app.input) {
+                if !app.input.is_empty()
+                    && clipboard.copy(&app.input) {
                         app.tabs[0].messages.push(String::from("Copied to clipboard"));
                     }
-                }
                 continue;
             }
 
@@ -654,8 +652,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         KeyCode::Enter => {
                             // Install the selected server
-                            if let Some((name, _, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
-                                if !app.config.mcp.contains_key(name) {
+                            if let Some((name, _, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected)
+                                && !app.config.mcp.contains_key(name) {
                                     let mcp_config = config::McpConfig {
                                         command: cmd.clone(),
                                         environment: None,
@@ -665,7 +663,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     app.config.save();
                                     app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart open_crust to use it.", name));
                                 }
-                            }
                         }
                         KeyCode::Char(c) => {
                             app.mcp_input.push(c);
@@ -719,11 +716,10 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
             }
         }
 
-        if let Some(code) = target_code {
-            if key.code == code && key.modifiers.contains(target_modifiers) {
+        if let Some(code) = target_code
+            && key.code == code && key.modifiers.contains(target_modifiers) {
                 return true;
             }
-        }
     }
     false
 }
@@ -823,7 +819,7 @@ async fn run_multi_agent(
             );
 
             let provider_name = format!("{:?}", provider);
-            print!("Agent {} ({}) thinking...\n", provider_name, model);
+            println!("Agent {} ({}) thinking...", provider_name, model);
 
             match llm_client.query_simple(&prompt).await {
                 Ok(response) => (provider_name, model, Ok(response)),
