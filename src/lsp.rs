@@ -160,6 +160,48 @@ impl LspManager {
         self.call_lsp("textDocument/typeDefinition", path, line, character).await
     }
 
+    pub async fn completion(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
+        let server = self.find_server_for_path_mut(path)?;
+        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
+        
+        let params = json!({
+            "textDocument": { "uri": uri },
+            "position": { "line": line, "character": character }
+        });
+        
+        let result = server.call("textDocument/completion", params).await?;
+        Ok(format!("textDocument/completion: {}", result))
+    }
+
+    pub async fn diagnostics(&mut self, path: &str) -> Result<String, String> {
+        let server = self.find_server_for_path_mut(path)?;
+        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
+        
+        // Request diagnostics via textDocument/diagnostic (LSP 3.17+)
+        let params = json!({
+            "textDocument": { "uri": uri }
+        });
+        
+        let result = server.call("textDocument/diagnostic", params).await?;
+        Ok(format!("textDocument/diagnostic: {}", result))
+    }
+
+    pub async fn formatting(&mut self, path: &str) -> Result<String, String> {
+        let server = self.find_server_for_path_mut(path)?;
+        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
+        
+        let params = json!({
+            "textDocument": { "uri": uri },
+            "options": {
+                "tabSize": 4,
+                "insertSpaces": true
+            }
+        });
+        
+        let result = server.call("textDocument/formatting", params).await?;
+        Ok(format!("textDocument/formatting: {}", result))
+    }
+
     async fn call_lsp(&mut self, method: &str, path: &str, line: u32, character: u32) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
         let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());

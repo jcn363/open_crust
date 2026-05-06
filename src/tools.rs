@@ -573,6 +573,50 @@ pub fn get_tools_schema() -> Value {
                     "required": ["name"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_completion",
+                "description": "Get code completion suggestions at a specific position in a file.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The file path" },
+                        "line": { "type": "integer", "description": "Line number (0-based)" },
+                        "character": { "type": "integer", "description": "Character offset (0-based)" }
+                    },
+                    "required": ["path", "line", "character"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_diagnostics",
+                "description": "Get diagnostics (errors, warnings) for a file from the LSP server.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The file path" }
+                    },
+                    "required": ["path"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "lsp_formatting",
+                "description": "Format a file using the LSP server's formatting provider.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The file path" }
+                    },
+                    "required": ["path"]
+                }
+            }
         }
     ])
 }

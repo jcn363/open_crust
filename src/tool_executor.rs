@@ -94,6 +94,11 @@ impl ToolExecutor {
             // Skill tool
             "skill" => self.execute_skill(args).await,
             
+            // LSP tools
+            "lsp_completion" => self.execute_lsp_completion(args).await,
+            "lsp_diagnostics" => self.execute_lsp_diagnostics(args).await,
+            "lsp_formatting" => self.execute_lsp_formatting(args).await,
+            
             // Try custom tools
             _ => {
                 let custom_result = {
@@ -218,6 +223,38 @@ impl ToolExecutor {
         
         let mut lsp = self.lsp_manager.lock().await;
         match lsp.type_definition(path, line, character).await {
+            Ok(res) => Ok(res),
+            Err(e) => Ok(format!("LSP Error: {}", e)),
+        }
+    }
+
+    async fn execute_lsp_completion(&self, args: &Value) -> ToolResult {
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+        let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+        let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+        
+        let mut lsp = self.lsp_manager.lock().await;
+        match lsp.completion(path, line, character).await {
+            Ok(res) => Ok(res),
+            Err(e) => Ok(format!("LSP Error: {}", e)),
+        }
+    }
+
+    async fn execute_lsp_diagnostics(&self, args: &Value) -> ToolResult {
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+        
+        let mut lsp = self.lsp_manager.lock().await;
+        match lsp.diagnostics(path).await {
+            Ok(res) => Ok(res),
+            Err(e) => Ok(format!("LSP Error: {}", e)),
+        }
+    }
+
+    async fn execute_lsp_formatting(&self, args: &Value) -> ToolResult {
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+        
+        let mut lsp = self.lsp_manager.lock().await;
+        match lsp.formatting(path).await {
             Ok(res) => Ok(res),
             Err(e) => Ok(format!("LSP Error: {}", e)),
         }
