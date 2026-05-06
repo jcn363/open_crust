@@ -130,7 +130,7 @@ impl Default for Config {
             model: "llama3".to_string(),
             ollama_url: Some("http://localhost:11434".to_string()),
             openrouter_key: None,
-            mcp: std::collections::HashMap::new(),
+            mcp: default_mcp_servers(),
             lsp: std::collections::HashMap::new(),
             instructions: Vec::new(),
             permission: default_permissions(),
@@ -254,11 +254,9 @@ fn validate_hex_color(color: &str, field_name: &str) {
 /// Returns the recommended default MCP servers for OpenCrust
 /// These are the most valuable servers based on ecosystem analysis
 ///
-/// # Note
-/// This function is preserved as a reference implementation and for potential future use
-/// in configuration initialization or the CLI. It documents the recommended server setup
-/// that users may want to adopt.
-#[allow(dead_code)]
+/// Provides recommended MCP server configurations for common use cases.
+/// Currently used as the default MCP server set in [`Config::default()`].
+/// Users can enable/disable servers in their config.json file.
 pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
     let mut mcp = std::collections::HashMap::new();
 

@@ -27,9 +27,17 @@ pub fn get_json_path(json_str: &str, path: &str) -> Result<String, String> {
     let mut current = &value;
     
     for part in parts {
-        current = match current.get(part) {
-            Some(v) => v,
-            None => return Err(format!("Path not found: {}", path)),
+        // Try to parse as array index first, then fall back to object key
+        current = if let Ok(index) = part.parse::<usize>() {
+            match current.get(index) {
+                Some(v) => v,
+                None => return Err(format!("Path not found: {}", path)),
+            }
+        } else {
+            match current.get(part) {
+                Some(v) => v,
+                None => return Err(format!("Path not found: {}", path)),
+            }
         };
     }
     
@@ -56,10 +64,26 @@ pub fn set_json_path(json_str: &str, path: &str, new_value: &str) -> Result<Stri
         
         for i in 0..last_idx {
             let key = parts[i];
-            current = current.get_mut(key).ok_or_else(|| format!("Path not found: {}", key))?;
+            // Try to parse as array index, otherwise use as object key
+            if let Ok(idx) = key.parse::<usize>() {
+                current = current.get_mut(idx).ok_or_else(|| format!("Path not found: {}", key))?;
+            } else {
+                current = current.get_mut(key).ok_or_else(|| format!("Path not found: {}", key))?;
+            }
         }
         
-        if let Some(obj) = current.as_object_mut() {
+        // Set the value at the final path component
+        if let Ok(idx) = parts[last_idx].parse::<usize>() {
+            if let Some(arr) = current.as_array_mut() {
+                if idx < arr.len() {
+                    arr[idx] = new_val;
+                } else {
+                    return Err(format!("Array index out of bounds: {}", idx));
+                }
+            } else {
+                return Err(format!("Cannot set array index on non-array at path: {}", path));
+            }
+        } else if let Some(obj) = current.as_object_mut() {
             obj.insert(parts[last_idx].to_string(), new_val);
         } else {
             return Err(format!("Cannot set at path: {}", path));
