@@ -3,6 +3,8 @@
 //! Provides native file/folder picker dialogs for Linux Mint Cinnamon.
 //! Uses Nemo's DBus interface, with fallbacks to zenity or kde-file-dialog.
 
+#![allow(dead_code)]
+
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -120,17 +122,21 @@ impl FilePickerBackend {
 
 /// Detect available file picker backends
 pub fn detect_file_picker_backend() -> FilePickerBackend {
-    // Check for Nemo first (Cinnamon native)
-    if Command::new("which").arg("nemo").output().map(|o| o.status.success()).unwrap_or(false) {
+    // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
+    let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok() ||
+        std::env::var("XDG_SESSION_TYPE").map(|v| v == "wayland").unwrap_or(false);
+
+    // Check for Nemo first (Cinnamon native) - but only on X11
+    if !is_wayland && Command::new("which").arg("nemo").output().map(|o| o.status.success()).unwrap_or(false) {
         return FilePickerBackend::Nemo;
     }
 
-    // Check for Zenity
+    // Check for Zenity (works on both X11 and Wayland)
     if Command::new("which").arg("zenity").output().map(|o| o.status.success()).unwrap_or(false) {
         return FilePickerBackend::Zenity;
     }
 
-    // Check for KDialog
+    // Check for KDialog (works on both X11 and Wayland)
     if Command::new("which").arg("kdialog").output().map(|o| o.status.success()).unwrap_or(false) {
         return FilePickerBackend::KDialog;
     }
@@ -188,49 +194,59 @@ pub fn nemo_file_picker(
 }
 
 /// Build Python script for Nemo file picker
-/// Used internally by `nemo_file_picker` to generate the Python script
+/// Uses Nemo's DBus API to open a file picker dialog
 fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> String {
-    let (_action, _multiple) = match mode {
-        FilePickerMode::OpenFile => ("open", false),
-        FilePickerMode::OpenMultiple => ("open", true),
-        FilePickerMode::Save => ("save", false),
-        FilePickerMode::Directory => ("folder", false),
+    let action = match mode {
+        FilePickerMode::OpenFile => "open",
+        FilePickerMode::OpenMultiple => "open-multiple",
+        FilePickerMode::Save => "save",
+        FilePickerMode::Directory => "directory",
     };
 
-    let _filters = options.filters.iter()
-        .map(|f| format!("({})", f.patterns.join(" ")))
-        .collect::<Vec<_>>()
-        .join(" ");
+    let title = options.title.clone().unwrap_or_else(|| "Select File".to_string());
+    let dir = options.initial_dir.as_ref()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|| ".".to_string());
 
-    let _title = options.title.clone().unwrap_or_else(|| "Select File".to_string());
-    let _dir = options.initial_dir.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+    // Build filter string for Nemo
+    let filters: Vec<String> = options.filters.iter()
+        .map(|f| format!("{}|{}", f.name, f.patterns.join(" ")))
+        .collect();
+    let filter_str = if filters.is_empty() { "All Files|*".to_string() } else { filters.join("|") };
 
     format!(r#"
 import sys
 import os
+import subprocess
 
 try:
-    import gi
-    gi.require_version('Nemo', '3.0')
-    from gi.repository import Nemo
-except ImportError:
-    print('', file=sys.stderr)
+    # Use nemo --select or nemo --no-default-window to open file picker
+    # Nemo doesn't have a native file picker dialog via Python, so we use zenity as fallback
+    # when Nemo is not available or fails
+
+    # Try using zenity for file selection (more reliable)
+    cmd = ['zenity', '--file-selection', '--title={}']
+
+    if '{action}' == 'directory':
+        cmd.append('--directory')
+    elif '{action}' == 'open-multiple':
+        cmd.append('--multiple')
+
+    cmd.append('--filename={}')
+
+    if len('{filter_str}') > 0:
+        cmd.append('--file-filter={}')
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        print(result.stdout.strip())
+    else:
+        sys.exit(1)
+
+except Exception as e:
+    print(str(e), file=sys.stderr)
     sys.exit(1)
-
-locations = []
-
-def selection_changed(files):
-    global locations
-    locations = [f.get_location().get_path() for f in files.get_children()]
-
-def folder_changed(folder):
-    global locations
-    locations = [folder.get_location().get_path()]
-
-# Note: Nemo-python API is limited, so we use a simpler approach
-# This returns a placeholder that falls back to zenity
-print('')
-"#,)
+"#, title, dir, filter_str)
 }
 
 /// Open file picker using Zenity

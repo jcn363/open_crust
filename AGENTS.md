@@ -24,7 +24,7 @@ OpenCrust provides terminal-native CLI subcommands:
 
 **Desktop Integration:**
 - `opencrust desktop detect` - Detect desktop environment (Cinnamon/MATE/GNOME/Plasma)
-- `opencrust desktop notify "message" --title "title"` - Send system notification
+- `opencrust desktop notify --title "title" --body "message"` - Send system notification
 - `opencrust desktop file-picker [--directory]` - Open native file picker
 
 **Session Management:**

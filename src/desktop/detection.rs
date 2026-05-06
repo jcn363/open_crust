@@ -3,6 +3,8 @@
 //! Detects if running on Linux Mint Cinnamon and extracts desktop-specific
 //! configuration like theme colors, icon paths, and system settings.
 
+#![allow(dead_code)]
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -22,6 +24,39 @@ pub enum DesktopEnvironment {
     Xfce,
     /// Unknown desktop environment
     Unknown,
+}
+
+/// Display server protocol
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum DisplayServer {
+    /// X11 display server
+    X11,
+    /// Wayland display server
+    Wayland,
+    /// Unknown display server
+    #[default]
+    Unknown,
+}
+
+impl DisplayServer {
+    /// Check if running on Wayland
+    pub fn is_wayland(&self) -> bool {
+        matches!(self, DisplayServer::Wayland)
+    }
+
+    /// Check if running on X11
+    pub fn is_x11(&self) -> bool {
+        matches!(self, DisplayServer::X11)
+    }
+
+    /// Get display server name
+    pub fn name(&self) -> &str {
+        match self {
+            DisplayServer::X11 => "X11",
+            DisplayServer::Wayland => "Wayland",
+            DisplayServer::Unknown => "Unknown",
+        }
+    }
 }
 
 impl DesktopEnvironment {
@@ -97,6 +132,8 @@ impl CinnamonTheme {
 pub struct CinnamonInfo {
     /// Desktop environment variant
     pub desktop: DesktopEnvironment,
+    /// Display server protocol (X11/Wayland)
+    pub display_server: DisplayServer,
     /// Mint version (if available)
     pub version: Option<String>,
     /// User's theme settings
@@ -117,6 +154,7 @@ impl Default for CinnamonInfo {
     fn default() -> Self {
         Self {
             desktop: DesktopEnvironment::Unknown,
+            display_server: DisplayServer::Unknown,
             version: None,
             theme: CinnamonTheme::default_dark(),
             home_dir: dirs::home_dir().unwrap_or_default(),
@@ -170,6 +208,30 @@ pub fn detect_desktop() -> DesktopEnvironment {
     }
 
     DesktopEnvironment::Unknown
+}
+
+/// Detect the display server protocol (X11 or Wayland)
+pub fn detect_display_server() -> DisplayServer {
+    // Check WAYLAND_DISPLAY (most reliable Wayland indicator)
+    if env::var("WAYLAND_DISPLAY").is_ok() {
+        return DisplayServer::Wayland;
+    }
+
+    // Check XDG_SESSION_TYPE
+    if let Ok(session_type) = env::var("XDG_SESSION_TYPE") {
+        match session_type.to_lowercase().as_str() {
+            "wayland" => return DisplayServer::Wayland,
+            "x11" => return DisplayServer::X11,
+            _ => {}
+        }
+    }
+
+    // Check for X11-specific variables
+    if env::var("DISPLAY").is_ok() {
+        return DisplayServer::X11;
+    }
+
+    DisplayServer::Unknown
 }
 
 /// Read a gsettings value from Cinnamon schema
@@ -254,6 +316,7 @@ pub fn get_mint_version() -> Option<String> {
 /// Detect Cinnamon desktop environment with full info
 pub fn detect_cinnamon() -> CinnamonInfo {
     let desktop = detect_desktop();
+    let display_server = detect_display_server();
     let is_cinnamon = desktop == DesktopEnvironment::Cinnamon;
 
     let theme = if is_cinnamon {
@@ -276,6 +339,7 @@ pub fn detect_cinnamon() -> CinnamonInfo {
 
     CinnamonInfo {
         desktop,
+        display_server,
         version,
         theme,
         home_dir: dirs::home_dir().unwrap_or_default(),

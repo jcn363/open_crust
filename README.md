@@ -258,7 +258,7 @@ OpenCrust provides terminal-native CLI subcommands for desktop integration and s
 opencrust desktop detect
 
 # Send a notification
-opencrust desktop notify "Build complete!" --title "OpenCrust"
+opencrust desktop notify --title "OpenCrust" --body "Build complete!"
 
 # Open native file picker
 opencrust desktop file-picker --directory

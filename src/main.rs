@@ -330,10 +330,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             DesktopCommands::Detect => {
-                use desktop::detection::{detect_desktop, is_supported_desktop, get_cinnamon_info};
+                use desktop::detection::{detect_desktop, detect_display_server, is_supported_desktop, get_cinnamon_info};
                 
                 let desktop = detect_desktop();
+                let display_server = detect_display_server();
                 println!("Desktop environment: {}", desktop);
+                println!("Display server: {}", display_server.name());
                 println!("Supported: {}", is_supported_desktop());
                 
                 if desktop.is_cinnamon() {
@@ -344,6 +346,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     println!("  Accent: {}", info.theme.accent);
                     println!("  Icon theme: {}", info.icon_theme);
                     println!("  Cursor theme: {}", info.cursor_theme);
+                    println!("  Display server: {}", info.display_server.name());
                 }
             }
         }
