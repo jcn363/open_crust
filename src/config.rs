@@ -250,3 +250,60 @@ fn validate_hex_color(color: &str, field_name: &str) {
         eprintln!("Warning: {} should be a hex color (e.g., #1e1e1e), got: {}", field_name, color);
     }
 }
+
+/// Returns the recommended default MCP servers for OpenCrust
+/// These are the most valuable servers based on ecosystem analysis
+///
+/// # Note
+/// This function is preserved as a reference implementation and for potential future use
+/// in configuration initialization or the CLI. It documents the recommended server setup
+/// that users may want to adopt.
+#[allow(dead_code)]
+pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
+    let mut mcp = std::collections::HashMap::new();
+
+    // Context7 - Version-accurate library docs (highest impact)
+    mcp.insert("context7".to_string(), McpConfig {
+        command: vec!["npx".to_string(), "-y".to_string(), "@context7/mcp-server".to_string()],
+        environment: None,
+        enabled: false, // Disabled by default, user must enable
+    });
+
+    // GitHub - Repository management
+    mcp.insert("github".to_string(), McpConfig {
+        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()],
+        environment: Some(std::collections::HashMap::from([
+            ("GITHUB_TOKEN".to_string(), "your-github-token".to_string()),
+        ])),
+        enabled: false,
+    });
+
+    // Brave Search - Web research
+    mcp.insert("brave-search".to_string(), McpConfig {
+        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()],
+        environment: Some(std::collections::HashMap::from([
+            ("BRAVE_API_KEY".to_string(), "your-brave-api-key".to_string()),
+        ])),
+        enabled: false,
+    });
+
+    // PostgreSQL - Database queries
+    mcp.insert("postgres".to_string(), McpConfig {
+        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()],
+        environment: Some(std::collections::HashMap::from([
+            ("DATABASE_URL".to_string(), "postgres://user:pass@localhost:5432/db".to_string()),
+        ])),
+        enabled: false,
+    });
+
+    // Filesystem - Enhanced file operations
+    mcp.insert("filesystem".to_string(), McpConfig {
+        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()],
+        environment: Some(std::collections::HashMap::from([
+            ("ALLOWED_DIRS".to_string(), "/home/user/projects".to_string()),
+        ])),
+        enabled: false,
+    });
+
+    mcp
+}

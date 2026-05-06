@@ -188,7 +188,7 @@ pub fn nemo_file_picker(
 }
 
 /// Build Python script for Nemo file picker
-#[allow(dead_code)]
+/// Used internally by `nemo_file_picker` to generate the Python script
 fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> String {
     let (_action, _multiple) = match mode {
         FilePickerMode::OpenFile => ("open", false),

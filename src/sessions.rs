@@ -4,6 +4,13 @@ use std::fs;
 use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 
+/// Represents a persisted session with message history
+///
+/// Used for serializing/deserializing session state to disk.
+/// Instances are created in `_save_session()` and support `pub` visibility
+/// to enable external access patterns in future API expansions.
+/// Marked as `#[allow(dead_code)]` because it's only used internally via serde
+/// but exposed publicly for future CLI/API use.
 #[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {

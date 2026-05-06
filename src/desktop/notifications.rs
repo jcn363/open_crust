@@ -233,6 +233,11 @@ pub fn send_notification(notification: &Notification) -> Result<(), String> {
 }
 
 /// Send a notification via DBus (enables rich notifications with actions)
+///
+/// # Future Enhancement
+/// This function is planned for future implementation to support richer notification
+/// features via DBus (e.g., action buttons, persistent notifications). Currently not
+/// integrated into the main notification pipeline, but preserved for upcoming enhancements.
 #[allow(dead_code)]
 pub fn send_notification_dbus(
     app_name: &str,

@@ -162,23 +162,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match cmd {
             McpCommands::List => {
                 println!("Available MCP servers (curated list):");
-                println!("  github    - GitHub integration (npx -y @modelcontextprotocol/server-github)");
-                println!("  slack      - Slack integration (npx -y @modelcontextprotocol/server-slack)");
-                println!("  filesystem - File system access (npx -y @modelcontextprotocol/server-filesystem)");
-                println!("  postgres   - PostgreSQL database (npx -y @modelcontextprotocol/server-postgres)");
-                println!("  google-drive - Google Drive (npx -y @modelcontextprotocol/server-google-drive)");
+                println!("\n=== Tier 1: Essential ===");
+                println!("  context7     - Version-accurate library docs (eliminates API hallucinations)");
+                println!("  github      - GitHub integration (repos, issues, PRs, CI/CD)");
+                println!("  postgres    - PostgreSQL database queries");
+                println!("  brave-search - Web search (privacy-focused)");
+                println!("  filesystem  - Enhanced file system access");
+                println!("\n=== Tier 2: High Value ===");
+                println!("  playwright  - Browser automation & E2E testing");
+                println!("  supabase    - RLS-aware database access");
+                println!("  sentry      - Error monitoring integration");
+                println!("  linear      - Issue tracking");
+                println!("  e2b         - Secure cloud sandbox for code execution");
+                println!("\n=== Tier 3: Production ===");
+                println!("  slack       - Slack messaging");
+                println!("  google-drive - Google Drive file access");
+                println!("  stripe      - Payment integration (requires OAuth)");
                 println!("\nUse `opencrust mcp install <name>` to add a server.");
                 println!("For more servers, visit: https://github.com/modelcontextprotocol/servers");
+                println!("Or browse: https://mcpdirectory.app/ (2,500+ servers)");
             }
             McpCommands::Install { server } => {
                 let config = config::Config::load();
                 let mut new_config = config.clone();
-                let (command, description) = match server.as_str() {
-                    "github" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()], "GitHub integration"),
-                    "slack" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()], "Slack integration"),
-                    "filesystem" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()], "File system access"),
-                    "postgres" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()], "PostgreSQL database"),
-                    "google-drive" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()], "Google Drive"),
+                let (command, description, env_help) = match server.as_str() {
+                    // Tier 1: Essential
+                    "context7" => (vec!["npx".to_string(), "-y".to_string(), "@context7/mcp-server".to_string()], "Version-accurate library docs".to_string(), "No API key required"),
+                    "github" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()], "GitHub integration (repos, issues, PRs)".to_string(), "Set GITHUB_TOKEN env var"),
+                    "postgres" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()], "PostgreSQL database queries".to_string(), "Set DATABASE_URL env var"),
+                    "brave-search" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()], "Web search (privacy-focused)".to_string(), "Set BRAVE_API_KEY env var"),
+                    "filesystem" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()], "Enhanced file system access".to_string(), "Set ALLOWED_DIRS env var"),
+                    // Tier 2: High Value
+                    "playwright" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-playwright".to_string()], "Browser automation & E2E testing".to_string(), "Run: npx playwright install"),
+                    "supabase" => (vec!["npx".to_string(), "-y".to_string(), "@supabase/mcp-server-supabase".to_string()], "RLS-aware database access".to_string(), "Set SUPABASE_ACCESS_TOKEN env var"),
+                    "sentry" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sentry".to_string()], "Error monitoring integration".to_string(), "Set SENTRY_AUTH_TOKEN env var"),
+                    "linear" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-linear".to_string()], "Issue tracking".to_string(), "Set LINEAR_API_KEY env var"),
+                    "e2b" => (vec!["npx".to_string(), "-y".to_string(), "@e2b/mcp-server".to_string()], "Secure cloud sandbox for code execution".to_string(), "Set E2B_API_KEY env var"),
+                    // Tier 3: Production
+                    "slack" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()], "Slack messaging".to_string(), "Set SLACK_TOKEN env var"),
+                    "google-drive" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()], "Google Drive file access".to_string(), "OAuth required"),
+                    "stripe" => (vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-stripe".to_string()], "Payment integration".to_string(), "Set STRIPE_API_KEY env var"),
                     _ => {
                         eprintln!("Unknown MCP server: {}. Use `opencrust mcp list` to see available servers.", server);
                         return Ok(());
@@ -191,7 +214,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 };
                 new_config.mcp.insert(server.clone(), mcp_config);
                 new_config.save();
-                println!("Installed MCP server '{}' ({}). Restart open_crust to use it.", server, description);
+                println!("Installed MCP server '{}'.", server);
+                println!("  Description: {}", description);
+                println!("  Setup: {}", env_help);
+                println!("\nRestart open_crust to use the server.");
             }
         }
         return Ok(());

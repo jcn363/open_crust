@@ -142,7 +142,7 @@ open_crust/
 
 ## 🔌 MCP Ecosystem Integration
 
-OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **2,300+ community servers** for databases, APIs, productivity tools, and more.
+OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **12,000+ community servers** for databases, APIs, productivity tools, and more.
 
 ### Quick Start
 
@@ -156,21 +156,44 @@ opencrust mcp install github
 # Restart open_crust to load the new server
 ```
 
-### Popular MCP Servers
+### Recommended MCP Servers
 
-| Server | Description |
-|--------|-------------|
-| `github` | GitHub API integration for repo management |
-| `slack` | Slack messaging and channel management |
-| `filesystem` | Extended file system operations |
-| `postgres` | PostgreSQL database queries |
-| `google-drive` | Google Drive file access |
+**Tier 1: Essential** (Install first)
+| Server | Description | Install Command |
+|--------|-------------|-----------------|
+| `context7` | Version-accurate library docs (eliminates API hallucinations) | `opencrust mcp install context7` |
+| `github` | Repos, issues, PRs, CI/CD | `opencrust mcp install github` |
+| `postgres` | Natural language DB queries | `opencrust mcp install postgres` |
+| `brave-search` | Privacy-focused web search | `opencrust mcp install brave-search` |
+| `filesystem` | Enhanced file operations | `opencrust mcp install filesystem` |
 
-Browse all servers at [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
+**Tier 2: High Value**
+| Server | Description | Install Command |
+|--------|-------------|-----------------|
+| `playwright` | Browser automation & E2E testing | `opencrust mcp install playwright` |
+| `supabase` | RLS-aware database access | `opencrust mcp install supabase` |
+| `sentry` | Error monitoring | `opencrust mcp install sentry` |
+| `linear` | Issue tracking | `opencrust mcp install linear` |
+| `e2b` | Secure cloud sandbox for code execution | `opencrust mcp install e2b` |
+
+Browse all servers at [mcpdirectory.app](https://mcpdirectory.app/) (2,500+ servers)
 
 ---
 
-## 🔌 Adding Skills
+## 🧠 Built-in Skills
+
+OpenCrust ships with specialized skills that enhance AI behavior for specific tasks. Skills are automatically discovered from `.opencrust/skills/`.
+
+### Included Skills
+
+| Skill | Description |
+|-------|-------------|
+| `rust-expert` | Cargo commands, crate selection, unsafe code review, performance optimization |
+| `security-auditor` | OWASP Top 10 detection, vulnerability scanning, audit compliance |
+| `git-workflow` | Branch management, conventional commits, PR preparation |
+| `code-refactorer` | Pattern-based transformations, technical debt identification |
+
+### Adding Custom Skills
 
 Create a SKILL.md file in `.opencrust/skills/<skill-name>/`:
 
@@ -184,6 +207,8 @@ description: Does something useful
 
 The agent should follow these steps to accomplish the task...
 ```
+
+See `docs/skills.md` for detailed skill creation guide.
 
 ---
 Built with 🦀 by the OpenCrust Team.
