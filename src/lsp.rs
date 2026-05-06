@@ -68,12 +68,62 @@ impl LspServer {
 
 pub struct LspManager {
     pub servers: HashMap<String, LspServer>,
+    configs: HashMap<String, LspConfig>,
 }
 
 impl LspManager {
     pub fn new() -> Self {
         Self {
             servers: HashMap::new(),
+            configs: HashMap::new(),
+        }
+    }
+    
+    #[allow(dead_code)]
+    pub async fn add_server(&mut self, name: String, config: LspConfig) -> Result<(), String> {
+        let server = LspServer::spawn(&name, &config).await?;
+        self.servers.insert(name.clone(), server);
+        self.configs.insert(name, config);
+        Ok(())
+    }
+    
+    #[allow(dead_code)]
+    fn find_server_for_path(&self, path: &str) -> Result<&LspServer, String> {
+        let path_ext = std::path::Path::new(path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("");
+        
+        // Find server whose extensions match the file path
+        for (name, config) in &self.configs {
+            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string())) 
+                && let Some(server) = self.servers.get(name) {
+                return Ok(server);
+            }
+        }
+        
+        Err("No LSP server available for this file type".to_string())
+    }
+
+    fn find_server_for_path_mut(&mut self, path: &str) -> Result<&mut LspServer, String> {
+        let path_ext = std::path::Path::new(path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("");
+        
+        // First, find the server name that matches
+        let mut server_name = None;
+        for (name, config) in &self.configs {
+            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string())) 
+                && self.servers.contains_key(name) {
+                server_name = Some(name.clone());
+                break;
+            }
+        }
+        
+        match server_name {
+            Some(name) => Ok(self.servers.get_mut(&name).unwrap()),
+            None => Err("No LSP server available for this file type".to_string())
         }
     }
 
@@ -83,6 +133,7 @@ impl LspManager {
                 match LspServer::spawn(name, config).await {
                     Ok(server) => {
                         self.servers.insert(name.clone(), server);
+                        self.configs.insert(name.clone(), config.clone());
                         println!("open_crust: LSP server '{}' connected.", name);
                     }
                     Err(e) => {
@@ -110,21 +161,15 @@ impl LspManager {
     }
 
     async fn call_lsp(&mut self, method: &str, path: &str, line: u32, character: u32) -> Result<String, String> {
-        let server = self.find_server_for_path(path)?;
+        let server = self.find_server_for_path_mut(path)?;
         let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
         
         let params = json!({
             "textDocument": { "uri": uri },
             "position": { "line": line, "character": character }
         });
-
+        
         let result = server.call(method, params).await?;
         Ok(format!("{}: {}", method, result))
-    }
-
-    fn find_server_for_path(&mut self, _path: &str) -> Result<&mut LspServer, String> {
-        // For now, just return the first server if it exists.
-        // TODO: we'd check extensions.
-        self.servers.values_mut().next().ok_or("No LSP server available".to_string())
     }
 }
