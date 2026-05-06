@@ -137,6 +137,8 @@ impl LlmClient {
                 ProviderType::OpenRouter => self.generate_openrouter(messages_history).await?,
                 ProviderType::OpenAI => self.generate_openai(messages_history).await?,
                 ProviderType::Gemini => self.generate_gemini(messages_history).await?,
+                ProviderType::Mistral => self.generate_mistral(messages_history).await?,
+                ProviderType::Anthropic => self.generate_anthropic(messages_history).await?,
             };
 
         if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
@@ -295,6 +297,58 @@ impl LlmClient {
             .unwrap_or(json!({})))
     }
 
+    async fn generate_mistral(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.mistral_api_key.as_deref().unwrap_or("");
+        let res_json = self.generate_completion(
+            messages,
+            "https://api.mistral.ai/v1/chat/completions",
+            Some(("Authorization", format!("Bearer {}", api_key))),
+        ).await?;
+        Ok(res_json.get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_anthropic(&self, messages: &[Value]) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.anthropic_api_key.as_deref().unwrap_or("");
+        
+        // Convert messages to Anthropic format (skip system messages)
+        let mut anthropic_messages: Vec<Value> = Vec::new();
+        for msg in messages {
+            let role = msg.get("role").and_then(|r| r.as_str());
+            let content = msg.get("content").and_then(|c| c.as_str());
+            if let (Some(r), Some(c)) = (role, content) {
+                if r != "system" {
+                    anthropic_messages.push(json!({"role": r, "content": c}));
+                }
+            }
+        }
+        
+        let body = json!({
+            "model": self.config.model,
+            "messages": anthropic_messages,
+            "max_tokens": 4096
+        });
+        
+        let client = reqwest::Client::new();
+        let res = client.post("https://api.anthropic.com/v1/messages")
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json")
+            .header("anthropic-version", "2023-06-01")
+            .json(&body)
+            .send()
+            .await?;
+        
+        let res_json: Value = res.json().await?;
+        Ok(res_json.get("content")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("text"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
     /// Simple query without tool execution - for multi-agent comparison
     pub async fn query_simple(&self, prompt: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
         let messages = vec![
@@ -306,6 +360,8 @@ impl LlmClient {
             ProviderType::OpenRouter => self.generate_openrouter(&messages).await?,
             ProviderType::OpenAI => self.generate_openai(&messages).await?,
             ProviderType::Gemini => self.generate_gemini(&messages).await?,
+            ProviderType::Mistral => self.generate_mistral(&messages).await?,
+            ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
         };
         
         // Extract content from response - handle multiple formats:

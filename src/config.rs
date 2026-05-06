@@ -7,6 +7,8 @@ pub enum ProviderType {
     OpenRouter,
     OpenAI,
     Gemini,
+    Mistral,
+    Anthropic,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -99,6 +101,8 @@ pub struct Config {
     pub theme: Option<ThemeConfig>,
     pub openai_key: Option<String>,
     pub gemini_api_key: Option<String>,
+    pub mistral_api_key: Option<String>,
+    pub anthropic_api_key: Option<String>,
 }
 
 impl Default for Keybinds {
@@ -135,6 +139,8 @@ impl Default for Config {
             theme: None,
             openai_key: None,
             gemini_api_key: None,
+            mistral_api_key: None,
+            anthropic_api_key: None,
         }
     }
 }
@@ -192,6 +198,16 @@ impl Config {
             ProviderType::Gemini => {
                 if self.gemini_api_key.is_none() || self.gemini_api_key.as_ref().unwrap().is_empty() {
                     eprintln!("Warning: Gemini provider selected but gemini_api_key is not set");
+                }
+            }
+            ProviderType::Mistral => {
+                if self.mistral_api_key.is_none() || self.mistral_api_key.as_ref().unwrap().is_empty() {
+                    eprintln!("Warning: Mistral provider selected but mistral_api_key is not set");
+                }
+            }
+            ProviderType::Anthropic => {
+                if self.anthropic_api_key.is_none() || self.anthropic_api_key.as_ref().unwrap().is_empty() {
+                    eprintln!("Warning: Anthropic provider selected but anthropic_api_key is not set");
                 }
             }
         }

@@ -521,6 +521,8 @@ fn parse_agent_spec(spec: &str) -> Result<(config::ProviderType, String), Box<dy
             "openrouter" => config::ProviderType::OpenRouter,
             "openai" => config::ProviderType::OpenAI,
             "gemini" => config::ProviderType::Gemini,
+            "mistral" => config::ProviderType::Mistral,
+            "anthropic" => config::ProviderType::Anthropic,
             _ => return Err(format!("Unknown provider: {}", parts[0]).into()),
         };
         Ok((provider, parts[1].to_string()))
@@ -530,6 +532,8 @@ fn parse_agent_spec(spec: &str) -> Result<(config::ProviderType, String), Box<dy
             "openrouter" => config::ProviderType::OpenRouter,
             "openai" => config::ProviderType::OpenAI,
             "gemini" => config::ProviderType::Gemini,
+            "mistral" => config::ProviderType::Mistral,
+            "anthropic" => config::ProviderType::Anthropic,
             _ => return Err(format!("Unknown provider: {}", spec).into()),
         };
         let model = match provider {
@@ -537,6 +541,8 @@ fn parse_agent_spec(spec: &str) -> Result<(config::ProviderType, String), Box<dy
             config::ProviderType::OpenRouter => "openai/gpt-4".to_string(),
             config::ProviderType::OpenAI => "gpt-4".to_string(),
             config::ProviderType::Gemini => "gemini-pro".to_string(),
+            config::ProviderType::Mistral => "mistral-large".to_string(),
+            config::ProviderType::Anthropic => "claude-3-opus".to_string(),
         };
         Ok((provider, model))
     }
