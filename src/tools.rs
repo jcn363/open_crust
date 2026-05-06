@@ -2,6 +2,8 @@ use serde_json::Value;
 use std::fs;
 use std::process::Command;
 
+use crate::desktop::notifications;
+
 pub fn execute_tool(name: &str, arguments: &Value) -> String {
     match name {
         "bash" => {
@@ -31,6 +33,19 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
                     format!("Successfully wrote to {}", path_str)
                 }
                 Err(e) => format!("Error writing file: {}", e),
+            }
+        }
+        "notify" => {
+            let title = arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Notification");
+            let body = arguments.get("body").and_then(|v| v.as_str()).unwrap_or("");
+            let urgency = arguments.get("urgency").and_then(|v| v.as_str()).unwrap_or("normal");
+            
+            let notif = crate::desktop::notifications::Notification::new(title, body)
+                .with_urgency(crate::desktop::notifications::NotificationUrgency::from_str(urgency));
+            
+            match notifications::send_notification(&notif) {
+                Ok(_) => format!("Notification sent: {} - {}", title, body),
+                Err(e) => format!("Failed to send notification: {}", e),
             }
         }
         _ => format!("Unknown tool: {}", name),
@@ -145,30 +160,42 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
-                "name": "lsp_type_definition",
-                "description": "Go to the type definition of a symbol using LSP.",
+                "name": "notify",
+                "description": "Send a desktop notification to the user. Works on Linux with desktop environments like Cinnamon, Gnome, or KDE.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "path": { "type": "string", "description": "File path" },
-                        "line": { "type": "integer", "description": "Line number" },
-                        "character": { "type": "integer", "description": "Character position" }
+                        "title": {
+                            "type": "string",
+                            "description": "Notification title"
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Notification body message"
+                        },
+                        "urgency": {
+                            "type": "string",
+                            "description": "Urgency level: low, normal, or critical",
+                            "enum": ["low", "normal", "critical"]
+                        }
                     },
-                    "required": ["path", "line", "character"]
+                    "required": ["title", "body"]
                 }
             }
         },
         {
             "type": "function",
             "function": {
-                "name": "task",
-                "description": "Spawn a subagent to solve a specific sub-problem.",
+                "name": "lsp_goto_definition",
+                "description": "Jump to the definition of a symbol using LSP.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "prompt": { "type": "string", "description": "The specific instruction for the subagent" }
+                        "path": { "type": "string", "description": "File path" },
+                        "line": { "type": "integer", "description": "Line number (0-indexed)" },
+                        "character": { "type": "integer", "description": "Character position (0-indexed)" }
                     },
-                    "required": ["prompt"]
+                    "required": ["path", "line", "character"]
                 }
             }
         },

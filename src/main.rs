@@ -1,6 +1,7 @@
 #![deny(warnings)]
 mod app;
 mod config;
+mod desktop;
 mod events;
 mod llm;
 mod tools;
@@ -26,6 +27,8 @@ mod telemetry;
 mod security;
 mod tool_executor;
 mod clipboard;
+
+use desktop::detection::get_cinnamon_info;
 
 use app::{App, Mode};
 use clipboard::ClipboardManager;
@@ -81,7 +84,25 @@ enum McpCommands {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
-    let config = config::Config::load();
+    let mut config = config::Config::load();
+
+    // Detect Cinnamon desktop environment and apply theming if available
+    let cinnamon_info = get_cinnamon_info();
+    if cinnamon_info.desktop.is_cinnamon() {
+        // Log desktop detection (silent, for debugging)
+        eprintln!("[Desktop] Detected: {} {}", cinnamon_info.desktop, 
+            cinnamon_info.version.as_deref().unwrap_or(""));
+    }
+
+    // If no custom theme is configured, apply Cinnamon theme
+    if config.theme.is_none() && cinnamon_info.desktop.is_cinnamon() {
+        config.theme = Some(config::ThemeConfig {
+            background: cinnamon_info.theme.background.clone(),
+            foreground: cinnamon_info.theme.foreground.clone(),
+            accent: cinnamon_info.theme.accent.clone(),
+            border: cinnamon_info.theme.border.clone(),
+        });
+    }
 
     // Check for multi-agent mode early (before config is moved)
     if !args.agents.is_empty() {
