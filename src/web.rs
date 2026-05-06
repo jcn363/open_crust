@@ -1,5 +1,6 @@
 use reqwest::Client;
 use std::error::Error;
+use ::html2md;
 
 pub struct WebManager {
     client: Client,
@@ -34,15 +35,7 @@ impl WebManager {
     }
 
     fn html_to_md(&self, html: &str) -> String {
-        // Very basic HTML to Markdown conversion
-        // TODO: use something like 'htmd' or 'html2md'
-        let mut md = html.replace("<p>", "\n\n").replace("</p>", "");
-        md = md.replace("<h1>", "\n# ").replace("</h1>", "\n");
-        md = md.replace("<h2>", "\n## ").replace("</h2>", "\n");
-        md = md.replace("<li>", "\n- ").replace("</li>", "");
-
-        // Strip other tags
-        let re = regex::Regex::new(r"<[^>]*>").unwrap();
-        re.replace_all(&md, "").to_string()
+        // Use html2md crate for proper HTML to Markdown conversion
+        html2md::parse_html(html)
     }
 }
