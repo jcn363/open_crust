@@ -1,35 +1,331 @@
-use std::process::Command;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+use serde::{Deserialize, Serialize};
+use reqwest::Client;
+use crate::config::Config;
 
-pub struct RagManager;
+/// A stored embedding with metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoredEmbedding {
+    pub id: String,
+    pub content: String,
+    pub embedding: Vec<f32>,
+    pub file_path: String,
+    pub line_start: usize,
+    pub line_end: usize,
+}
 
-impl RagManager {
+/// Vector store for semantic search
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct VectorStore {
+    pub embeddings: HashMap<String, StoredEmbedding>,
+}
+
+#[allow(dead_code)]
+impl VectorStore {
     pub fn new() -> Self {
-        Self
-    }
-
-    pub fn semantic_search(&self, query: &str) -> String {
-        // High-quality placeholder for Semantic Search
-        // TODO: this would use embeddings and a vector DB.
-        // For now, we perform a weighted keyword search to simulate semantic retrieval.
-        
-        let output = Command::new("grep")
-            .arg("-rEi")
-            .arg(query)
-            .arg(".")
-            .arg("--exclude-dir=.git")
-            .arg("--exclude-dir=target")
-            .output();
-
-        match output {
-            Ok(out) => {
-                let results = String::from_utf8_lossy(&out.stdout);
-                if results.is_empty() {
-                    format!("No semantic matches found for '{}'.", query)
-                } else {
-                    format!("Semantic search results for '{}':\n{}", query, results.lines().take(10).collect::<Vec<_>>().join("\n"))
-                }
-            }
-            Err(e) => format!("Search Error: {}", e),
+        Self {
+            embeddings: HashMap::new(),
         }
     }
+
+    /// Load vector store from disk
+    pub fn load(config_dir: &Path) -> Self {
+        let path = config_dir.join("vectors.json");
+        if path.exists() {
+            match fs::read_to_string(&path) {
+                Ok(content) => {
+                    serde_json::from_str(&content).unwrap_or_default()
+                }
+                Err(_) => Self::new(),
+            }
+        } else {
+            Self::new()
+        }
+    }
+
+    /// Save vector store to disk
+    pub fn save(&self, config_dir: &Path) {
+        let path = config_dir.join("vectors.json");
+        if let Ok(content) = serde_json::to_string_pretty(self) {
+            let _ = fs::create_dir_all(config_dir);
+            let _ = fs::write(path, content);
+        }
+    }
+
+    /// Add an embedding to the store
+    pub fn add(&mut self, embedding: StoredEmbedding) {
+        self.embeddings.insert(embedding.id.clone(), embedding);
+    }
+
+    /// Search for similar embeddings using cosine similarity
+    pub fn search(&self, query_embedding: &[f32], top_k: usize) -> Vec<(&StoredEmbedding, f32)> {
+        let mut results: Vec<(&StoredEmbedding, f32)> = self.embeddings
+            .values()
+            .map(|emb| {
+                let similarity = cosine_similarity(query_embedding, &emb.embedding);
+                (emb, similarity)
+            })
+            .collect();
+
+        results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        results.into_iter().take(top_k).collect()
+    }
+
+    /// Clear all embeddings
+    pub fn clear(&mut self) {
+        self.embeddings.clear();
+    }
+
+    /// Get statistics
+    pub fn stats(&self) -> (usize, usize) {
+        let num_embeddings = self.embeddings.len();
+        let dim = self.embeddings.values().next().map(|e| e.embedding.len()).unwrap_or(0);
+        (num_embeddings, dim)
+    }
+}
+
+/// Calculate cosine similarity between two vectors
+pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+
+    let mut dot_product = 0.0f32;
+    let mut norm_a = 0.0f32;
+    let mut norm_b = 0.0f32;
+
+    for i in 0..a.len() {
+        dot_product += a[i] * b[i];
+        norm_a += a[i] * a[i];
+        norm_b += b[i] * b[i];
+    }
+
+    let norm = norm_a.sqrt() * norm_b.sqrt();
+    if norm == 0.0 {
+        0.0
+    } else {
+        dot_product / norm
+    }
+}
+
+/// Generate embeddings using Ollama API
+pub async fn generate_embedding(ollama_url: &str, text: &str) -> Result<Vec<f32>, String> {
+    let client = Client::new();
+    let url = format!("{}/api/embeddings", ollama_url.trim_end_matches('/'));
+
+    let payload = serde_json::json!({
+        "model": "nomic-embed-text",  // Default embedding model for Ollama
+        "prompt": text
+    });
+
+    let response = client
+        .post(&url)
+        .json(&payload)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to call Ollama embeddings API: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Ollama API returned error: {}", response.status()));
+    }
+
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Ollama response: {}", e))?;
+
+    let embedding = json
+        .get("embedding")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Invalid response format from Ollama".to_string())?;
+
+    let vec: Vec<f32> = embedding
+        .iter()
+        .filter_map(|v| v.as_f64().map(|f| f as f32))
+        .collect();
+
+    if vec.is_empty() {
+        Err("Empty embedding returned from Ollama".to_string())
+    } else {
+        Ok(vec)
+    }
+}
+
+/// Chunk text into smaller pieces for embedding
+#[allow(dead_code)]
+pub fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
+    let mut chunks = Vec::new();
+    let mut current_chunk = String::new();
+    let mut line_start = 1;
+    let mut current_line = 1;
+
+    for line in text.lines() {
+        if current_chunk.len() + line.len() + 1 > max_chars && !current_chunk.is_empty() {
+            chunks.push((current_chunk.clone(), line_start, current_line));
+            current_chunk.clear();
+            line_start = current_line;
+        }
+        current_chunk.push_str(line);
+        current_chunk.push('\n');
+        current_line += 1;
+    }
+
+    if !current_chunk.is_empty() {
+        chunks.push((current_chunk, line_start, current_line));
+    }
+
+    chunks.into_iter().map(|(text, _, _)| text).collect()
+}
+
+pub struct RagManager {
+    vector_store: VectorStore,
+    #[allow(dead_code)]
+    config_dir: std::path::PathBuf,
+    ollama_url: String,
+}
+
+#[allow(dead_code)]
+impl RagManager {
+    pub fn new(config: &Config) -> Self {
+        let config_dir = dirs::home_dir()
+            .unwrap()
+            .join(".config/open_crust");
+        
+        let ollama_url = config.ollama_url
+            .clone()
+            .unwrap_or_else(|| "http://localhost:11434".to_string());
+
+        let vector_store = VectorStore::load(&config_dir);
+
+        Self {
+            vector_store,
+            config_dir,
+            ollama_url,
+        }
+    }
+
+    /// Index a file by generating embeddings for its chunks
+    pub async fn index_file(&mut self, file_path: &str) -> Result<usize, String> {
+        let content = fs::read_to_string(file_path)
+            .map_err(|e| format!("Failed to read file {}: {}", file_path, e))?;
+
+        let chunks = chunk_text(&content, 512);
+        let mut indexed = 0;
+
+        for (i, chunk) in chunks.iter().enumerate() {
+            match generate_embedding(&self.ollama_url, chunk).await {
+                Ok(embedding) => {
+                    let stored = StoredEmbedding {
+                        id: format!("{}:{}", file_path, i),
+                        content: chunk.clone(),
+                        embedding,
+                        file_path: file_path.to_string(),
+                        line_start: i * 20,  // Approximate line numbers
+                        line_end: (i + 1) * 20,
+                    };
+                    self.vector_store.add(stored);
+                    indexed += 1;
+                }
+                Err(e) => {
+                    eprintln!("Warning: Failed to embed chunk {} of {}: {}", i, file_path, e);
+                }
+            }
+        }
+
+        self.vector_store.save(&self.config_dir);
+        Ok(indexed)
+    }
+
+    /// Index the entire codebase
+    pub async fn index_codebase(&mut self, root: &str) -> Result<(usize, usize), String> {
+        let mut files_indexed = 0;
+        let mut chunks_indexed = 0;
+
+        // Walk the directory, skipping .git and target
+        let walker = walkdir::WalkDir::new(root)
+            .follow_links(false)
+            .into_iter()
+            .filter_entry(|e| {
+                let name = e.file_name().to_str().unwrap_or("");
+                !name.starts_with('.') && name != "target" && name != "node_modules"
+            });
+
+        for entry in walker {
+            let entry = entry.map_err(|e| e.to_string())?;
+            if entry.file_type().is_file() {
+                let path = entry.path().to_string_lossy().to_string();
+                // Only index code files
+                if is_code_file(&path) {
+                    match self.index_file(&path).await {
+                        Ok(chunks) => {
+                            files_indexed += 1;
+                            chunks_indexed += chunks;
+                        }
+                        Err(e) => eprintln!("Warning: Failed to index {}: {}", path, e),
+                    }
+                }
+            }
+        }
+
+        Ok((files_indexed, chunks_indexed))
+    }
+
+    /// Perform semantic search
+    pub async fn semantic_search(&self, query: &str, top_k: usize) -> String {
+        // Generate embedding for the query
+        let query_embedding = match generate_embedding(&self.ollama_url, query).await {
+            Ok(emb) => emb,
+            Err(e) => return format!("Error generating embedding: {}", e),
+        };
+
+        // Search for similar embeddings
+        let results = self.vector_store.search(&query_embedding, top_k);
+
+        if results.is_empty() {
+            format!("No semantic matches found for '{}'.", query)
+        } else {
+            let mut output = format!("Semantic search results for '{}':\n", query);
+            for (emb, similarity) in results {
+                output.push_str(&format!(
+                    "\n[{}] {} (lines {}-{}, similarity: {:.3})\n{}\n",
+                    emb.file_path,
+                    emb.file_path,
+                    emb.line_start,
+                    emb.line_end,
+                    similarity,
+                    emb.content.lines().take(5).collect::<Vec<_>>().join("\n")
+                ));
+            }
+            output
+        }
+    }
+
+    /// Clear all indexed data
+    pub fn clear_index(&mut self) {
+        self.vector_store.clear();
+        self.vector_store.save(&self.config_dir);
+    }
+
+    /// Get index statistics
+    pub fn stats(&self) -> (usize, usize) {
+        self.vector_store.stats()
+    }
+}
+
+/// Check if a file is a code file based on extension
+#[allow(dead_code)]
+fn is_code_file(path: &str) -> bool {
+    let code_extensions = [
+        "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp",
+        "rb", "php", "swift", "kt", "cs", "sh", "bash", "zsh", "toml", "yaml", "yml",
+        "json", "md", "txt",
+    ];
+    
+    Path::new(path)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| code_extensions.contains(&ext))
+        .unwrap_or(false)
 }

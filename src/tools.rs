@@ -533,11 +533,12 @@ pub fn get_tools_schema() -> Value {
             "type": "function",
             "function": {
                 "name": "semantic_search",
-                "description": "Perform a semantic search across the codebase to find relevant snippets.",
+                "description": "Perform a semantic search across the codebase to find relevant snippets using vector embeddings.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": { "type": "string", "description": "The search query or concept to find" }
+                        "query": { "type": "string", "description": "The search query or concept to find" },
+                        "top_k": { "type": "integer", "description": "Number of top results to return (default: 5)" }
                     },
                     "required": ["query"]
                 }
