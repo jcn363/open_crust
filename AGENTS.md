@@ -12,12 +12,36 @@
 - **Observability** (`stats.rs`, `telemetry.rs`): Token tracking, cost estimation, and session telemetry export
 - **Session Management** (`sessions.rs`): Persistent session storage and history
 - **Desktop Integration** (`desktop/mod.rs`, `desktop/detection.rs`, `desktop/notifications.rs`, `desktop/file_picker.rs`): Cinnamon desktop environment detection, system notifications, and native file pickers
-- **Desktop Integration** (`desktop/mod.rs`, `desktop/detection.rs`, `desktop/notifications.rs`, `desktop/file_picker.rs`): Cinnamon desktop environment detection, system notifications, and native file pickers
-- **Utilities** (`git.rs`, `rules.rs`, `formatters.rs`, `web.rs`, `events.rs`, `context.rs`, `acp.rs`): Git integration, rule parsing, auto-formatters, web search, event handling, context management, and ACP stdio interface
+- **Utilities** (`git.rs`, `rules.rs`, `formatters.rs`, `web.rs`, `events.rs`, `context.rs`, `acp.rs`, `json_utils.rs`): Git integration, rule parsing, auto-formatters, web search, event handling, context management, ACP stdio interface, and JSON path utilities
 
 The architecture enforces **strict separation of concerns** — desktop integration modules never access permissions state or call the LLM directly; data flows through clearly defined boundaries.
 
 The architecture enforces **strict separation of concerns**—UI never calls LLM directly; tools never access permissions state directly. Data flows through clearly defined boundaries.
+
+## CLI Commands
+
+OpenCrust provides terminal-native CLI subcommands:
+
+**Desktop Integration:**
+- `opencrust desktop detect` - Detect desktop environment (Cinnamon/MATE/GNOME/Plasma)
+- `opencrust desktop notify "message" --title "title"` - Send system notification
+- `opencrust desktop file-picker [--directory]` - Open native file picker
+
+**Session Management:**
+- `opencrust session list` - List all saved sessions
+- `opencrust session show <id>` - Show a specific session
+- `opencrust session delete <id>` - Delete a session
+- `opencrust session save --name "name"` - Save current session
+
+## Custom Tools & Skills
+
+**Custom Tools:** Executable scripts in `.opencrust/tools/` are auto-discovered. Each script should have a comment header with `name:` and `description:`.
+
+**Built-in Linter Tools:**
+- `clippy-check` - Runs `cargo clippy -- -D warnings`
+- `fmt-check` - Verifies code formatting with `cargo fmt -- --check`
+
+**Skills:** Markdown files in `.opencrust/skills/<skill-name>/SKILL.md` with YAML frontmatter (`name:`, `description:`). Nine built-in skills included: `rust-expert`, `security-auditor`, `git-workflow`, `code-refactorer`, `api-integrator`, `test-generator`, `docs-writer`, `perf-profiler`, `dep-manager`.
 
 ## Build, Test, and Development Commands
 
