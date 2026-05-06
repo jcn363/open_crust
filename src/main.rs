@@ -614,19 +614,64 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                     },
                     Mode::Review => match key.code {
-                        KeyCode::Char('a') | KeyCode::Char('A') => {
-                            app.mode = Mode::Normal;
-                            if let Some(tx) = &app.approval_tx {
-                                let _ = tx.try_send(true);
+                        // Navigation
+                        KeyCode::Up => {
+                            if app.plan_review_index >0 {
+                                app.plan_review_index -= 1;
                             }
-                            app.tabs[0].messages.push(String::from("You: a (Approved Change)"));
                         }
-                        KeyCode::Char('d') | KeyCode::Char('D') => {
-                            app.mode = Mode::Normal;
-                            if let Some(tx) = &app.approval_tx {
-                                let _ = tx.try_send(false);
+                        KeyCode::Down => {
+                            if app.plan_review_index + 1 < app.proposed_changes.len() {
+                                app.plan_review_index += 1;
                             }
-                            app.tabs[0].messages.push(String::from("You: d (Denied Change)"));
+                        }
+                        // Approve current file
+                        KeyCode::Char('a') => {
+                            if let Some(change) = app.proposed_changes.get_mut(app.plan_review_index) {
+                                change.status = crate::app::ChangeStatus::Approved;
+                            }
+                        }
+                        // Deny current file
+                        KeyCode::Char('d') => {
+                            if let Some(change) = app.proposed_changes.get_mut(app.plan_review_index) {
+                                change.status = crate::app::ChangeStatus::Denied;
+                            }
+                        }
+                        // Approve all files (Shift+A)
+                        KeyCode::Char('A') if key.modifiers == crossterm::event::KeyModifiers::SHIFT => {
+                            for change in &mut app.proposed_changes {
+                                change.status = crate::app::ChangeStatus::Approved;
+                            }
+                        }
+                        // Execute approved changes
+                        KeyCode::Enter => {
+                            // Execute approved changes
+                            let approved: Vec<_> = app.proposed_changes.iter()
+                                .filter(|c| c.status == crate::app::ChangeStatus::Approved)
+                                .cloned()
+                                .collect();
+                            
+                            for change in &approved {
+                                // Write approved changes to files
+                                if let Err(e) = std::fs::write(&change.path, &change.proposed) {
+                                    app.tabs[0].messages.push(format!("Error writing {}: {}", change.path, e));
+                                } else {
+                                    app.tabs[0].messages.push(format!("Applied: {}", change.path));
+                                }
+                            }
+                            
+                            // Clear reviewed changes
+                            app.proposed_changes.clear();
+                            app.plan_review_index = 0;
+                            app.mode = Mode::Normal;
+                            app.tabs[0].messages.push(format!("Executed {} approved changes", approved.len()));
+                        }
+                        // Cancel (Esc)
+                        KeyCode::Esc => {
+                            app.proposed_changes.clear();
+                            app.plan_review_index = 0;
+                            app.mode = Mode::Normal;
+                            app.tabs[0].messages.push(String::from("Plan cancelled"));
                         }
                         _ => {}
                     },
