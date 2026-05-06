@@ -132,6 +132,12 @@ open_crust/
 │   ├── permissions.rs # Permission enforcement
 │   ├── web.rs         # Web search integration
 │   └── acp.rs         # ACP stdio interface
+│
+│   ├── desktop/       # Cinnamon desktop integration
+│   │   ├── mod.rs     # Module entry point
+│   │   ├── detection.rs    # Desktop environment detection
+│   │   ├── notifications.rs # System notifications
+│   │   └── file_picker.rs  # Native file pickers
 ```
 
 ## 🔌 MCP Ecosystem Integration
