@@ -1,0 +1,6 @@
+# name: clippy-check
+# description: Run cargo clippy linter and return warnings/errors
+# args: path
+
+cd "${1:-.}" || exit 1
+cargo clippy --message-format=short 2>&1 | grep -E "(warning|error):" || echo "No clippy issues found"
