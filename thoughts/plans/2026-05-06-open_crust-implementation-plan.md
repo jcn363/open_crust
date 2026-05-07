@@ -4,6 +4,8 @@ This document provides detailed implementation plans for all priority features i
 
 > **Last Updated**: 2026-05-07
 > **Status**: Actively maintained - reflects current codebase state
+>
+> **Note**: Background Agents feature implemented on 2026-05-07
 
 ## Executive Summary
 
@@ -43,15 +45,12 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | **Context Budget Display** | ✅ Implemented | **Status bar shows tokens, budget, percentage, cost** |
 | **Model Context Display** | ✅ Implemented | **Status bar shows model name and context limit** |
 | **Plan Mode + Diff Preview** | ✅ Implemented | **File list, status indicators, approve/deny workflow** |
+| **Background Agents** | ✅ **Implemented** | **Async task spawning, Tasks tab display, Ctrl+T keybinding** |
 
 ### Impact-Ordered Priority (Not Yet Implemented)
 
 | Impact | Feature | Addresses Pain Point | Hours |
-|--------|--------|-----------------|-------|-------|
-| **Critical** | Plan Mode + Diff Preview | Tool hallucination/corruption | 12 |
-| **Critical** | Context Budget Display | "Where am I?" confusion | 3 |
-| **High** | Model Context Display | "Which model?" confusion | 2 |
-| **High** | Background Agents | Rate limits, stream interrupts | 8 |
+|--------|---------|---------------------|-------|-------|
 | **High** | Auto-Context Summarization | Context loss | 4 |
 | **Medium** | Input Prediction | Typing effort | 5 |
 | **Medium** | Vim Mode | Power user workflows | 5 |
@@ -59,6 +58,12 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | **Lower** | Enhanced Skills | Skill discovery | 4 |
 | **Lower** | MCP Server Mode | Integration | 6 |
 | **Lower** | Headless / Scriptable | CI/CD only | 3 |
+
+### Completed Features (This Session)
+
+| Feature | Completed On | Notes |
+|---------|----------------|-------|
+| Background Agents | 2026-05-07 | Async task spawning, Tasks tab display, Ctrl+T keybinding |
 
 ---
 
