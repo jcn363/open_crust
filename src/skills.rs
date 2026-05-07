@@ -21,11 +21,7 @@ pub struct Skill {
 
 impl Skill {
     pub fn avg_latency_ms(&self) -> u64 {
-        if self.usage_count > 0 {
-            self.total_latency_ms / self.usage_count
-        } else {
-            0
-        }
+        self.total_latency_ms.checked_div(self.usage_count).unwrap_or(0)
     }
 }
 

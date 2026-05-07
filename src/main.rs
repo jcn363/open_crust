@@ -462,14 +462,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             SkillsCommands::Activate { name } => {
-                if skills.activate_skill(&name) {
+                if skills.activate_skill(name) {
                     println!("Skill '{}' activated.", name);
                 } else {
                     eprintln!("Skill '{}' not found.", name);
                 }
             }
             SkillsCommands::Deactivate { name } => {
-                if skills.deactivate_skill(&name) {
+                if skills.deactivate_skill(name) {
                     println!("Skill '{}' deactivated.", name);
                 } else {
                     eprintln!("Skill '{}' not found.", name);
@@ -922,14 +922,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                   // Update skill_manager (clone before moving into async block)
                                   let skill_name = name.clone();
                                   let sm = skill_manager.clone();
-                                  tokio::spawn(async move {
-                                      let mut skills = sm.lock().await;
-                                      if new_active {
-                                          let _ = skills.activate_skill(&skill_name);
-                                      } else {
-                                          let _ = skills.deactivate_skill(&skill_name);
-                                      }
-                                  });
+                                    tokio::spawn(async move {
+                                        let mut skills = sm.lock().await;
+                                        if new_active {
+                                            let _ = skills.activate_skill(skill_name.as_str());
+                                        } else {
+                                            let _ = skills.deactivate_skill(skill_name.as_str());
+                                        }
+                                    });
                                   
                                   let status = if new_active { "activated" } else { "deactivated" };
                                   app.tabs[0].messages.push(format!("System: Skill '{}' {}", name, status));
