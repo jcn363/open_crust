@@ -281,6 +281,41 @@ opencrust session delete <session-id>
 opencrust session save --name "my-session"
 ```
 
+### MCP Server Mode (JSON-RPC stdio)
+
+```bash
+# Start MCP server on stdio (for tool integration)
+opencrust serve --stdio
+```
+
+### Headless Mode (one‑shot prompt)
+
+```bash
+# Prompt via command line
+opencrust -p "Explain the Rust ownership model"
+
+# Prompt from a file
+opencrust -f prompt.txt
+
+# Override config values (project dir, provider, model)
+opencrust -p "Summarize this repo" --project /path/to/project --provider ollama --model llama3
+```
+
+
+```bash
+# List all saved sessions
+opencrust session list
+
+# Show a specific session
+opencrust session show <session-id>
+
+# Delete a session
+opencrust session delete <session-id>
+
+# Save current session
+opencrust session save --name "my-session"
+```
+
 ---
 
 ## 📚 Documentation
