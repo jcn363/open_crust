@@ -137,6 +137,12 @@ enum SessionCommands {
         #[arg(short, long)]
         messages: String,
     },
+    /// Fork a session to experiment with different approaches
+    Fork {
+        id: String,
+        #[arg(short, long)]
+        name: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -407,6 +413,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 match session_manager.save_session(id, &msgs) {
                     Ok(_) => println!("Session '{}' saved ({} messages).", id, msgs.len()),
                     Err(e) => eprintln!("Error: {}", e),
+                }
+            }
+            SessionCommands::Fork { id, name } => {
+                match session_manager.fork_session(id, name.as_deref()) {
+                    Ok(new_session) => {
+                        println!("Forked session '{}' → '{}'", id, new_session.id);
+                        println!("Timestamp: {}", new_session.timestamp);
+                        println!("Messages copied: {}", new_session.messages.len());
+                    }
+                    Err(e) => {
+                        eprintln!("Error forking session: {}", e);
+                        std::process::exit(1);
+                    }
                 }
             }
         }

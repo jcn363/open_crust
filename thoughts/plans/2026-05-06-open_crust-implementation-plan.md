@@ -52,7 +52,7 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 
 | Impact | Feature | Addresses Pain Point | Hours |
 |--------|---------|---------------------|-------|-------|
-| **Medium** | Input Prediction | Typing effort | 5 |
+| **Medium** | Input Prediction (Completed) | Typing effort | 5 |
 | **Medium** | Vim Mode | Power user workflows | 5 |
 | **Medium** | Session Forking | Experiment with approaches | 5 |
 | **Lower** | Enhanced Skills | Skill discovery | 4 |
@@ -65,6 +65,7 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 |---------|----------------|-------|
 | Background Agents | 2026-05-07 | Async task spawning, Tasks tab display, Ctrl+T keybinding |
 | Auto-Context Summarization | 2026-05-07 | LLM-based summarization at 80% context threshold, config threshold support |
+| Input Prediction | 2026-05-07 | Ghost text with Tab accept, Escape dismiss, 300ms debounce, dimmed rendering |
 
 ---
 
