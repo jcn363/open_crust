@@ -172,6 +172,7 @@ impl SkillManager {
     }
 
     /// Record skill usage for statistics
+    #[allow(dead_code)]
     pub fn record_usage(&mut self, name: &str, latency_ms: u64) {
         if let Some(skill) = self.skills.get_mut(name) {
             skill.usage_count += 1;
@@ -185,6 +186,7 @@ impl SkillManager {
     }
 
     /// Get mutable reference to a specific skill
+    #[allow(dead_code)]
     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
         self.skills.get_mut(name)
     }

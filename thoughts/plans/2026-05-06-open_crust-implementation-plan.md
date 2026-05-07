@@ -31,7 +31,7 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | Desktop Integration | ✅ Implemented | notifications, file picker, detection |
 | CLI Commands | ✅ Implemented | desktop, session, mcp subcommands |
 | MCP & LSP Support | ✅ Implemented | Full JSON-RPC support |
-| Skills System | ✅ Implemented | 9 built-in skills |
+| Skills System | ✅ Implemented | 9 built-in skills, active/inactive toggle, SkillBrowser UI (Ctrl+Shift+K), CLI subcommands |
 | Web Intelligence | ✅ Implemented | Brave search integration |
 | Semantic Search | ✅ Implemented | Local RAG |
 | Task Planner | ✅ Implemented | Multi-step plans |
