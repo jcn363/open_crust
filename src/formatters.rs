@@ -1,9 +1,9 @@
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 pub fn format_file(path: &Path) {
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    
+
     match extension {
         "rs" => {
             let _ = Command::new("rustfmt")

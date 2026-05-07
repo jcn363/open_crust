@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UsageStats {
@@ -20,7 +20,7 @@ impl UsageStats {
     pub fn add_usage(&mut self, model: &str, input: u64, output: u64) {
         self.input_tokens += input;
         self.output_tokens += output;
-        
+
         // Very rough cost calculation (placeholder prices per 1M tokens)
         let (in_price, out_price) = match model {
             m if m.contains("gpt-4o") => (5.0, 15.0),

@@ -55,17 +55,42 @@ impl FileFilter {
 
     /// Common filter: source code
     pub fn source_code() -> Self {
-        Self::new("Source Code", vec!["*.rs".to_string(), "*.py".to_string(), "*.js".to_string(), "*.ts".to_string(), "*.go".to_string()])
+        Self::new(
+            "Source Code",
+            vec![
+                "*.rs".to_string(),
+                "*.py".to_string(),
+                "*.js".to_string(),
+                "*.ts".to_string(),
+                "*.go".to_string(),
+            ],
+        )
     }
 
     /// Common filter: text files
     pub fn text() -> Self {
-        Self::new("Text Files", vec!["*.txt".to_string(), "*.md".to_string(), "*.json".to_string()])
+        Self::new(
+            "Text Files",
+            vec![
+                "*.txt".to_string(),
+                "*.md".to_string(),
+                "*.json".to_string(),
+            ],
+        )
     }
 
     /// Common filter: images
     pub fn images() -> Self {
-        Self::new("Images", vec!["*.png".to_string(), "*.jpg".to_string(), "*.jpeg".to_string(), "*.gif".to_string(), "*.svg".to_string()])
+        Self::new(
+            "Images",
+            vec![
+                "*.png".to_string(),
+                "*.jpg".to_string(),
+                "*.jpeg".to_string(),
+                "*.gif".to_string(),
+                "*.svg".to_string(),
+            ],
+        )
     }
 }
 
@@ -123,21 +148,39 @@ impl FilePickerBackend {
 /// Detect available file picker backends
 pub fn detect_file_picker_backend() -> FilePickerBackend {
     // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
-    let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok() ||
-        std::env::var("XDG_SESSION_TYPE").map(|v| v == "wayland").unwrap_or(false);
+    let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
+        || std::env::var("XDG_SESSION_TYPE")
+            .map(|v| v == "wayland")
+            .unwrap_or(false);
 
     // Check for Nemo first (Cinnamon native) - but only on X11
-    if !is_wayland && Command::new("which").arg("nemo").output().map(|o| o.status.success()).unwrap_or(false) {
+    if !is_wayland
+        && Command::new("which")
+            .arg("nemo")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    {
         return FilePickerBackend::Nemo;
     }
 
     // Check for Zenity (works on both X11 and Wayland)
-    if Command::new("which").arg("zenity").output().map(|o| o.status.success()).unwrap_or(false) {
+    if Command::new("which")
+        .arg("zenity")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+    {
         return FilePickerBackend::Zenity;
     }
 
     // Check for KDialog (works on both X11 and Wayland)
-    if Command::new("which").arg("kdialog").output().map(|o| o.status.success()).unwrap_or(false) {
+    if Command::new("which")
+        .arg("kdialog")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+    {
         return FilePickerBackend::KDialog;
     }
 
@@ -150,16 +193,11 @@ pub fn is_file_picker_available() -> bool {
 }
 
 /// Get the Nemo file picker dialog via DBus
-pub fn nemo_file_picker(
-    mode: FilePickerMode,
-    options: &FilePickerOptions,
-) -> FilePickerResult {
+pub fn nemo_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     // Use python script for Nemo DBus - most reliable method
     let script = build_nemo_script(mode, options);
 
-    let output = Command::new("python3")
-        .args(["-c", &script])
-        .output();
+    let output = Command::new("python3").args(["-c", &script]).output();
 
     match output {
         Ok(output) => {
@@ -203,18 +241,30 @@ fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> Strin
         FilePickerMode::Directory => "directory",
     };
 
-    let title = options.title.clone().unwrap_or_else(|| "Select File".to_string());
-    let dir = options.initial_dir.as_ref()
+    let title = options
+        .title
+        .clone()
+        .unwrap_or_else(|| "Select File".to_string());
+    let dir = options
+        .initial_dir
+        .as_ref()
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_else(|| ".".to_string());
 
     // Build filter string for Nemo
-    let filters: Vec<String> = options.filters.iter()
+    let filters: Vec<String> = options
+        .filters
+        .iter()
         .map(|f| format!("{}|{}", f.name, f.patterns.join(" ")))
         .collect();
-    let filter_str = if filters.is_empty() { "All Files|*".to_string() } else { filters.join("|") };
+    let filter_str = if filters.is_empty() {
+        "All Files|*".to_string()
+    } else {
+        filters.join("|")
+    };
 
-    format!(r#"
+    format!(
+        r#"
 import sys
 import os
 import subprocess
@@ -246,14 +296,13 @@ try:
 except Exception as e:
     print(str(e), file=sys.stderr)
     sys.exit(1)
-"#, title, dir, filter_str)
+"#,
+        title, dir, filter_str
+    )
 }
 
 /// Open file picker using Zenity
-pub fn zenity_file_picker(
-    mode: FilePickerMode,
-    options: &FilePickerOptions,
-) -> FilePickerResult {
+pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let mut args = vec!["--file-selection".to_string()];
 
     match mode {
@@ -270,9 +319,10 @@ pub fn zenity_file_picker(
 
     // Add initial directory
     if let Some(ref dir) = options.initial_dir
-        && dir.exists() {
-            args.push(format!( "--filename={}", dir.to_string_lossy()));
-        }
+        && dir.exists()
+    {
+        args.push(format!("--filename={}", dir.to_string_lossy()));
+    }
 
     // Add filters
     for filter in &options.filters {
@@ -312,10 +362,7 @@ pub fn zenity_file_picker(
 }
 
 /// Open file picker using KDialog (KDE fallback)
-pub fn kdialog_file_picker(
-    mode: FilePickerMode,
-    options: &FilePickerOptions,
-) -> FilePickerResult {
+pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let (dialog_type, _extra) = match mode {
         FilePickerMode::OpenFile => ("--getopenfilename", ""),
         FilePickerMode::OpenMultiple => ("--getopenfilename", "--multiple"),
@@ -344,7 +391,11 @@ pub fn kdialog_file_picker(
         .collect::<Vec<_>>()
         .join(" *.");
     if !filters_str.is_empty() {
-        args.push(format!("*{}*{}", if filters_str.contains('.') { "" } else { "." }, filters_str));
+        args.push(format!(
+            "*{}*{}",
+            if filters_str.contains('.') { "" } else { "." },
+            filters_str
+        ));
     }
 
     // Title
@@ -442,9 +493,11 @@ pub fn save_file(initial_dir: Option<PathBuf>, default_name: &str) -> Option<Pat
         ..Default::default()
     };
     if let Some(ref mut dir) = options.initial_dir
-        && dir.exists() && !dir.is_file() {
-            dir.push(default_name);
-        }
+        && dir.exists()
+        && !dir.is_file()
+    {
+        dir.push(default_name);
+    }
     let result = file_picker(FilePickerMode::Save, &options);
     if result.cancelled {
         None
@@ -497,7 +550,10 @@ mod tests {
         // Just verify detection works - may find Nemo, Zenity, KDialog, or None
         assert!(matches!(
             backend,
-            FilePickerBackend::Nemo | FilePickerBackend::Zenity | FilePickerBackend::KDialog | FilePickerBackend::None
+            FilePickerBackend::Nemo
+                | FilePickerBackend::Zenity
+                | FilePickerBackend::KDialog
+                | FilePickerBackend::None
         ));
     }
 

@@ -7,16 +7,16 @@ pub enum Mode {
     Insert,
     Review,
     Servers,
-    SkillBrowser,  // Ctrl+Shift+K skill browser
-    CommandPalette,  // Ctrl+K command palette
+    SkillBrowser,   // Ctrl+Shift+K skill browser
+    CommandPalette, // Ctrl+K command palette
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum PlanMode {
-    Disabled,    // Normal execution
-    Planning,    // LLM is planning
-    Reviewing,   // User reviewing diffs
+    Disabled,  // Normal execution
+    Planning,  // LLM is planning
+    Reviewing, // User reviewing diffs
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -107,7 +107,7 @@ impl App {
             false
         }
     }
-    
+
     /// Clear ghost text and reset prediction state
     pub fn clear_ghost_text(&mut self) {
         self.ghost_text = None;
@@ -116,47 +116,119 @@ impl App {
 }
 
 impl App {
-    pub fn new(config: Config, prompt_tx: mpsc::Sender<String>, approval_tx: mpsc::Sender<bool>, background_task_tx: tokio::sync::mpsc::Sender<String>, llm_client: crate::llm::LlmClient) -> Self {
+    pub fn new(
+        config: Config,
+        prompt_tx: mpsc::Sender<String>,
+        approval_tx: mpsc::Sender<bool>,
+        background_task_tx: tokio::sync::mpsc::Sender<String>,
+        llm_client: crate::llm::LlmClient,
+    ) -> Self {
         let chat_tab = Tab {
             name: "Chat".to_string(),
-            messages: vec![String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.")],
+            messages: vec![String::from(
+                "Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
+            )],
         };
         let tasks_tab = Tab {
             name: "Tasks".to_string(),
             messages: vec![String::from("No tasks yet.")],
         };
 
-          let mut app = Self {
-              config,
-              mode: Mode::Normal,
-              input: String::new(),
-              tabs: vec![chat_tab, tasks_tab],
-              active_tab: 0,
-              should_quit: false,
-              prompt_tx: Some(prompt_tx),
-              approval_tx: Some(approval_tx),
-              waiting_for_approval: false,
-              proposed_changes: Vec::new(),
-              llm_client,
-              mcp_input: String::new(),
-              show_sidebar: true,
-              sidebar_items: Vec::new(),
-              history: Vec::new(),
-              history_index: None,
-              // Input Prediction fields
-              ghost_text: None,
-              input_prediction_enabled: true,
-              last_input_time: None,
+        let mut app = Self {
+            config,
+            mode: Mode::Normal,
+            input: String::new(),
+            tabs: vec![chat_tab, tasks_tab],
+            active_tab: 0,
+            should_quit: false,
+            prompt_tx: Some(prompt_tx),
+            approval_tx: Some(approval_tx),
+            waiting_for_approval: false,
+            proposed_changes: Vec::new(),
+            llm_client,
+            mcp_input: String::new(),
+            show_sidebar: true,
+            sidebar_items: Vec::new(),
+            history: Vec::new(),
+            history_index: None,
+            // Input Prediction fields
+            ghost_text: None,
+            input_prediction_enabled: true,
+            last_input_time: None,
             // MCP Browser initialization
             mcp_browser_items: vec![
-                ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
-                ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
-                ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
-                ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
-                ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
-                ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
-                ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
-                ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
+                (
+                    "github".to_string(),
+                    "GitHub integration".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-github".to_string(),
+                    ],
+                ),
+                (
+                    "slack".to_string(),
+                    "Slack integration".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-slack".to_string(),
+                    ],
+                ),
+                (
+                    "filesystem".to_string(),
+                    "File system access".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-filesystem".to_string(),
+                    ],
+                ),
+                (
+                    "postgres".to_string(),
+                    "PostgreSQL database".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-postgres".to_string(),
+                    ],
+                ),
+                (
+                    "google-drive".to_string(),
+                    "Google Drive".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-google-drive".to_string(),
+                    ],
+                ),
+                (
+                    "git".to_string(),
+                    "Git repository tools".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-git".to_string(),
+                    ],
+                ),
+                (
+                    "sqlite".to_string(),
+                    "SQLite database".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-sqlite".to_string(),
+                    ],
+                ),
+                (
+                    "brave-search".to_string(),
+                    "Brave search API".to_string(),
+                    vec![
+                        "npx".to_string(),
+                        "-y".to_string(),
+                        "@modelcontextprotocol/server-brave-search".to_string(),
+                    ],
+                ),
             ],
             mcp_browser_selected: 0,
             mcp_browser_scroll: 0,
@@ -164,16 +236,16 @@ impl App {
             skill_browser_items: Vec::new(),
             skill_browser_selected: 0,
             skill_browser_scroll: 0,
-              // Plan review index (for diff viewer)
-              plan_review_index: 0,
-              // Plan mode state
-              plan_mode: PlanMode::Disabled,
-              // Command palette initialization
-              command_palette_selected: 0,
-              // Background tasks initialization
-              background_tasks: Vec::new(),
-              background_task_tx: Some(background_task_tx),
-          };
+            // Plan review index (for diff viewer)
+            plan_review_index: 0,
+            // Plan mode state
+            plan_mode: PlanMode::Disabled,
+            // Command palette initialization
+            command_palette_selected: 0,
+            // Background tasks initialization
+            background_tasks: Vec::new(),
+            background_task_tx: Some(background_task_tx),
+        };
         app.load_history();
         app
     }
@@ -182,7 +254,7 @@ impl App {
     pub fn spawn_background_task(&mut self, prompt: String) {
         let task_id = uuid::Uuid::new_v4().to_string();
         let now = chrono::Utc::now();
-        
+
         let task = BackgroundTask {
             id: task_id.clone(),
             prompt: prompt.clone(),
@@ -190,13 +262,13 @@ impl App {
             result: None,
             started_at: now,
         };
-        
+
         self.background_tasks.push(task);
-        
+
         if let Some(tx) = &self.background_task_tx {
             let tx_clone = tx.clone();
             let llm = self.llm_client.clone();
-            
+
             tokio::spawn(async move {
                 let result = llm.query_simple(&prompt).await;
                 let response = match result {
@@ -219,7 +291,9 @@ impl App {
     pub fn submit_message(&mut self) {
         if !self.input.is_empty() {
             let user_msg = self.input.clone();
-            self.tabs[self.active_tab].messages.push(format!("You: {}", user_msg));
+            self.tabs[self.active_tab]
+                .messages
+                .push(format!("You: {}", user_msg));
 
             // Save to history
             if self.history.last().map(|s| s.as_str()) != Some(&user_msg) {
@@ -237,7 +311,9 @@ impl App {
     }
 
     pub fn history_up(&mut self) {
-        if self.history.is_empty() { return; }
+        if self.history.is_empty() {
+            return;
+        }
         let idx = match self.history_index {
             None => self.history.len() - 1,
             Some(0) => 0,
@@ -269,19 +345,21 @@ impl App {
 
     fn load_history(&mut self) {
         let path = Self::history_path();
-        if path.exists() && let Ok(content) = std::fs::read_to_string(path) {
+        if path.exists()
+            && let Ok(content) = std::fs::read_to_string(path)
+        {
             self.history = content.lines().map(|l| l.to_string()).collect();
         }
     }
 
-     pub fn save_history(&self) {
-         let path = Self::history_path();
-         if let Some(parent) = path.parent() {
-             let _ = std::fs::create_dir_all(parent);
-         }
-         let content = self.history.join("\n");
-         let _ = std::fs::write(path, content);
-     }
+    pub fn save_history(&self) {
+        let path = Self::history_path();
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let content = self.history.join("\n");
+        let _ = std::fs::write(path, content);
+    }
 
     pub fn handle_char(&mut self, c: char) {
         self.input.push(c);
@@ -293,7 +371,8 @@ impl App {
 
     pub fn refresh_sidebar(&mut self) {
         if let Ok(entries) = std::fs::read_dir(".") {
-            self.sidebar_items = entries.flatten()
+            self.sidebar_items = entries
+                .flatten()
                 .map(|e| e.file_name().to_string_lossy().to_string())
                 .collect();
             self.sidebar_items.sort();

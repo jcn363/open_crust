@@ -24,9 +24,10 @@ impl PermissionManager {
                             continue;
                         }
                         if let Ok(pattern) = Pattern::new(pattern_str)
-                            && pattern.matches(input) {
-                                result = action.clone();
-                            }
+                            && pattern.matches(input)
+                        {
+                            result = action.clone();
+                        }
                     }
                     return result;
                 }
@@ -50,9 +51,14 @@ impl PermissionManager {
         }
 
         if let Ok(parsed_url) = url::Url::parse(url_str)
-            && let Some(host) = parsed_url.host_str() {
-                return self.config.allowed_domains.iter().any(|domain| host.ends_with(domain));
-            }
+            && let Some(host) = parsed_url.host_str()
+        {
+            return self
+                .config
+                .allowed_domains
+                .iter()
+                .any(|domain| host.ends_with(domain));
+        }
         false
     }
 }

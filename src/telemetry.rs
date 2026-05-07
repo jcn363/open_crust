@@ -26,7 +26,10 @@ impl TelemetryExporter {
             "status": "Session Completed"
         });
 
-        let _ = fs::write("telemetry.json", serde_json::to_string_pretty(&data).unwrap_or_default());
+        let _ = fs::write(
+            "telemetry.json",
+            serde_json::to_string_pretty(&data).unwrap_or_default(),
+        );
         println!("Telemetry exported to telemetry.json");
     }
 }

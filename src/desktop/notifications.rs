@@ -150,19 +150,20 @@ pub fn check_notification_daemon() -> NotificationDaemon {
         .output();
 
     if let Ok(output) = output
-        && output.status.success() {
-            let info = String::from_utf8_lossy(&output.stdout);
-            // Parse response like: string "notify-osd" string "MATE" string "1.0" string "1.0"
-            let parts: Vec<&str> = info.lines().filter(|l| !l.is_empty()).collect();
-            if parts.len() >= 4 {
-                return NotificationDaemon {
-                    available: true,
-                    name: parts[0].trim_matches('"').to_string(),
-                    supports_actions: false,
-                    supports_inline_reply: false,
-                };
-            }
-        };
+        && output.status.success()
+    {
+        let info = String::from_utf8_lossy(&output.stdout);
+        // Parse response like: string "notify-osd" string "MATE" string "1.0" string "1.0"
+        let parts: Vec<&str> = info.lines().filter(|l| !l.is_empty()).collect();
+        if parts.len() >= 4 {
+            return NotificationDaemon {
+                available: true,
+                name: parts[0].trim_matches('"').to_string(),
+                supports_actions: false,
+                supports_inline_reply: false,
+            };
+        }
+    };
 
     // Fallback: check if notify-send exists
     let has_notify_send = Command::new("which")
@@ -237,10 +238,7 @@ pub fn send_notification(notification: &Notification) -> Result<(), String> {
 ///
 /// Uses dbus-send to invoke the Freedesktop Notifications DBus interface.
 /// This enables richer notifications with action buttons and persistence.
-pub fn send_notification_dbus(
-    app_name: &str,
-    notification: &Notification,
-) -> Result<u32, String> {
+pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Result<u32, String> {
     let _urgency: u32 = match notification.options.urgency {
         NotificationUrgency::Low => 0,
         NotificationUrgency::Normal => 1,
@@ -287,9 +285,10 @@ pub fn send_notification_dbus(
                 for line in response.lines() {
                     if line.contains("uint32")
                         && let Some(id_str) = line.split_whitespace().last()
-                            && let Ok(id) = id_str.parse::<u32>() {
-                                return Ok(id);
-                            }
+                        && let Ok(id) = id_str.parse::<u32>()
+                    {
+                        return Ok(id);
+                    }
                 }
                 Ok(0) // Return 0 as placeholder ID
             } else {
@@ -334,12 +333,12 @@ pub fn close_notification(id: u32) -> Result<(), String> {
 /// This provides graceful degradation while maintaining maximum compatibility.
 pub fn send_notification_smart(notification: &Notification) -> Result<(), String> {
     let app_name = "OpenCrust";
-    
+
     // Try DBus first for richer features
     if let Ok(_id) = send_notification_dbus(app_name, notification) {
         return Ok(());
     }
-    
+
     // Fall back to notify-send if DBus fails
     send_notification(notification)
 }

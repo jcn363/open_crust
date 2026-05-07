@@ -56,11 +56,21 @@ pub struct Keybinds {
     // Add more as needed, following the pattern
 }
 
-fn default_leader() -> String { "ctrl+x".to_string() }
-fn default_app_exit() -> String { "ctrl+q".to_string() }
-fn default_input_submit() -> String { "return".to_string() }
-fn default_paste() -> String { "ctrl+v".to_string() }
-fn default_copy() -> String { "ctrl+c".to_string() }
+fn default_leader() -> String {
+    "ctrl+x".to_string()
+}
+fn default_app_exit() -> String {
+    "ctrl+q".to_string()
+}
+fn default_input_submit() -> String {
+    "return".to_string()
+}
+fn default_paste() -> String {
+    "ctrl+v".to_string()
+}
+fn default_copy() -> String {
+    "ctrl+c".to_string()
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TuiConfig {
@@ -90,10 +100,18 @@ impl Default for ThemeConfig {
     }
 }
 
-fn default_color_bg() -> String { "#1e1e1e".to_string() }
-fn default_color_fg() -> String { "#ffffff".to_string() }
-fn default_color_accent() -> String { "#007acc".to_string() }
-fn default_color_border() -> String { "#333333".to_string() }
+fn default_color_bg() -> String {
+    "#1e1e1e".to_string()
+}
+fn default_color_fg() -> String {
+    "#ffffff".to_string()
+}
+fn default_color_accent() -> String {
+    "#007acc".to_string()
+}
+fn default_color_border() -> String {
+    "#333333".to_string()
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -134,7 +152,10 @@ impl Default for Keybinds {
 
 fn default_permissions() -> std::collections::HashMap<String, PermissionRule> {
     let mut map = std::collections::HashMap::new();
-    map.insert("*".to_string(), PermissionRule::Action(PermissionAction::Ask));
+    map.insert(
+        "*".to_string(),
+        PermissionRule::Action(PermissionAction::Ask),
+    );
     map
 }
 
@@ -166,7 +187,7 @@ impl Config {
     pub fn load() -> Self {
         let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
         let config_path = config_dir.join("config.json");
-        
+
         if config_path.exists() {
             let content = fs::read_to_string(config_path).unwrap_or_default();
             match serde_json::from_str(&content) {
@@ -203,8 +224,11 @@ impl Config {
                 }
             }
             ProviderType::OpenRouter => {
-                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty() {
-                    eprintln!("Warning: OpenRouter provider selected but openrouter_key is not set");
+                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty()
+                {
+                    eprintln!(
+                        "Warning: OpenRouter provider selected but openrouter_key is not set"
+                    );
                 }
             }
             ProviderType::OpenAI => {
@@ -213,18 +237,25 @@ impl Config {
                 }
             }
             ProviderType::Gemini => {
-                if self.gemini_api_key.is_none() || self.gemini_api_key.as_ref().unwrap().is_empty() {
+                if self.gemini_api_key.is_none() || self.gemini_api_key.as_ref().unwrap().is_empty()
+                {
                     eprintln!("Warning: Gemini provider selected but gemini_api_key is not set");
                 }
             }
             ProviderType::Mistral => {
-                if self.mistral_api_key.is_none() || self.mistral_api_key.as_ref().unwrap().is_empty() {
+                if self.mistral_api_key.is_none()
+                    || self.mistral_api_key.as_ref().unwrap().is_empty()
+                {
                     eprintln!("Warning: Mistral provider selected but mistral_api_key is not set");
                 }
             }
             ProviderType::Anthropic => {
-                if self.anthropic_api_key.is_none() || self.anthropic_api_key.as_ref().unwrap().is_empty() {
-                    eprintln!("Warning: Anthropic provider selected but anthropic_api_key is not set");
+                if self.anthropic_api_key.is_none()
+                    || self.anthropic_api_key.as_ref().unwrap().is_empty()
+                {
+                    eprintln!(
+                        "Warning: Anthropic provider selected but anthropic_api_key is not set"
+                    );
                 }
             }
         }
@@ -247,7 +278,10 @@ impl Config {
                 eprintln!("Warning: LSP server '{}' has empty command", name);
             }
             if lsp.extensions.is_empty() {
-                eprintln!("Warning: LSP server '{}' has no file extensions specified", name);
+                eprintln!(
+                    "Warning: LSP server '{}' has no file extensions specified",
+                    name
+                );
             }
         }
 
@@ -267,18 +301,23 @@ impl Config {
         if let Some(budget) = self.context_budget {
             return budget;
         }
-        
+
         // Default limits based on provider and model
         match self.provider {
             ProviderType::Anthropic => {
-                if self.model.contains("opus") { 200_000 }
-                else if self.model.contains("sonnet") { 200_000 }
-                else { 100_000 }
+                if self.model.contains("opus") || self.model.contains("sonnet") {
+                    200_000
+                } else {
+                    100_000
+                }
             }
             ProviderType::OpenAI => 128_000,
             ProviderType::Gemini => {
-                if self.model.contains("gemini-2.5") { 1_000_000 }
-                else { 128_000 }
+                if self.model.contains("gemini-2.5") {
+                    1_000_000
+                } else {
+                    128_000
+                }
             }
             ProviderType::Ollama => 8_000, // configurable, but default is small
             ProviderType::OpenRouter => 128_000, // depends on the model routed
@@ -295,7 +334,10 @@ impl Config {
 /// Basic validation for hex color strings
 fn validate_hex_color(color: &str, field_name: &str) {
     if !color.starts_with('#') || (color.len() != 7 && color.len() != 4) {
-        eprintln!("Warning: {} should be a hex color (e.g., #1e1e1e), got: {}", field_name, color);
+        eprintln!(
+            "Warning: {} should be a hex color (e.g., #1e1e1e), got: {}",
+            field_name, color
+        );
     }
 }
 
@@ -309,47 +351,86 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
     let mut mcp = std::collections::HashMap::new();
 
     // Context7 - Version-accurate library docs (highest impact)
-    mcp.insert("context7".to_string(), McpConfig {
-        command: vec!["npx".to_string(), "-y".to_string(), "@context7/mcp-server".to_string()],
-        environment: None,
-        enabled: false, // Disabled by default, user must enable
-    });
+    mcp.insert(
+        "context7".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@context7/mcp-server".to_string(),
+            ],
+            environment: None,
+            enabled: false, // Disabled by default, user must enable
+        },
+    );
 
     // GitHub - Repository management
-    mcp.insert("github".to_string(), McpConfig {
-        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()],
-        environment: Some(std::collections::HashMap::from([
-            ("GITHUB_TOKEN".to_string(), "your-github-token".to_string()),
-        ])),
-        enabled: false,
-    });
+    mcp.insert(
+        "github".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-github".to_string(),
+            ],
+            environment: Some(std::collections::HashMap::from([(
+                "GITHUB_TOKEN".to_string(),
+                "your-github-token".to_string(),
+            )])),
+            enabled: false,
+        },
+    );
 
     // Brave Search - Web research
-    mcp.insert("brave-search".to_string(), McpConfig {
-        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()],
-        environment: Some(std::collections::HashMap::from([
-            ("BRAVE_API_KEY".to_string(), "your-brave-api-key".to_string()),
-        ])),
-        enabled: false,
-    });
+    mcp.insert(
+        "brave-search".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-brave-search".to_string(),
+            ],
+            environment: Some(std::collections::HashMap::from([(
+                "BRAVE_API_KEY".to_string(),
+                "your-brave-api-key".to_string(),
+            )])),
+            enabled: false,
+        },
+    );
 
     // PostgreSQL - Database queries
-    mcp.insert("postgres".to_string(), McpConfig {
-        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()],
-        environment: Some(std::collections::HashMap::from([
-            ("DATABASE_URL".to_string(), "postgres://user:pass@localhost:5432/db".to_string()),
-        ])),
-        enabled: false,
-    });
+    mcp.insert(
+        "postgres".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-postgres".to_string(),
+            ],
+            environment: Some(std::collections::HashMap::from([(
+                "DATABASE_URL".to_string(),
+                "postgres://user:pass@localhost:5432/db".to_string(),
+            )])),
+            enabled: false,
+        },
+    );
 
     // Filesystem - Enhanced file operations
-    mcp.insert("filesystem".to_string(), McpConfig {
-        command: vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()],
-        environment: Some(std::collections::HashMap::from([
-            ("ALLOWED_DIRS".to_string(), "/home/user/projects".to_string()),
-        ])),
-        enabled: false,
-    });
+    mcp.insert(
+        "filesystem".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-filesystem".to_string(),
+            ],
+            environment: Some(std::collections::HashMap::from([(
+                "ALLOWED_DIRS".to_string(),
+                "/home/user/projects".to_string(),
+            )])),
+            enabled: false,
+        },
+    );
 
     mcp
 }

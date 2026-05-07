@@ -1,6 +1,6 @@
+use ::html2md;
 use reqwest::Client;
 use std::error::Error;
-use ::html2md;
 
 pub struct WebManager {
     client: Client,

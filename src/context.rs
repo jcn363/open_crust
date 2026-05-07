@@ -1,5 +1,5 @@
-use std::fs;
 use crate::security::validate_path;
+use std::fs;
 
 pub fn inject_file_context(prompt: &str) -> String {
     let mut enriched_prompt = String::from(prompt);
@@ -9,7 +9,7 @@ pub fn inject_file_context(prompt: &str) -> String {
         if word.starts_with('@') && word.len() > 1 {
             let path = &word[1..];
             let path = path.trim_end_matches(&[',', '.', ';', ':', '?', '!'][..]);
-            
+
             // Validate the path before adding
             match validate_path(path) {
                 Ok(valid_path) => {
@@ -29,7 +29,10 @@ pub fn inject_file_context(prompt: &str) -> String {
         enriched_prompt.push_str("\n\n---\nFile Contexts:\n");
         for path in files_to_inject {
             if let Ok(content) = fs::read_to_string(&path) {
-                enriched_prompt.push_str(&format!("\n<file path=\"{}\">\n{}\n</file>\n", path, content));
+                enriched_prompt.push_str(&format!(
+                    "\n<file path=\"{}\">\n{}\n</file>\n",
+                    path, content
+                ));
             }
         }
     }

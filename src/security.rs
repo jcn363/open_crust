@@ -3,8 +3,8 @@
 //! This module provides path validation, command sanitization, and other
 //! security-related functions to prevent common vulnerabilities.
 
-use std::path::{Path, PathBuf};
 use std::env;
+use std::path::{Path, PathBuf};
 
 /// Errors that can occur during security validation
 #[derive(Debug)]
@@ -46,20 +46,19 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
     // Check for path traversal patterns
     if path_str.contains("..") {
         // Allow .. if it's part of a legitimate relative path that resolves safely
-        let canonical = std::fs::canonicalize(path).map_err(|_| {
-            SecurityError::PathTraversal(path_str.to_string())
-        })?;
-        
+        let canonical = std::fs::canonicalize(path)
+            .map_err(|_| SecurityError::PathTraversal(path_str.to_string()))?;
+
         // Get the current directory as base
         let base = env::current_dir().map_err(|_| {
             SecurityError::UnsafePath("Cannot determine current directory".to_string())
         })?;
-        
+
         // Ensure the canonical path starts with the base directory
         if !canonical.starts_with(&base) {
             return Err(SecurityError::PathTraversal(path_str.to_string()));
         }
-        
+
         return Ok(canonical);
     }
 
@@ -69,7 +68,7 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
             let base = env::current_dir().map_err(|_| {
                 SecurityError::UnsafePath("Cannot determine current directory".to_string())
             })?;
-            
+
             if !canonical.starts_with(&base) {
                 return Err(SecurityError::AccessDenied(path_str.to_string()));
             }
@@ -95,20 +94,11 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
 /// more sophisticated command validation.
 pub fn validate_command(command: &str) -> Result<(), SecurityError> {
     let dangerous_patterns = [
-        "rm -rf",
-        "mkfs",
-        "dd if=",
-        "> /dev/",
-        "| sh",
-        "| bash",
-        "; sh",
-        "; bash",
-        "`",
-        "$(",
+        "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$(",
     ];
 
     let lower_cmd = command.to_lowercase();
-    
+
     for pattern in dangerous_patterns.iter() {
         if lower_cmd.contains(pattern) {
             return Err(SecurityError::UnsafeCommand(command.to_string()));
@@ -117,7 +107,9 @@ pub fn validate_command(command: &str) -> Result<(), SecurityError> {
 
     // Check for null bytes
     if command.contains('\0') {
-        return Err(SecurityError::UnsafeCommand("Null byte in command".to_string()));
+        return Err(SecurityError::UnsafeCommand(
+            "Null byte in command".to_string(),
+        ));
     }
 
     Ok(())
@@ -170,7 +162,7 @@ mod tests {
         // Create a temp directory and validate paths within it
         let temp_dir = TempDir::new().unwrap();
         let test_path = temp_dir.path().join("test_file.txt");
-        
+
         // Should be safe since it's within the temp dir
         let result = validate_path(&test_path);
         // Note: This might fail if canonicalize doesn't work as expected

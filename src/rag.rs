@@ -1,9 +1,9 @@
+use crate::config::Config;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use serde::{Deserialize, Serialize};
-use reqwest::Client;
-use crate::config::Config;
 
 /// A stored embedding with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,9 +35,7 @@ impl VectorStore {
         let path = config_dir.join("vectors.json");
         if path.exists() {
             match fs::read_to_string(&path) {
-                Ok(content) => {
-                    serde_json::from_str(&content).unwrap_or_default()
-                }
+                Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
                 Err(_) => Self::new(),
             }
         } else {
@@ -61,7 +59,8 @@ impl VectorStore {
 
     /// Search for similar embeddings using cosine similarity
     pub fn search(&self, query_embedding: &[f32], top_k: usize) -> Vec<(&StoredEmbedding, f32)> {
-        let mut results: Vec<(&StoredEmbedding, f32)> = self.embeddings
+        let mut results: Vec<(&StoredEmbedding, f32)> = self
+            .embeddings
             .values()
             .map(|emb| {
                 let similarity = cosine_similarity(query_embedding, &emb.embedding);
@@ -81,7 +80,12 @@ impl VectorStore {
     /// Get statistics
     pub fn stats(&self) -> (usize, usize) {
         let num_embeddings = self.embeddings.len();
-        let dim = self.embeddings.values().next().map(|e| e.embedding.len()).unwrap_or(0);
+        let dim = self
+            .embeddings
+            .values()
+            .next()
+            .map(|e| e.embedding.len())
+            .unwrap_or(0);
         (num_embeddings, dim)
     }
 }
@@ -103,11 +107,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     }
 
     let norm = norm_a.sqrt() * norm_b.sqrt();
-    if norm == 0.0 {
-        0.0
-    } else {
-        dot_product / norm
-    }
+    if norm == 0.0 { 0.0 } else { dot_product / norm }
 }
 
 /// Generate embeddings using Ollama API
@@ -189,11 +189,10 @@ pub struct RagManager {
 #[allow(dead_code)]
 impl RagManager {
     pub fn new(config: &Config) -> Self {
-        let config_dir = dirs::home_dir()
-            .unwrap()
-            .join(".config/open_crust");
-        
-        let ollama_url = config.ollama_url
+        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
+
+        let ollama_url = config
+            .ollama_url
             .clone()
             .unwrap_or_else(|| "http://localhost:11434".to_string());
 
@@ -222,14 +221,17 @@ impl RagManager {
                         content: chunk.clone(),
                         embedding,
                         file_path: file_path.to_string(),
-                        line_start: i * 20,  // Approximate line numbers
+                        line_start: i * 20, // Approximate line numbers
                         line_end: (i + 1) * 20,
                     };
                     self.vector_store.add(stored);
                     indexed += 1;
                 }
                 Err(e) => {
-                    eprintln!("Warning: Failed to embed chunk {} of {}: {}", i, file_path, e);
+                    eprintln!(
+                        "Warning: Failed to embed chunk {} of {}: {}",
+                        i, file_path, e
+                    );
                 }
             }
         }
@@ -318,11 +320,10 @@ impl RagManager {
 #[allow(dead_code)]
 fn is_code_file(path: &str) -> bool {
     let code_extensions = [
-        "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp",
-        "rb", "php", "swift", "kt", "cs", "sh", "bash", "zsh", "toml", "yaml", "yml",
-        "json", "md",
+        "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp", "rb", "php",
+        "swift", "kt", "cs", "sh", "bash", "zsh", "toml", "yaml", "yml", "json", "md",
     ];
-    
+
     Path::new(path)
         .extension()
         .and_then(|ext| ext.to_str())
@@ -339,7 +340,10 @@ mod tests {
         let v1 = vec![1.0, 0.0, 0.0];
         let v2 = vec![1.0, 0.0, 0.0];
         let sim = cosine_similarity(&v1, &v2);
-        assert!((sim - 1.0).abs() < 1e-6, "Identical vectors should have similarity 1.0");
+        assert!(
+            (sim - 1.0).abs() < 1e-6,
+            "Identical vectors should have similarity 1.0"
+        );
     }
 
     #[test]
@@ -347,7 +351,10 @@ mod tests {
         let v1 = vec![1.0, 0.0, 0.0];
         let v2 = vec![0.0, 1.0, 0.0];
         let sim = cosine_similarity(&v1, &v2);
-        assert!(sim.abs() < 1e-6, "Orthogonal vectors should have similarity 0.0");
+        assert!(
+            sim.abs() < 1e-6,
+            "Orthogonal vectors should have similarity 0.0"
+        );
     }
 
     #[test]
@@ -355,7 +362,10 @@ mod tests {
         let v1 = vec![1.0, 0.0, 0.0];
         let v2 = vec![-1.0, 0.0, 0.0];
         let sim = cosine_similarity(&v1, &v2);
-        assert!((sim - (-1.0)).abs() < 1e-6, "Opposite vectors should have similarity -1.0");
+        assert!(
+            (sim - (-1.0)).abs() < 1e-6,
+            "Opposite vectors should have similarity -1.0"
+        );
     }
 
     #[test]
@@ -409,7 +419,7 @@ mod tests {
     #[test]
     fn test_vector_store_add_and_search() {
         let mut store = VectorStore::new();
-        
+
         let embedding = StoredEmbedding {
             id: "test1".to_string(),
             content: "test content".to_string(),
@@ -418,14 +428,17 @@ mod tests {
             line_start: 1,
             line_end: 3,
         };
-        
+
         store.add(embedding);
         assert_eq!(store.embeddings.len(), 1);
-        
+
         let query = vec![1.0, 0.0, 0.0];
         let results = store.search(&query, 5);
         assert!(!results.is_empty(), "Should find similar embedding");
-        assert!((results[0].1 - 1.0).abs() < 1e-6, "Should find exact match with similarity 1.0");
+        assert!(
+            (results[0].1 - 1.0).abs() < 1e-6,
+            "Should find exact match with similarity 1.0"
+        );
     }
 
     #[tokio::test]
@@ -435,13 +448,17 @@ mod tests {
             .args(&["list"])
             .output()
             .map(|o| String::from_utf8_lossy(&o.stdout).contains("nomic-embed-text"))
-            .unwrap_or(false) 
+            .unwrap_or(false)
         {
             let result = generate_embedding("http://localhost:11434", "test").await;
             assert!(result.is_ok(), "Should generate embedding");
             let embedding = result.unwrap();
             assert!(!embedding.is_empty(), "Embedding should not be empty");
-            assert_eq!(embedding.len(), 768, "nomic-embed-text should produce 768-dim embeddings");
+            assert_eq!(
+                embedding.len(),
+                768,
+                "nomic-embed-text should produce 768-dim embeddings"
+            );
         }
     }
 }

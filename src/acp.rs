@@ -1,9 +1,11 @@
-use std::io::{self, BufRead};
-use serde_json::{json, Value};
 use crate::llm::LlmClient;
+use serde_json::{Value, json};
+use std::io::{self, BufRead};
 use tokio::sync::mpsc;
 
-pub async fn run_acp_loop(llm_client: LlmClient) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn run_acp_loop(
+    llm_client: LlmClient,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let stdin = io::stdin();
     let reader = stdin.lock().lines();
 
@@ -17,16 +19,22 @@ pub async fn run_acp_loop(llm_client: LlmClient) -> Result<(), Box<dyn std::erro
             match method {
                 "chat" => {
                     let prompt = params.get("prompt").and_then(|v| v.as_str()).unwrap_or("");
-                    let mut history = params.get("messages").and_then(|v| v.as_array()).cloned().unwrap_or_default();
-                    
+                    let mut history = params
+                        .get("messages")
+                        .and_then(|v| v.as_array())
+                        .cloned()
+                        .unwrap_or_default();
+
                     let (progress_tx, mut _progress_rx) = mpsc::channel(32);
                     let (_approval_tx, mut approval_rx) = mpsc::channel(1);
 
                     // For ACP, we might need a non-interactive mode or auto-approval
                     // But for now, let's just run it.
-                    
+
                     let client = llm_client.clone();
-                    let response = client.send_message(&mut history, prompt, progress_tx, &mut approval_rx).await?;
+                    let response = client
+                        .send_message(&mut history, prompt, progress_tx, &mut approval_rx)
+                        .await?;
 
                     let response_json = json!({
                         "jsonrpc": "2.0",

@@ -202,9 +202,10 @@ pub fn detect_desktop() -> DesktopEnvironment {
 
     // Check for cinnamon-specific processes
     if let Ok(proc_cmdline) = fs::read_to_string("/proc/1/cmdline")
-        && proc_cmdline.to_lowercase().contains("cinnamon") {
-            return DesktopEnvironment::Cinnamon;
-        }
+        && proc_cmdline.to_lowercase().contains("cinnamon")
+    {
+        return DesktopEnvironment::Cinnamon;
+    }
 
     DesktopEnvironment::Unknown
 }
@@ -271,10 +272,7 @@ pub fn detect_cinnamon_theme() -> CinnamonTheme {
         CinnamonTheme::default_light()
     };
 
-    CinnamonTheme {
-        accent,
-        ..theme
-    }
+    CinnamonTheme { accent, ..theme }
 }
 
 /// Detect icon and cursor themes
@@ -374,7 +372,10 @@ mod tests {
     fn test_desktop_detection() {
         let desktop = detect_desktop();
         // Just check it's a valid variant
-        assert!(matches!(desktop, DesktopEnvironment::Cinnamon | DesktopEnvironment::Unknown));
+        assert!(matches!(
+            desktop,
+            DesktopEnvironment::Cinnamon | DesktopEnvironment::Unknown
+        ));
     }
 
     #[test]

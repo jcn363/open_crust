@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,20 +25,25 @@ impl CustomToolManager {
     pub fn discover(&mut self) {
         let paths = vec![
             PathBuf::from(".opencrust/tools"),
-            dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("open_crust/tools"),
+            dirs::config_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("open_crust/tools"),
         ];
 
         for path in paths {
-            if path.exists() && path.is_dir()
-                && let Ok(entries) = fs::read_dir(path) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        if p.is_file()
-                            && let Some(tool) = self.parse_tool(&p) {
-                                self.tools.insert(tool.name.clone(), tool);
-                            }
+            if path.exists()
+                && path.is_dir()
+                && let Ok(entries) = fs::read_dir(path)
+            {
+                for entry in entries.flatten() {
+                    let p = entry.path();
+                    if p.is_file()
+                        && let Some(tool) = self.parse_tool(&p)
+                    {
+                        self.tools.insert(tool.name.clone(), tool);
                     }
                 }
+            }
         }
     }
 
@@ -54,7 +59,8 @@ impl CustomToolManager {
             } else if line.starts_with("# description:") {
                 description = line.trim_start_matches("# description:").trim().to_string();
             } else if line.starts_with("# args:") {
-                args = line.trim_start_matches("# args:")
+                args = line
+                    .trim_start_matches("# args:")
                     .split(',')
                     .map(|s| s.trim().to_string())
                     .collect();
@@ -62,7 +68,9 @@ impl CustomToolManager {
         }
 
         let name = name.or_else(|| {
-            path.file_stem().and_then(|s| s.to_str()).map(|s| s.to_string())
+            path.file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
         })?;
 
         Some(CustomTool {
@@ -74,35 +82,41 @@ impl CustomToolManager {
     }
 
     pub fn get_tools_schema(&self) -> Vec<Value> {
-        self.tools.values().map(|tool| {
-            let mut properties = json!({});
-            let mut required = Vec::new();
+        self.tools
+            .values()
+            .map(|tool| {
+                let mut properties = json!({});
+                let mut required = Vec::new();
 
-            for arg in &tool.args {
-                properties[arg] = json!({
-                    "type": "string"
-                });
-                required.push(arg);
-            }
-
-            json!({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": properties,
-                        "required": required
-                    }
+                for arg in &tool.args {
+                    properties[arg] = json!({
+                        "type": "string"
+                    });
+                    required.push(arg);
                 }
+
+                json!({
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": {
+                            "type": "object",
+                            "properties": properties,
+                            "required": required
+                        }
+                    }
+                })
             })
-        }).collect()
+            .collect()
     }
 
     pub async fn call_tool(&self, name: &str, args: &Value) -> Result<String, String> {
-        let tool = self.tools.get(name).ok_or_else(|| format!("Tool '{}' not found", name))?;
-        
+        let tool = self
+            .tools
+            .get(name)
+            .ok_or_else(|| format!("Tool '{}' not found", name))?;
+
         let mut command = Command::new(&tool.path);
         for arg_name in &tool.args {
             if let Some(val) = args.get(arg_name).and_then(|v| v.as_str()) {
@@ -112,7 +126,9 @@ impl CustomToolManager {
             }
         }
 
-        let output = command.output().map_err(|e| format!("Failed to execute tool: {}", e))?;
+        let output = command
+            .output()
+            .map_err(|e| format!("Failed to execute tool: {}", e))?;
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {

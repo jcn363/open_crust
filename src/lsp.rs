@@ -1,10 +1,10 @@
-use std::process::Stdio;
-use tokio::process::Command;
-use serde_json::{json, Value};
-use std::collections::HashMap;
 use crate::config::LspConfig;
 use crate::jsonrpc::JsonRpcClient;
+use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::env;
+use std::process::Stdio;
+use tokio::process::Command;
 
 pub struct LspServer {
     rpc: JsonRpcClient,
@@ -22,8 +22,8 @@ impl LspServer {
         }
 
         cmd.stdin(Stdio::piped())
-           .stdout(Stdio::piped())
-           .stderr(Stdio::inherit());
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit());
 
         if let Some(env_vars) = &config.env {
             for (k, v) in env_vars {
@@ -31,7 +31,9 @@ impl LspServer {
             }
         }
 
-        let child = cmd.spawn().map_err(|e| format!("Failed to spawn LSP server {}: {}", name, e))?;
+        let child = cmd
+            .spawn()
+            .map_err(|e| format!("Failed to spawn LSP server {}: {}", name, e))?;
         let mut rpc = JsonRpcClient::new(child);
 
         // Perform LSP initialization
@@ -78,7 +80,7 @@ impl LspManager {
             configs: HashMap::new(),
         }
     }
-    
+
     #[allow(dead_code)]
     pub async fn add_server(&mut self, name: String, config: LspConfig) -> Result<(), String> {
         let server = LspServer::spawn(&name, &config).await?;
@@ -86,22 +88,23 @@ impl LspManager {
         self.configs.insert(name, config);
         Ok(())
     }
-    
+
     #[allow(dead_code)]
     fn find_server_for_path(&self, path: &str) -> Result<&LspServer, String> {
         let path_ext = std::path::Path::new(path)
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
-        
+
         // Find server whose extensions match the file path
         for (name, config) in &self.configs {
-            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string())) 
-                && let Some(server) = self.servers.get(name) {
+            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string()))
+                && let Some(server) = self.servers.get(name)
+            {
                 return Ok(server);
             }
         }
-        
+
         Err("No LSP server available for this file type".to_string())
     }
 
@@ -110,20 +113,21 @@ impl LspManager {
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
-        
+
         // First, find the server name that matches
         let mut server_name = None;
         for (name, config) in &self.configs {
-            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string())) 
-                && self.servers.contains_key(name) {
+            if (config.extensions.is_empty() || config.extensions.contains(&path_ext.to_string()))
+                && self.servers.contains_key(name)
+            {
                 server_name = Some(name.clone());
                 break;
             }
         }
-        
+
         match server_name {
             Some(name) => Ok(self.servers.get_mut(&name).unwrap()),
-            None => Err("No LSP server available for this file type".to_string())
+            None => Err("No LSP server available for this file type".to_string()),
         }
     }
 
@@ -144,52 +148,85 @@ impl LspManager {
         }
     }
 
-    pub async fn goto_definition(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
-        self.call_lsp("textDocument/definition", path, line, character).await
+    pub async fn goto_definition(
+        &mut self,
+        path: &str,
+        line: u32,
+        character: u32,
+    ) -> Result<String, String> {
+        self.call_lsp("textDocument/definition", path, line, character)
+            .await
     }
 
     pub async fn hover(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
-        self.call_lsp("textDocument/hover", path, line, character).await
+        self.call_lsp("textDocument/hover", path, line, character)
+            .await
     }
 
-    pub async fn find_references(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
-        self.call_lsp("textDocument/references", path, line, character).await
+    pub async fn find_references(
+        &mut self,
+        path: &str,
+        line: u32,
+        character: u32,
+    ) -> Result<String, String> {
+        self.call_lsp("textDocument/references", path, line, character)
+            .await
     }
 
-    pub async fn type_definition(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
-        self.call_lsp("textDocument/typeDefinition", path, line, character).await
+    pub async fn type_definition(
+        &mut self,
+        path: &str,
+        line: u32,
+        character: u32,
+    ) -> Result<String, String> {
+        self.call_lsp("textDocument/typeDefinition", path, line, character)
+            .await
     }
 
-    pub async fn completion(&mut self, path: &str, line: u32, character: u32) -> Result<String, String> {
+    pub async fn completion(
+        &mut self,
+        path: &str,
+        line: u32,
+        character: u32,
+    ) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
-        
+        let uri = format!(
+            "file://{}",
+            env::current_dir().unwrap().join(path).display()
+        );
+
         let params = json!({
             "textDocument": { "uri": uri },
             "position": { "line": line, "character": character }
         });
-        
+
         let result = server.call("textDocument/completion", params).await?;
         Ok(format!("textDocument/completion: {}", result))
     }
 
     pub async fn diagnostics(&mut self, path: &str) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
-        
+        let uri = format!(
+            "file://{}",
+            env::current_dir().unwrap().join(path).display()
+        );
+
         // Request diagnostics via textDocument/diagnostic (LSP 3.17+)
         let params = json!({
             "textDocument": { "uri": uri }
         });
-        
+
         let result = server.call("textDocument/diagnostic", params).await?;
         Ok(format!("textDocument/diagnostic: {}", result))
     }
 
     pub async fn formatting(&mut self, path: &str) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
-        
+        let uri = format!(
+            "file://{}",
+            env::current_dir().unwrap().join(path).display()
+        );
+
         let params = json!({
             "textDocument": { "uri": uri },
             "options": {
@@ -197,20 +234,29 @@ impl LspManager {
                 "insertSpaces": true
             }
         });
-        
+
         let result = server.call("textDocument/formatting", params).await?;
         Ok(format!("textDocument/formatting: {}", result))
     }
 
-    async fn call_lsp(&mut self, method: &str, path: &str, line: u32, character: u32) -> Result<String, String> {
+    async fn call_lsp(
+        &mut self,
+        method: &str,
+        path: &str,
+        line: u32,
+        character: u32,
+    ) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!("file://{}", env::current_dir().unwrap().join(path).display());
-        
+        let uri = format!(
+            "file://{}",
+            env::current_dir().unwrap().join(path).display()
+        );
+
         let params = json!({
             "textDocument": { "uri": uri },
             "position": { "line": line, "character": character }
         });
-        
+
         let result = server.call(method, params).await?;
         Ok(format!("{}: {}", method, result))
     }

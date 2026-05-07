@@ -4,5 +4,5 @@
 //! for Linux Mint Cinnamon while keeping the core TUI unchanged.
 
 pub mod detection;
-pub mod notifications;
 pub mod file_picker;
+pub mod notifications;

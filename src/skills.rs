@@ -1,8 +1,8 @@
-use std::fs;
-use std::path::Path;
+use directories::ProjectDirs;
 use serde::Deserialize;
 use std::collections::HashMap;
-use directories::ProjectDirs;
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SkillMetadata {
@@ -21,7 +21,9 @@ pub struct Skill {
 
 impl Skill {
     pub fn avg_latency_ms(&self) -> u64 {
-        self.total_latency_ms.checked_div(self.usage_count).unwrap_or(0)
+        self.total_latency_ms
+            .checked_div(self.usage_count)
+            .unwrap_or(0)
     }
 }
 
@@ -54,7 +56,7 @@ impl SkillManager {
                 } else {
                     break;
                 }
-                
+
                 // Stop at git root if possible (optional optimization)
                 if curr.join(".git").exists() {
                     search_paths.push(curr.join(".opencrust/skills"));
@@ -92,16 +94,20 @@ impl SkillManager {
                     let skill_file = skill_dir.join("SKILL.md");
                     if skill_file.exists()
                         && let Ok(content) = fs::read_to_string(&skill_file)
-                        && let Some((metadata, body)) = self.parse_skill(&content) {
-                            let name = metadata.name.clone();
-                            self.skills.insert(name, Skill {
+                        && let Some((metadata, body)) = self.parse_skill(&content)
+                    {
+                        let name = metadata.name.clone();
+                        self.skills.insert(
+                            name,
+                            Skill {
                                 metadata,
                                 content: body.to_string(),
                                 usage_count: 0,
                                 total_latency_ms: 0,
                                 active: true,
-                            });
-                        }
+                            },
+                        );
+                    }
                 }
             }
         }
@@ -189,14 +195,17 @@ impl SkillManager {
 
     /// List all skills with their statistics (for the browser UI)
     pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool, u64, u64)> {
-        self.skills.values()
-            .map(|s| (
-                s.metadata.name.clone(),
-                s.metadata.description.clone(),
-                s.active,
-                s.usage_count,
-                s.avg_latency_ms()
-            ))
+        self.skills
+            .values()
+            .map(|s| {
+                (
+                    s.metadata.name.clone(),
+                    s.metadata.description.clone(),
+                    s.active,
+                    s.usage_count,
+                    s.avg_latency_ms(),
+                )
+            })
             .collect()
     }
 }
@@ -227,11 +236,11 @@ mod tests {
         let mut manager = create_test_skill_manager();
         assert!(manager.activate_skill("test-skill"));
         assert!(manager.skills["test-skill"].active);
-        
+
         // Deactivate
         assert!(manager.deactivate_skill("test-skill"));
         assert!(!manager.skills["test-skill"].active);
-        
+
         // Non-existent skill
         assert!(!manager.activate_skill("non-existent"));
     }
@@ -242,7 +251,7 @@ mod tests {
         // First deactivate
         assert!(manager.deactivate_skill("test-skill"));
         assert!(!manager.skills["test-skill"].active);
-        
+
         // Already deactivated
         assert!(!manager.deactivate_skill("test-skill"));
     }
@@ -250,17 +259,17 @@ mod tests {
     #[test]
     fn test_record_usage() {
         let mut manager = create_test_skill_manager();
-        
+
         // Record usage
         manager.record_usage("test-skill", 100);
         assert_eq!(manager.skills["test-skill"].usage_count, 1);
         assert_eq!(manager.skills["test-skill"].total_latency_ms, 100);
-        
+
         // Record more usage
         manager.record_usage("test-skill", 200);
         assert_eq!(manager.skills["test-skill"].usage_count, 2);
         assert_eq!(manager.skills["test-skill"].total_latency_ms, 300);
-        
+
         // Test avg_latency_ms
         assert_eq!(manager.skills["test-skill"].avg_latency_ms(), 150);
     }
@@ -270,7 +279,7 @@ mod tests {
         let mut manager = create_test_skill_manager();
         manager.deactivate_skill("test-skill");
         manager.record_usage("test-skill", 50);
-        
+
         let stats = manager.list_skills_with_stats();
         assert_eq!(stats.len(), 1);
         let (name, desc, active, usage, avg_latency) = &stats[0];
@@ -287,7 +296,7 @@ mod tests {
         let skill = manager.get_skill("test-skill");
         assert!(skill.is_some());
         assert_eq!(skill.unwrap().metadata.name, "test-skill");
-        
+
         let none = manager.get_skill("non-existent");
         assert!(none.is_none());
     }

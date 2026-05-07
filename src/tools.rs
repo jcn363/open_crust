@@ -9,7 +9,10 @@ use crate::markdown;
 pub fn execute_tool(name: &str, arguments: &Value) -> String {
     match name {
         "bash" => {
-            let command = arguments.get("command").and_then(|v| v.as_str()).unwrap_or("");
+            let command = arguments
+                .get("command")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match Command::new("sh").arg("-c").arg(command).output() {
                 Ok(output) => {
                     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -28,7 +31,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
         }
         "write" => {
             let path_str = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
-            let content = arguments.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let content = arguments
+                .get("content")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match fs::write(path_str, content) {
                 Ok(_) => {
                     crate::formatters::format_file(std::path::Path::new(path_str));
@@ -38,13 +44,20 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "notify" => {
-            let title = arguments.get("title").and_then(|v| v.as_str()).unwrap_or("Notification");
+            let title = arguments
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Notification");
             let body = arguments.get("body").and_then(|v| v.as_str()).unwrap_or("");
-            let urgency = arguments.get("urgency").and_then(|v| v.as_str()).unwrap_or("normal");
-            
-            let notif = crate::desktop::notifications::Notification::new(title, body)
-                .with_urgency(crate::desktop::notifications::NotificationUrgency::from_str(urgency));
-            
+            let urgency = arguments
+                .get("urgency")
+                .and_then(|v| v.as_str())
+                .unwrap_or("normal");
+
+            let notif = crate::desktop::notifications::Notification::new(title, body).with_urgency(
+                crate::desktop::notifications::NotificationUrgency::from_str(urgency),
+            );
+
             // Use smart backend selection: DBus (rich features) > notify-send (fallback)
             match notifications::send_notification_smart(&notif) {
                 Ok(_) => format!("Notification sent: {} - {}", title, body),
@@ -75,39 +88,62 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
         }
         "json_merge" => {
             let base = arguments.get("base").and_then(|v| v.as_str()).unwrap_or("");
-            let patch = arguments.get("patch").and_then(|v| v.as_str()).unwrap_or("");
+            let patch = arguments
+                .get("patch")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match json_utils::merge_json(base, patch) {
                 Ok(merged) => merged,
                 Err(e) => e,
             }
         }
         "md_title" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match markdown::extract_title(md) {
                 Some(title) => title,
                 None => "No title found".to_string(),
             }
         }
         "md_headings" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let headings = markdown::extract_headings(md);
             if headings.is_empty() {
                 "No headings found".to_string()
             } else {
-                headings.iter().map(|(l, t)| format!("{} {}", "#".repeat(*l as usize), t)).collect::<Vec<_>>().join("\n")
+                headings
+                    .iter()
+                    .map(|(l, t)| format!("{} {}", "#".repeat(*l as usize), t))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         }
         "md_links" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let links = markdown::extract_links(md);
             if links.is_empty() {
                 "No links found".to_string()
             } else {
-                links.iter().map(|(text, url)| format!("[{}]({})", text, url)).collect::<Vec<_>>().join("\n")
+                links
+                    .iter()
+                    .map(|(text, url)| format!("[{}]({})", text, url))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         }
         "md_word_count" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let count = markdown::count_words(md);
             format!("{} words", count)
         }
@@ -120,71 +156,116 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
         }
         "json_compare" => {
             let left = arguments.get("left").and_then(|v| v.as_str()).unwrap_or("");
-            let right = arguments.get("right").and_then(|v| v.as_str()).unwrap_or("");
+            let right = arguments
+                .get("right")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match json_utils::compare_json(left, right) {
                 Ok(result) => result,
                 Err(e) => e,
             }
         }
         "md_is_valid" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match markdown::is_valid(md) {
                 true => "Valid markdown".to_string(),
                 false => "Invalid markdown".to_string(),
             }
         }
         "md_to_html" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             markdown::to_html(md)
         }
         "md_extract_code" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let code_blocks = markdown::extract_code_blocks(md);
             if code_blocks.is_empty() {
                 "No code blocks found".to_string()
             } else {
-                code_blocks.iter().map(|(_, code)| code.as_str()).collect::<Vec<_>>().join("\n---\n")
+                code_blocks
+                    .iter()
+                    .map(|(_, code)| code.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n---\n")
             }
         }
         "md_frontmatter" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match markdown::extract_frontmatter(md) {
                 Some((fm, _)) => fm,
                 None => "No frontmatter found".to_string(),
             }
         }
         "md_tables" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let tables = markdown::extract_tables(md);
             if tables.is_empty() {
                 "No tables found".to_string()
             } else {
-                let output: Vec<String> = tables.iter().map(|t| {
-                    t.iter().map(|row| row.join(" | ")).collect::<Vec<_>>().join("\n")
-                }).collect();
+                let output: Vec<String> = tables
+                    .iter()
+                    .map(|t| {
+                        t.iter()
+                            .map(|row| row.join(" | "))
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    })
+                    .collect();
                 output.join("\n\n")
             }
         }
         "md_images" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let images = markdown::extract_images(md);
             if images.is_empty() {
                 "No images found".to_string()
             } else {
-                images.iter().map(|(alt, url)| format!("![{}]({})", alt, url)).collect::<Vec<_>>().join("\n")
+                images
+                    .iter()
+                    .map(|(alt, url)| format!("![{}]({})", alt, url))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         }
         "md_tasks" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let tasks = markdown::extract_tasks(md);
             if tasks.is_empty() {
                 "No tasks found".to_string()
             } else {
-                tasks.iter().map(|(done, text)| format!("[{}] {}", if *done { "x" } else { " " }, text)).collect::<Vec<_>>().join("\n")
+                tasks
+                    .iter()
+                    .map(|(done, text)| format!("[{}] {}", if *done { "x" } else { " " }, text))
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         }
         "md_list_items" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let items = markdown::extract_list_items(md);
             if items.is_empty() {
                 "No list items found".to_string()
@@ -193,7 +274,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_numbered" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let items = markdown::extract_numbered_items(md);
             if items.is_empty() {
                 "No numbered items found".to_string()
@@ -202,7 +286,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_quotes" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let quotes = markdown::extract_quotes(md);
             if quotes.is_empty() {
                 "No blockquotes found".to_string()
@@ -211,7 +298,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_urls" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let urls = markdown::extract_urls(md);
             if urls.is_empty() {
                 "No URLs found".to_string()
@@ -220,7 +310,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_inline_code" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let code = markdown::extract_inline_code(md);
             if code.is_empty() {
                 "No inline code found".to_string()
@@ -229,7 +322,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_bold" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let bold = markdown::extract_bold(md);
             if bold.is_empty() {
                 "No bold text found".to_string()
@@ -238,7 +334,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_italic" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let italic = markdown::extract_italic(md);
             if italic.is_empty() {
                 "No italic text found".to_string()
@@ -247,7 +346,10 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_summary" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             markdown::get_summary(md)
         }
         "json_keys" => {
@@ -272,18 +374,34 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
             }
         }
         "md_headings_tree" => {
-            let md = arguments.get("markdown").and_then(|v| v.as_str()).unwrap_or("");
+            let md = arguments
+                .get("markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let tree = markdown::get_headings_tree(md);
             if tree.is_empty() {
                 "No headings found".to_string()
             } else {
-                tree.iter().map(|(level, text, depth)| format!("{} {} {}", "  ".repeat(*depth), "#".repeat(*level as usize), text)).collect::<Vec<_>>().join("\n")
+                tree.iter()
+                    .map(|(level, text, depth)| {
+                        format!(
+                            "{} {} {}",
+                            "  ".repeat(*depth),
+                            "#".repeat(*level as usize),
+                            text
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
             }
         }
         "json_set_path" => {
             let json_str = arguments.get("json").and_then(|v| v.as_str()).unwrap_or("");
             let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
-            let new_value = arguments.get("value").and_then(|v| v.as_str()).unwrap_or("");
+            let new_value = arguments
+                .get("value")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             match json_utils::set_json_path(json_str, path, new_value) {
                 Ok(result) => result,
                 Err(e) => e,
