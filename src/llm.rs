@@ -386,26 +386,4 @@ impl LlmClient {
             Err("No content in response".into())
         }
     }
-
-    /// Spawn a background task that runs independently, reports via notification channel
-    pub async fn spawn_background_task(
-        &self,
-        prompt: String,
-        notification_tx: tokio::sync::mpsc::Sender<String>,
-    ) -> String {
-        let task_id = uuid::Uuid::new_v4().to_string();
-        let task_id_clone = task_id.clone();
-        let llm = self.clone();
-        
-        tokio::spawn(async move {
-            let result = llm.query_simple(&prompt).await;
-            let response = match result {
-                Ok(content) => format!("[TASK_COMPLETE]{}::{}", task_id_clone, content),
-                Err(e) => format!("[TASK_FAILED]{}::{}", task_id_clone, e),
-            };
-            let _ = notification_tx.send(response).await;
-        });
-        
-        task_id
-    }
 }

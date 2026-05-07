@@ -611,25 +611,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
 
                  match app.mode {
-                  Mode::Normal => match key.code {
-                      KeyCode::Char('i') => {
-                          app.enter_insert_mode();
-                      }
-                      KeyCode::Char('s') => {
-                          app.mode = Mode::Servers;
-                      }
-                      KeyCode::Char('p') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
-                          app.plan_mode = crate::app::PlanMode::Planning;
-                          app.tabs[0].messages.push(String::from("Entering plan mode..."));
-                      }
-                      KeyCode::Char('k') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
-                          app.mode = Mode::CommandPalette;
-                      }
-                      KeyCode::Tab => {
-                          app.active_tab = (app.active_tab + 1) % app.tabs.len();
-                      }
-                      _ => {}
-                  },
+                    Mode::Normal => match key.code {
+                        KeyCode::Char('i') => {
+                            app.enter_insert_mode();
+                        }
+                        KeyCode::Char('s') => {
+                            app.mode = Mode::Servers;
+                        }
+                        KeyCode::Char('p') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
+                            app.plan_mode = crate::app::PlanMode::Planning;
+                            app.tabs[0].messages.push(String::from("Entering plan mode..."));
+                        }
+                        KeyCode::Char('k') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
+                            app.mode = Mode::CommandPalette;
+                        }
+                        KeyCode::Char('t') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
+                            // Spawn background task with current input
+                            if !app.input.is_empty() {
+                                let prompt = app.input.clone();
+                                app.spawn_background_task(prompt);
+                                app.input.clear();
+                                app.tabs[0].messages.push(String::from("Spawning background task..."));
+                            } else {
+                                app.tabs[0].messages.push(String::from("No input to spawn as background task"));
+                            }
+                        }
+                        KeyCode::Tab => {
+                            app.active_tab = (app.active_tab + 1) % app.tabs.len();
+                        }
+                        _ => {}
+                    },
                     Mode::Insert => {
                         if check_key_match(&key, &submit_keys) {
                             app.submit_message();
