@@ -529,12 +529,40 @@ impl LlmClient {
             crate::config::ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
         };
         
-        // Extract content string from JSON Value (same as run_with_tools)
-        let content = result.get("content")
-            .and_then(|c| c.as_str())
-            .unwrap_or("")
-            .to_string();
-        
-        Ok(content)
+        // Extract content from the response based on provider
+        let content = match self.config.provider {
+            crate::config::ProviderType::Ollama => {
+                result.get("message")
+                    .and_then(|m| m.get("content"))
+                    .and_then(|c| c.as_str())
+                    .unwrap_or("")
+            }
+            crate::config::ProviderType::OpenRouter | crate::config::ProviderType::OpenAI | crate::config::ProviderType::Mistral => {
+                result.get("choices")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("message"))
+                    .and_then(|m| m.get("content"))
+                    .and_then(|c| c.as_str())
+                    .unwrap_or("")
+            }
+            crate::config::ProviderType::Gemini => {
+                result.get("candidates")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("content"))
+                    .and_then(|c| c.get("parts"))
+                    .and_then(|p| p.get(0))
+                    .and_then(|p| p.get("text"))
+                    .and_then(|t| t.as_str())
+                    .unwrap_or("")
+            }
+            crate::config::ProviderType::Anthropic => {
+                result.get("content")
+                    .and_then(|c| c.get(0))
+                    .and_then(|c| c.get("text"))
+                    .and_then(|t| t.as_str())
+                    .unwrap_or("")
+            }
+        };
+        Ok(content.to_string())
     }
 }

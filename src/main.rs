@@ -417,6 +417,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (response_tx, mut response_rx) = mpsc::channel::<String>(32);
     let (approval_tx, mut approval_rx) = mpsc::channel::<bool>(1);
     let (background_task_tx, mut background_task_rx) = mpsc::channel::<String>(32);
+    let (prediction_tx, mut prediction_rx) = mpsc::channel::<(String, String)>(32); // (input_text, prediction)
 
     let mut client_clone = llm_client.clone();
     tokio::spawn(async move {
@@ -648,8 +649,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.submit_message();
                         } else {
                             match key.code {
+                                KeyCode::Tab => {
+                                    // Accept ghost text prediction
+                                    if let Some(ghost) = app.ghost_text.take() {
+                                        app.input.push_str(&ghost);
+                                        // Update last_input_time to prevent immediate re-prediction
+                                        app.last_input_time = Some(std::time::Instant::now());
+                                    }
+                                }
                                 KeyCode::Esc => {
-                                    app.enter_normal_mode();
+                                    // Dismiss ghost text if present, otherwise exit Insert mode
+                                    if app.ghost_text.is_some() {
+                                        app.clear_ghost_text();
+                                    } else {
+                                        app.enter_normal_mode();
+                                    }
                                 }
                                 KeyCode::Backspace => {
                                     app.handle_backspace();
@@ -841,6 +855,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                      },
                 }
             }
+        }
+
+        // Check for prediction results
+        if let Ok((input_text, prediction)) = prediction_rx.try_recv() {
+            if app.input == input_text {
+                app.ghost_text = Some(prediction);
+            }
+        }
+
+        // Trigger prediction if needed (after 300ms debounce)
+        if app.should_trigger_prediction() && app.ghost_text.is_none() && !app.input.is_empty() {
+            let llm_client_clone = app.llm_client.clone();
+            let input = app.input.clone();
+            let tx = prediction_tx.clone();
+            tokio::spawn(async move {
+                match llm_client_clone.generate_input_completion(&input).await {
+                    Ok(prediction) => { let _ = tx.send((input, prediction)).await; }
+                    Err(_) => {}
+                }
+            });
+            app.last_input_time = None; // Reset to prevent re-triggering
         }
 
         if app.should_quit {
