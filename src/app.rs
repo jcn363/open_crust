@@ -84,6 +84,30 @@ pub struct App {
     pub plan_mode: PlanMode,
     // Command palette state
     pub command_palette_selected: usize,
+    // Input Prediction (Ghost Text)
+    pub ghost_text: Option<String>,
+    pub input_prediction_enabled: bool,
+    pub last_input_time: Option<std::time::Instant>,
+}
+
+impl App {
+    /// Check if we should trigger input prediction (300ms debounce)
+    pub fn should_trigger_prediction(&self) -> bool {
+        if !self.input_prediction_enabled {
+            return false;
+        }
+        if let Some(last_time) = self.last_input_time {
+            last_time.elapsed() >= std::time::Duration::from_millis(300)
+        } else {
+            false
+        }
+    }
+    
+    /// Clear ghost text and reset prediction state
+    pub fn clear_ghost_text(&mut self) {
+        self.ghost_text = None;
+        self.last_input_time = None;
+    }
 }
 
 impl App {
@@ -114,6 +138,10 @@ impl App {
               sidebar_items: Vec::new(),
               history: Vec::new(),
               history_index: None,
+              // Input Prediction fields
+              ghost_text: None,
+              input_prediction_enabled: true,
+              last_input_time: None,
               // MCP Browser initialization
               mcp_browser_items: vec![
                   ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),

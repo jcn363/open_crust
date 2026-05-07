@@ -498,4 +498,43 @@ impl LlmClient {
         
         (true, Some(summary))
     }
+
+    /// Generate lightweight input completion (ghost text)
+    /// Takes current input and returns a short suggestion
+    pub async fn generate_input_completion(&self, current_input: &str) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        if current_input.trim().is_empty() {
+            return Ok(String::new());
+        }
+        
+        // Truncate input to avoid large context
+        let truncated = if current_input.len() > 200 {
+            &current_input[current_input.len()-200..]
+        } else {
+            current_input
+        };
+        
+        let prompt = format!(
+            "Complete the following input with a short, relevant continuation (max 50 chars). Only return the continuation, no quotes, no explanation:\n\n{}",
+            truncated
+        );
+        
+        let messages = vec![json!({"role": "user", "content": &prompt})];
+        
+        let result = match self.config.provider {
+            crate::config::ProviderType::Ollama => self.generate_ollama(&messages).await?,
+            crate::config::ProviderType::OpenRouter => self.generate_openrouter(&messages).await?,
+            crate::config::ProviderType::OpenAI => self.generate_openai(&messages).await?,
+            crate::config::ProviderType::Gemini => self.generate_gemini(&messages).await?,
+            crate::config::ProviderType::Mistral => self.generate_mistral(&messages).await?,
+            crate::config::ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
+        };
+        
+        // Extract content string from JSON Value (same as run_with_tools)
+        let content = result.get("content")
+            .and_then(|c| c.as_str())
+            .unwrap_or("")
+            .to_string();
+        
+        Ok(content)
+    }
 }

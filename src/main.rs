@@ -576,6 +576,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if check_key_match(&key, &paste_key) {
                 if let Some(text) = clipboard.paste() {
                     app.input.push_str(&text);
+                    // Update last input time for prediction
+                    app.last_input_time = Some(std::time::Instant::now());
                 }
                 continue;
             }
@@ -654,6 +656,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
+                                    // Update last input time for prediction
+                                    app.last_input_time = Some(std::time::Instant::now());
                                 }
                                 KeyCode::Up => {
                                     app.history_up();
