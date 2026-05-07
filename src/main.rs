@@ -60,6 +60,26 @@ struct Args {
     /// Prompt to send to multiple agents (use with --agent)
     #[arg(long, value_name = "PROMPT")]
     multi_prompt: Option<String>,
+
+    /// Run in headless mode with a single prompt (no TUI)
+    #[arg(short = 'p', long, value_name = "PROMPT")]
+    prompt: Option<String>,
+
+    /// Read prompt from file (use with --prompt)
+    #[arg(short = 'f', long, value_name = "FILE")]
+    file: Option<String>,
+
+    /// Set working directory for headless mode
+    #[arg(long, value_name = "DIR")]
+    project: Option<String>,
+
+    /// Override provider for this invocation
+    #[arg(long, value_name = "PROVIDER")]
+    provider: Option<String>,
+
+    /// Override model for this invocation
+    #[arg(long, value_name = "MODEL")]
+    model: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -87,6 +107,15 @@ enum Commands {
     Skills {
         #[command(subcommand)]
         cmd: SkillsCommands,
+    },
+    /// Run as an MCP server (expose OpenCrust tools via MCP protocol)
+    Serve {
+        /// Port to listen on (default: 8765)
+        #[arg(short, long, default_value = "8765")]
+        port: u16,
+        /// Use stdio transport instead of TCP
+        #[arg(long)]
+        stdio: bool,
     },
 }
 
@@ -220,6 +249,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         let mut custom = custom_tool_manager.lock().await;
         custom.discover();
+    }
+
+    // Handle headless mode (--prompt) - must be before other command handling
+    if let Some(ref prompt) = args.prompt {
+        return run_headless(
+            prompt,
+            args.file.as_deref(),
+            args.project.as_deref(),
+            args.provider.as_deref(),
+            args.model.as_deref(),
+            mcp_manager,
+            lsp_manager,
+            skill_manager,
+            custom_tool_manager,
+        )
+        .await;
     }
 
     let llm_client = llm::LlmClient::new(
@@ -670,6 +715,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
         return Ok(());
+    }
+
+    // Handle Serve command (MCP server mode)
+    if let Some(Commands::Serve { port, stdio }) = &args.command {
+        return mcp::run_mcp_server(*port, *stdio).await;
     }
 
     let (prompt_tx, mut prompt_rx) = mpsc::channel::<String>(32);
@@ -1350,10 +1400,10 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
             && key.modifiers.contains(target_modifiers)
         {
             return true;
+            }
         }
+        false
     }
-    false
-}
 
 /// Parse agent spec (format: "provider:model" or just "provider")
 fn parse_agent_spec(
@@ -1482,4 +1532,75 @@ async fn run_multi_agent(
     }
 
     Ok(())
+}
+
+/// Run OpenCrust in headless mode (no TUI, just prompt and response)
+async fn run_headless(
+    prompt: &str,
+    file: Option<&str>,
+    project: Option<&str>,
+    provider: Option<&str>,
+    model: Option<&str>,
+    mcp_manager: Arc<tokio::sync::Mutex<mcp::McpManager>>,
+    lsp_manager: Arc<tokio::sync::Mutex<lsp::LspManager>>,
+    skill_manager: Arc<tokio::sync::Mutex<skills::SkillManager>>,
+    custom_tool_manager: Arc<tokio::sync::Mutex<custom_tools::CustomToolManager>>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Get the prompt from argument or file
+    let prompt_text = if let Some(file_path) = file {
+        std::fs::read_to_string(file_path)
+            .map_err(|e| format!("Failed to read prompt file '{}': {}", file_path, e))?
+    } else {
+        prompt.to_string()
+    };
+
+    // Change working directory if --project is specified
+    if let Some(dir) = project {
+        std::env::set_current_dir(dir)
+            .map_err(|e| format!("Failed to change to directory '{}': {}", dir, e))?;
+        eprintln!("Working directory: {}", std::env::current_dir()?.display());
+    }
+
+    // Load and modify config
+    let mut config = config::Config::load();
+
+    // Override provider if specified
+    if let Some(provider_str) = provider {
+        config.provider = match provider_str.to_lowercase().as_str() {
+            "ollama" => config::ProviderType::Ollama,
+            "openrouter" => config::ProviderType::OpenRouter,
+            "openai" => config::ProviderType::OpenAI,
+            "gemini" => config::ProviderType::Gemini,
+            "mistral" => config::ProviderType::Mistral,
+            "anthropic" => config::ProviderType::Anthropic,
+            _ => return Err(format!("Unknown provider: {}", provider_str).into()),
+        };
+    }
+
+    // Override model if specified
+    if let Some(model_str) = model {
+        config.model = model_str.to_string();
+    }
+
+    // Create LLM client
+    let llm_client = llm::LlmClient::new(
+        config,
+        mcp_manager,
+        lsp_manager,
+        skill_manager,
+        custom_tool_manager,
+    );
+
+    // Send prompt and get response
+    eprintln!("Sending prompt to LLM...");
+    match llm_client.query_simple(&prompt_text).await {
+        Ok(response) => {
+            println!("{}", response);
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    }
 }

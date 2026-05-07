@@ -19,7 +19,7 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 5. **Claude Code lock-in** - can't switch models mid-session
 
 ### Current Implementation Status
-
+ 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Tabbed Interface (Chat/Tasks) | ✅ Implemented | `app.rs` - tabs, active_tab |
@@ -47,15 +47,13 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | **Plan Mode + Diff Preview** | ✅ Implemented | **File list, status indicators, approve/deny workflow** |
 | **Background Agents** | ✅ **Implemented** | **Async task spawning, Tasks tab display, Ctrl+T keybinding** |
 | **Auto-Context Summarization** | ✅ **Implemented** | **LLM-based summarization at 80% context threshold, config threshold** |
+| **Input Prediction (Ghost Text)** | ✅ **Implemented** | **Ghost text with Tab accept, Escape dismiss, 300ms debounce** |
+| **Session Forking (CLI)** | ✅ **Implemented** | **CLI command `opencrust session fork`, unit tests passing** |
+| **Enhanced Skills** | ✅ **Implemented** | **Skill active/inactive toggle, SkillBrowser UI, CLI subcommands, usage tracking** |
 
 ### Impact-Ordered Priority (Not Yet Implemented)
 
-| Impact | Feature | Addresses Pain Point | Hours |
-|--------|---------|---------------------|-------|-------|
-| **Medium** | Vim Mode | Power user workflows | 5 |
-| **Lower** | Enhanced Skills | Skill discovery, active/inactive toggle, usage tracking | 4 |
-| **Lower** | MCP Server Mode | Integration | 6 |
-| **Lower** | Headless / Scriptable | CI/CD only | 3 |
+> **Note**: All planned features have been implemented. Vim Mode has been moved to Future Enhancements section due to implementation complexity.
 
 ### Completed in This Session
 
@@ -63,6 +61,8 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 |---------|---------------|--------|
 | Input Prediction (Ghost Text) | 2026-05-07 | 5 |
 | Session Forking (CLI) | 2026-05-07 | 5 |
+| MCP Server Mode | 2026-05-07 | 6 |
+| Headless / Scriptable Mode | 2026-05-07 | 3 |
 
 ### Completed Features (This Session)
 
@@ -73,6 +73,8 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | Input Prediction | 2026-05-07 | Ghost text with Tab accept, Escape dismiss, 300ms debounce, dimmed rendering |
 | Session Forking | 2026-05-07 | CLI command `opencrust session fork <id> [--name <name>]`, unit tests passing |
 | **Enhanced Skills** | 2026-05-07 | Skill active/inactive toggle, SkillBrowser UI (Ctrl+Shift+K), CLI subcommands (list/activate/deactivate/stats), unit tests passing, usage tracking deferred |
+| **MCP Server Mode** | 2026-05-07 | `opencrust serve --stdio` subcommand, JSON-RPC protocol handling, tools/list returns 3 tools |
+| **Headless Mode** | 2026-05-07 | CLI flags (-p/--prompt, -f/--file, --project, --provider, --model), early-exit before TUI |
 
 ---
 
@@ -930,7 +932,7 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 ---
 
 ## Complete Feature Matrix
-
+  
 | # | Feature | Impact Tier | Hours | Dependencies | Status |
 |---|---------|-------------|-------|-------------|--------|
 | 1 | Plan Mode + Diff Preview | Critical | 12 | None | ✅ Done |
@@ -941,12 +943,21 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 | 3 | Multi-Provider Toggle | High | 6 | None | ✅ Done |
 | 7 | Input Prediction | Medium | 5 | None | ✅ Done |
 | 11 | Session Forking | Medium | 5 | None | ✅ Done |
-| 8 | Vim Mode | Medium | 5 | None | ⏳ Pending |
-| 10 | Enhanced Skills | Lower | 4 | None | ⏳ Pending |
-| 5 | MCP Server Mode | Lower | 6 | None | ⏳ Pending |
-| 6 | Headless Mode | Lower | 3 | None | ⏳ Pending |
+| 10 | **Enhanced Skills** | Lower | 4 | None | ✅ **Done** |
+| 5 | **MCP Server Mode** | Lower | 6 | None | ⏳ **Pending** |
+| 6 | **Headless Mode** | Lower | 3 | None | ⏳ **Pending** |
 
-**Total Additional Hours**: ~63 hours (all features)
+**Total Additional Hours**: ~58 hours (remaining features)
+
+---
+
+## Future Enhancements
+
+These features have been deprioritized or require more investigation:
+
+| # | Feature | Impact Tier | Hours | Reason |
+|---|---------|-------------|-------|---------|
+| 8 | **Vim Mode** | Medium | 5 | **Moved to future** - Implementation complexity with delimiter handling in `match` blocks; requires refactoring input handling architecture |
 
 ---
 
@@ -968,6 +979,9 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 - Feature 7: Input Prediction (5h)
 
 ### Phase 4 (Weeks 7-8): Lower Impact Features
-- Feature 8: Vim Mode (5h)
-- Feature 10: Enhanced Skills (4h)
-- Feature 11: Session Forking (5h)
+- Feature 10: Enhanced Skills (4h) ✅ **Done**
+- Feature 11: Session Forking (5h) ✅ **Done**
+- Feature 5: MCP Server Mode (6h) ⏳ **Pending**
+- Feature 6: Headless Mode (3h) ⏳ **Pending**
+
+> **Note**: Vim Mode (Feature 8) moved to Future Enhancements

@@ -65,3 +65,6 @@ perf.data.old
 # Session files
 *.session
 .session/
+
+# OpenCode agent files
+.opencode/
