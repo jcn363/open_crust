@@ -200,11 +200,54 @@ To verify skills are loaded:
 3. Ensure the file is named exactly `SKILL.md` (case-sensitive)
 
 ### Skill Not Applied
-
-1. The LLM decides when to use skills based on relevance
-2. Explicitly mention the skill name in your request
-3. Check the skill has clear instructions
+3. Ensure the file is named exactly `SKILL.md` (case-sensitive)
 
 ---
 
-*Last updated: 2026-05-06*
+## Active/Inactive Toggle
+
+Skills can be toggled active or inactive. Only active skills are sent to the LLM for context.
+
+### Using the SkillBrowser UI (Ctrl+Shift+K)
+
+1. Press `Ctrl+Shift+K` to open the SkillBrowser
+2. Use `↑`/`↓` to navigate the skill list
+3. Press `Enter` to toggle a skill's active status
+4. Press `Esc` or `q` to close the browser
+
+The SkillBrowser shows:
+- Skill name and status (ACTIVE/INACTIVE)
+- Description
+- Usage statistics (count and average latency)
+
+### Using CLI Commands
+
+```bash
+# List all skills with their status
+opencrust skills list
+
+# Activate a skill
+opencrust skills activate rust-expert
+
+# Deactivate a skill
+opencrust skills deactivate security-auditor
+
+# Show statistics for a specific skill
+opencrust skills stats rust-expert
+
+# Show statistics for all skills
+opencrust skills stats
+```
+
+---
+
+## Skill Usage Tracking
+
+> **Note**: Usage tracking is planned but not yet integrated. When implemented, OpenCrust will track:
+> - Number of times each skill is used
+> - Average latency for skill execution
+> - Statistics viewable via `opencrust skills stats`
+
+---
+
+*Last updated: 2026-05-07*

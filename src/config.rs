@@ -79,6 +79,17 @@ pub struct ThemeConfig {
     pub border: String,
 }
 
+impl Default for ThemeConfig {
+    fn default() -> Self {
+        ThemeConfig {
+            background: default_color_bg(),
+            foreground: default_color_fg(),
+            accent: default_color_accent(),
+            border: default_color_border(),
+        }
+    }
+}
+
 fn default_color_bg() -> String { "#1e1e1e".to_string() }
 fn default_color_fg() -> String { "#ffffff".to_string() }
 fn default_color_accent() -> String { "#007acc".to_string() }

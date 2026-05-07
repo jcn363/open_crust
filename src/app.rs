@@ -7,6 +7,7 @@ pub enum Mode {
     Insert,
     Review,
     Servers,
+    SkillBrowser,  // Ctrl+Shift+K skill browser
     CommandPalette,  // Ctrl+K command palette
 }
 
@@ -78,6 +79,10 @@ pub struct App {
     pub mcp_browser_items: Vec<(String, String, Vec<String>)>, // (name, description, command)
     pub mcp_browser_selected: usize,
     pub mcp_browser_scroll: usize,
+    // Skill Browser state (Ctrl+Shift+K)
+    pub skill_browser_items: Vec<(String, String, bool, u64, u64)>, // (name, description, active, usage_count, avg_latency_ms)
+    pub skill_browser_selected: usize,
+    pub skill_browser_scroll: usize,
     // Plan review index (for diff viewer)
     pub plan_review_index: usize, // Which file in the plan being reviewed
     // Plan mode state
@@ -142,19 +147,23 @@ impl App {
               ghost_text: None,
               input_prediction_enabled: true,
               last_input_time: None,
-              // MCP Browser initialization
-              mcp_browser_items: vec![
-                  ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
-                  ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
-                  ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
-                  ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
-                  ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
-                  ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
-                  ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
-                  ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
-              ],
-              mcp_browser_selected: 0,
-              mcp_browser_scroll: 0,
+            // MCP Browser initialization
+            mcp_browser_items: vec![
+                ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
+                ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
+                ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
+                ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
+                ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
+                ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
+                ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
+                ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
+            ],
+            mcp_browser_selected: 0,
+            mcp_browser_scroll: 0,
+            // Skill Browser initialization (populated in main.rs after skill discovery)
+            skill_browser_items: Vec::new(),
+            skill_browser_selected: 0,
+            skill_browser_scroll: 0,
               // Plan review index (for diff viewer)
               plan_review_index: 0,
               // Plan mode state

@@ -52,20 +52,27 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 
 | Impact | Feature | Addresses Pain Point | Hours |
 |--------|---------|---------------------|-------|-------|
-| **Medium** | Input Prediction (Completed) | Typing effort | 5 |
 | **Medium** | Vim Mode | Power user workflows | 5 |
-| **Medium** | Session Forking | Experiment with approaches | 5 |
-| **Lower** | Enhanced Skills | Skill discovery | 4 |
+| **Lower** | Enhanced Skills | Skill discovery, active/inactive toggle, usage tracking | 4 |
 | **Lower** | MCP Server Mode | Integration | 6 |
 | **Lower** | Headless / Scriptable | CI/CD only | 3 |
+
+### Completed in This Session
+
+| Feature | Completed On | Hours |
+|---------|---------------|--------|
+| Input Prediction (Ghost Text) | 2026-05-07 | 5 |
+| Session Forking (CLI) | 2026-05-07 | 5 |
 
 ### Completed Features (This Session)
 
 | Feature | Completed On | Notes |
-|---------|----------------|-------|
+|---------|---------------|-------|
 | Background Agents | 2026-05-07 | Async task spawning, Tasks tab display, Ctrl+T keybinding |
 | Auto-Context Summarization | 2026-05-07 | LLM-based summarization at 80% context threshold, config threshold support |
 | Input Prediction | 2026-05-07 | Ghost text with Tab accept, Escape dismiss, 300ms debounce, dimmed rendering |
+| Session Forking | 2026-05-07 | CLI command `opencrust session fork <id> [--name <name>]`, unit tests passing |
+| **Enhanced Skills** | 2026-05-07 | Skill active/inactive toggle, SkillBrowser UI (Ctrl+Shift+K), CLI subcommands (list/activate/deactivate/stats), unit tests passing, usage tracking deferred |
 
 ---
 
@@ -924,20 +931,20 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 
 ## Complete Feature Matrix
 
-| # | Feature | Impact Tier | Hours | Dependencies |
-|---|---------|-------------|-------|-------------|
-| 1 | Plan Mode + Diff Preview | Critical | 12 | None |
-| 2 | Context Budget Display | Critical | 3 | UsageStats |
-| 12 | Model Context Display | Critical | 2 | None |
-| 4 | Background Agents | High | 8 | None |
-| 9 | Auto-Context Summarization | High | 4 | Feature 2 |
-| 3 | Multi-Provider Toggle | High | 6 | None |
-| 7 | Input Prediction | Medium | 5 | None |
-| 8 | Vim Mode | Medium | 5 | None |
-| 11 | Session Forking | Medium | 5 | None |
-| 10 | Enhanced Skills | Lower | 4 | None |
-| 5 | MCP Server Mode | Lower | 6 | None |
-| 6 | Headless Mode | Lower | 3 | None |
+| # | Feature | Impact Tier | Hours | Dependencies | Status |
+|---|---------|-------------|-------|-------------|--------|
+| 1 | Plan Mode + Diff Preview | Critical | 12 | None | ✅ Done |
+| 2 | Context Budget Display | Critical | 3 | UsageStats | ✅ Done |
+| 12 | Model Context Display | Critical | 2 | None | ✅ Done |
+| 4 | Background Agents | High | 8 | None | ✅ Done |
+| 9 | Auto-Context Summarization | High | 4 | Feature 2 | ✅ Done |
+| 3 | Multi-Provider Toggle | High | 6 | None | ✅ Done |
+| 7 | Input Prediction | Medium | 5 | None | ✅ Done |
+| 11 | Session Forking | Medium | 5 | None | ✅ Done |
+| 8 | Vim Mode | Medium | 5 | None | ⏳ Pending |
+| 10 | Enhanced Skills | Lower | 4 | None | ⏳ Pending |
+| 5 | MCP Server Mode | Lower | 6 | None | ⏳ Pending |
+| 6 | Headless Mode | Lower | 3 | None | ⏳ Pending |
 
 **Total Additional Hours**: ~63 hours (all features)
 

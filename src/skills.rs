@@ -10,19 +10,35 @@ pub struct SkillMetadata {
     pub description: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct Skill {
     pub metadata: SkillMetadata,
     pub content: String,
+    pub usage_count: u64,
+    pub total_latency_ms: u64,
+    pub active: bool,
+}
+
+impl Skill {
+    pub fn avg_latency_ms(&self) -> u64 {
+        if self.usage_count > 0 {
+            self.total_latency_ms / self.usage_count
+        } else {
+            0
+        }
+    }
 }
 
 pub struct SkillManager {
     pub skills: HashMap<String, Skill>,
+    pub active_skills: Vec<String>,
 }
 
 impl SkillManager {
     pub fn new() -> Self {
         Self {
             skills: HashMap::new(),
+            active_skills: Vec::new(),
         }
     }
 
@@ -80,13 +96,16 @@ impl SkillManager {
                     let skill_file = skill_dir.join("SKILL.md");
                     if skill_file.exists()
                         && let Ok(content) = fs::read_to_string(&skill_file)
-                            && let Some((metadata, body)) = self.parse_skill(&content) {
-                                let name = metadata.name.clone();
-                                self.skills.insert(name, Skill {
-                                    metadata,
-                                    content: body.to_string(),
-                                });
-                            }
+                        && let Some((metadata, body)) = self.parse_skill(&content) {
+                            let name = metadata.name.clone();
+                            self.skills.insert(name, Skill {
+                                metadata,
+                                content: body.to_string(),
+                                usage_count: 0,
+                                total_latency_ms: 0,
+                                active: true,
+                            });
+                        }
                 }
             }
         }
@@ -114,7 +133,7 @@ impl SkillManager {
 
     pub fn get_available_skills_xml(&self) -> String {
         let mut xml = String::from("<available_skills>\n");
-        for skill in self.skills.values() {
+        for skill in self.skills.values().filter(|s| s.active) {
             xml.push_str(&format!(
                 "  <skill>\n    <name>{}</name>\n    <description>{}</description>\n  </skill>\n",
                 skill.metadata.name, skill.metadata.description
@@ -122,5 +141,165 @@ impl SkillManager {
         }
         xml.push_str("</available_skills>");
         xml
+    }
+
+    /// Activate a skill for the current session
+    pub fn activate_skill(&mut self, name: &str) -> bool {
+        if let Some(skill) = self.skills.get_mut(name) {
+            skill.active = true;
+            if !self.active_skills.contains(&name.to_string()) {
+                self.active_skills.push(name.to_string());
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Deactivate a skill for the current session
+    pub fn deactivate_skill(&mut self, name: &str) -> bool {
+        if let Some(skill) = self.skills.get_mut(name) {
+            if skill.active {
+                skill.active = false;
+                self.active_skills.retain(|n| n != name);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    /// Record skill usage for statistics
+    pub fn record_usage(&mut self, name: &str, latency_ms: u64) {
+        if let Some(skill) = self.skills.get_mut(name) {
+            skill.usage_count += 1;
+            skill.total_latency_ms += latency_ms;
+        }
+    }
+
+    /// Get a specific skill by name
+    pub fn get_skill(&self, name: &str) -> Option<&Skill> {
+        self.skills.get(name)
+    }
+
+    /// Get mutable reference to a specific skill
+    pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
+        self.skills.get_mut(name)
+    }
+
+    /// List all skills with their statistics (for the browser UI)
+    pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool, u64, u64)> {
+        self.skills.values()
+            .map(|s| (
+                s.metadata.name.clone(),
+                s.metadata.description.clone(),
+                s.active,
+                s.usage_count,
+                s.avg_latency_ms()
+            ))
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_skill_manager() -> SkillManager {
+        let mut manager = SkillManager::new();
+        // Manually add a test skill
+        let skill = Skill {
+            metadata: SkillMetadata {
+                name: "test-skill".to_string(),
+                description: "A test skill".to_string(),
+            },
+            content: "Test instructions".to_string(),
+            usage_count: 0,
+            total_latency_ms: 0,
+            active: true,
+        };
+        manager.skills.insert("test-skill".to_string(), skill);
+        manager
+    }
+
+    #[test]
+    fn test_activate_skill() {
+        let mut manager = create_test_skill_manager();
+        assert!(manager.activate_skill("test-skill"));
+        assert!(manager.skills["test-skill"].active);
+        
+        // Deactivate
+        assert!(manager.deactivate_skill("test-skill"));
+        assert!(!manager.skills["test-skill"].active);
+        
+        // Non-existent skill
+        assert!(!manager.activate_skill("non-existent"));
+    }
+
+    #[test]
+    fn test_deactivate_skill() {
+        let mut manager = create_test_skill_manager();
+        // First deactivate
+        assert!(manager.deactivate_skill("test-skill"));
+        assert!(!manager.skills["test-skill"].active);
+        
+        // Already deactivated
+        assert!(!manager.deactivate_skill("test-skill"));
+    }
+
+    #[test]
+    fn test_record_usage() {
+        let mut manager = create_test_skill_manager();
+        
+        // Record usage
+        manager.record_usage("test-skill", 100);
+        assert_eq!(manager.skills["test-skill"].usage_count, 1);
+        assert_eq!(manager.skills["test-skill"].total_latency_ms, 100);
+        
+        // Record more usage
+        manager.record_usage("test-skill", 200);
+        assert_eq!(manager.skills["test-skill"].usage_count, 2);
+        assert_eq!(manager.skills["test-skill"].total_latency_ms, 300);
+        
+        // Test avg_latency_ms
+        assert_eq!(manager.skills["test-skill"].avg_latency_ms(), 150);
+    }
+
+    #[test]
+    fn test_list_skills_with_stats() {
+        let mut manager = create_test_skill_manager();
+        manager.deactivate_skill("test-skill");
+        manager.record_usage("test-skill", 50);
+        
+        let stats = manager.list_skills_with_stats();
+        assert_eq!(stats.len(), 1);
+        let (name, desc, active, usage, avg_latency) = &stats[0];
+        assert_eq!(name, "test-skill");
+        assert_eq!(desc, "A test skill");
+        assert!(!active);
+        assert_eq!(*usage, 1);
+        assert_eq!(*avg_latency, 50);
+    }
+
+    #[test]
+    fn test_get_skill() {
+        let manager = create_test_skill_manager();
+        let skill = manager.get_skill("test-skill");
+        assert!(skill.is_some());
+        assert_eq!(skill.unwrap().metadata.name, "test-skill");
+        
+        let none = manager.get_skill("non-existent");
+        assert!(none.is_none());
+    }
+
+    #[test]
+    fn test_get_skill_mut() {
+        let mut manager = create_test_skill_manager();
+        let skill = manager.get_skill_mut("test-skill");
+        assert!(skill.is_some());
+        skill.unwrap().active = false;
+        assert!(!manager.skills["test-skill"].active);
     }
 }

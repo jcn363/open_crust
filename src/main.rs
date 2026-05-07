@@ -83,6 +83,11 @@ enum Commands {
         #[command(subcommand)]
         cmd: SessionCommands,
     },
+    /// Skill management
+    Skills {
+        #[command(subcommand)]
+        cmd: SkillsCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -143,6 +148,18 @@ enum SessionCommands {
         #[arg(short, long)]
         name: Option<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+enum SkillsCommands {
+    /// List all skills with their status
+    List,
+    /// Activate a skill
+    Activate { name: String },
+    /// Deactivate a skill
+    Deactivate { name: String },
+    /// Show skill statistics
+    Stats { name: Option<String> },
 }
 
 #[tokio::main]
@@ -431,6 +448,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
         return Ok(());
     }
+    // Skill management commands
+    if let Some(Commands::Skills { cmd }) = &args.command {
+        let mut skills = skill_manager.lock().await;
+        match cmd {
+            SkillsCommands::List => {
+                println!("Skills (use 'opencrust skills activate/deactivate <name>' to toggle):");
+                println!();
+                for (name, description, active, usage_count, avg_latency) in skills.list_skills_with_stats() {
+                    let status = if active { "ACTIVE" } else { "inactive" };
+                    println!("[{}] {} - {} (usage: {}, avg latency: {}ms)", 
+                             status, name, description, usage_count, avg_latency);
+                }
+            }
+            SkillsCommands::Activate { name } => {
+                if skills.activate_skill(&name) {
+                    println!("Skill '{}' activated.", name);
+                } else {
+                    eprintln!("Skill '{}' not found.", name);
+                }
+            }
+            SkillsCommands::Deactivate { name } => {
+                if skills.deactivate_skill(&name) {
+                    println!("Skill '{}' deactivated.", name);
+                } else {
+                    eprintln!("Skill '{}' not found.", name);
+                }
+            }
+            SkillsCommands::Stats { name } => {
+                if let Some(skill_name) = name {
+                    match skills.get_skill(skill_name) {
+                        Some(skill) => {
+                            println!("Skill: {}", skill.metadata.name);
+                            println!("Description: {}", skill.metadata.description);
+                            println!("Status: {}", if skill.active { "ACTIVE" } else { "inactive" });
+                            println!("Usage count: {}", skill.usage_count);
+                            println!("Total latency: {}ms", skill.total_latency_ms);
+                            println!("Average latency: {}ms", skill.avg_latency_ms());
+                        }
+                        None => eprintln!("Skill '{}' not found.", skill_name),
+                    }
+                } else {
+                    // Show stats for all skills
+                    println!("Skill Statistics:");
+                    println!();
+                    for (name, _, active, usage_count, avg_latency) in skills.list_skills_with_stats() {
+                        println!("{}: usage={}, avg_latency={}ms, status={}", 
+                                 name, usage_count, avg_latency, if active { "active" } else { "inactive" });
+                    }
+                }
+            }
+        }
+        return Ok(());
+    }
 
     let (prompt_tx, mut prompt_rx) = mpsc::channel::<String>(32);
     let (response_tx, mut response_rx) = mpsc::channel::<String>(32);
@@ -511,6 +581,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, background_task_tx, llm_client.clone());
     app.refresh_sidebar();
+
+    // Populate skill browser items from skill manager
+    {
+        let skills = skill_manager.lock().await;
+        let skill_list = skills.list_skills_with_stats();
+        for (name, description, active, usage_count, avg_latency) in skill_list {
+            app.skill_browser_items.push((name, description, active, usage_count, avg_latency));
+        }
+    }
 
     // Initialize clipboard manager
     let mut clipboard = ClipboardManager::new();
@@ -646,6 +725,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         KeyCode::Char('k') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
                             app.mode = Mode::CommandPalette;
+                        }
+                        KeyCode::Char('K') if key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL) 
+                            && key.modifiers.contains(crossterm::event::KeyModifiers::SHIFT) => {
+                            app.mode = Mode::SkillBrowser;
                         }
                         KeyCode::Char('t') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
                             // Spawn background task with current input
@@ -806,9 +889,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                          KeyCode::Backspace => {
                              app.mcp_input.pop();
                          }
-                         _ => {}
-                     },
-                     Mode::CommandPalette => match key.code {
+                        _ => {}
+                      },
+                      Mode::SkillBrowser => match key.code {
+                          KeyCode::Esc | KeyCode::Char('q') => {
+                              app.mode = Mode::Normal;
+                          }
+                          KeyCode::Up => {
+                              if app.skill_browser_selected > 0 {
+                                  app.skill_browser_selected -= 1;
+                              }
+                              // Adjust scroll if needed
+                              if app.skill_browser_selected < app.skill_browser_scroll {
+                                  app.skill_browser_scroll = app.skill_browser_selected;
+                              }
+                          }
+                          KeyCode::Down => {
+                              if app.skill_browser_selected < app.skill_browser_items.len() - 1 {
+                                  app.skill_browser_selected += 1;
+                              }
+                              // Adjust scroll if needed (assuming 20 visible items)
+                              if app.skill_browser_selected >= app.skill_browser_scroll + 20 {
+                                  app.skill_browser_scroll = app.skill_browser_selected - 19;
+                              }
+                          }
+                          KeyCode::Enter => {
+                              // Toggle skill active state
+                              if let Some((name, _, active, _, _)) = app.skill_browser_items.get_mut(app.skill_browser_selected) {
+                                  let new_active = !*active;
+                                  *active = new_active;
+                                  
+                                  // Update skill_manager (clone before moving into async block)
+                                  let skill_name = name.clone();
+                                  let sm = skill_manager.clone();
+                                  tokio::spawn(async move {
+                                      let mut skills = sm.lock().await;
+                                      if new_active {
+                                          let _ = skills.activate_skill(&skill_name);
+                                      } else {
+                                          let _ = skills.deactivate_skill(&skill_name);
+                                      }
+                                  });
+                                  
+                                  let status = if new_active { "activated" } else { "deactivated" };
+                                  app.tabs[0].messages.push(format!("System: Skill '{}' {}", name, status));
+                              }
+                          }
+                          _ => {}
+                      },
+                      Mode::CommandPalette => match key.code {
                          KeyCode::Esc => {
                              app.mode = Mode::Normal;
                          }

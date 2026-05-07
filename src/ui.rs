@@ -127,6 +127,7 @@ pub fn draw(f: &mut Frame, app: &App) {
              Mode::Insert => Style::default().fg(accent_color),
              Mode::Review => Style::default().fg(fg_color),
              Mode::Servers => Style::default().fg(fg_color),
+             Mode::SkillBrowser => Style::default().fg(fg_color),
              Mode::CommandPalette => Style::default().fg(fg_color),
          })
          .block(Block::default()
@@ -137,18 +138,20 @@ pub fn draw(f: &mut Frame, app: &App) {
                  Mode::Insert => Style::default().fg(accent_color),
                  Mode::Review => Style::default().fg(border_color),
                  Mode::Servers => Style::default().fg(border_color),
+                 Mode::SkillBrowser => Style::default().fg(border_color),
                  Mode::CommandPalette => Style::default().fg(border_color),
              }));
     f.render_widget(input, chunks[2]);
 
     // Status bar
-     let mode_str = match app.mode {
-         Mode::Normal  => "NORMAL",
-         Mode::Insert  => "INSERT",
-         Mode::Review  => "REVIEW",
-         Mode::Servers => "SERVERS",
-         Mode::CommandPalette => "PALETTE",
-     };
+    let mode_str = match app.mode {
+        Mode::Normal  => "NORMAL",
+        Mode::Insert  => "INSERT",
+        Mode::Review  => "REVIEW",
+        Mode::Servers => "SERVERS",
+        Mode::SkillBrowser => "SKILLS",
+        Mode::CommandPalette => "PALETTE",
+    };
 
     let stats = app.llm_client.usage_stats.try_lock();
     let context_budget = app.config.context_limit();
@@ -185,6 +188,8 @@ pub fn draw(f: &mut Frame, app: &App) {
         draw_review_popup(f, app);
     } else if let Mode::Servers = app.mode {
         draw_servers_popup(f, app);
+    } else if let Mode::SkillBrowser = app.mode {
+        draw_skill_browser(f, app);
     } else if let Mode::CommandPalette = app.mode {
         draw_command_palette(f, app);
     }
@@ -455,6 +460,133 @@ fn draw_command_palette(f: &mut Frame, app: &App) {
     // Status
     let status = Paragraph::new("[↑/↓] Navigate | [Enter] Select | [Esc] Cancel")
         .style(Style::default().fg(Color::DarkGray))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
+
+fn draw_skill_browser(f: &mut Frame, app: &App) {
+    let area = centered_rect(70, 60, f.area());
+    f.render_widget(Clear, area);
+
+    let theme = app.config.theme.clone().unwrap_or_default();
+    let accent_color = parse_color(&theme.accent);
+    let fg_color = parse_color(&theme.foreground);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),   // Title
+            Constraint::Min(1),      // Content
+            Constraint::Length(3),   // Status
+        ].as_ref())
+        .split(area);
+
+    // Title
+    let title = Paragraph::new("Skill Browser (Ctrl+Shift+K)")
+        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan)));
+    f.render_widget(title, chunks[0]);
+
+    // Content area - split into left (list) and right (details)
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(40),
+            Constraint::Percentage(60),
+        ].as_ref())
+        .split(chunks[1]);
+
+    // Left panel: Available Skills list
+    let skill_list: Vec<ListItem> = app.skill_browser_items
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _desc, active, _usage, _latency))| {
+            let prefix = if i == app.skill_browser_selected { "> " } else { "  " };
+            let status = if *active { "[ACTIVE]" } else { "[INACTIVE]" };
+            let style = if i == app.skill_browser_selected {
+                Style::default().fg(accent_color).add_modifier(Modifier::BOLD)
+            } else if *active {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(fg_color)
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{}{} {}", prefix, name, status), style),
+            ]))
+        })
+        .collect();
+
+    let list_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Available Skills ")
+        .border_style(Style::default().fg(accent_color));
+
+    let list = List::new(skill_list)
+        .block(list_block);
+    f.render_widget(list, content_chunks[0]);
+
+    // Right panel: Selected skill details
+    if let Some((name, desc, active, usage_count, avg_latency_ms)) = app.skill_browser_items.get(app.skill_browser_selected) {
+        let status_text = if *active { "ACTIVE" } else { "INACTIVE" };
+        let status_color = if *active { Color::Green } else { Color::Red };
+
+        let details = vec![
+            Line::from(vec![
+                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled(name, Style::default().fg(fg_color).add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Description: ", Style::default().fg(Color::Yellow)),
+            ]),
+            Line::from(desc.as_str()),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled(status_text, Style::default().fg(status_color).add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Usage Count: ", Style::default().fg(Color::Yellow)),
+                Span::styled(usage_count.to_string(), Style::default().fg(fg_color)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Avg Latency: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if *avg_latency_ms > 0 { format!("{}ms", avg_latency_ms) } else { "N/A".to_string() },
+                    Style::default().fg(fg_color)
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if *active {
+                        "Skill is active and will be used by the LLM. Press [Enter] to deactivate."
+                    } else {
+                        "Skill is inactive. Press [Enter] to activate."
+                    },
+                    Style::default().fg(fg_color)
+                ),
+            ]),
+        ];
+
+        let details_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Skill Details ")
+            .border_style(Style::default().fg(accent_color));
+
+        let details_para = Paragraph::new(details)
+            .block(details_block)
+            .wrap(Wrap { trim: true });
+        f.render_widget(details_para, content_chunks[1]);
+    }
+
+    // Status bar
+    let status_text = "[↑/↓] Navigate | [Enter] Toggle Active | [Esc/q] Close";
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(accent_color).fg(Color::Black))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }
