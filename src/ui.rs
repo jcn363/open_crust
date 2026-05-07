@@ -158,7 +158,14 @@ pub fn draw(f: &mut Frame, app: &App) {
     f.render_widget(messages_list, main_area[1]);
 
     // Input Box
-    let input = Paragraph::new(app.input.as_str())
+    let input = Paragraph::new({
+    let mut line = Line::from(app.input.clone());
+    if let Some(ref ghost) = app.ghost_text {
+        // Append ghost text with dimmed style
+        line.spans.push(Span::styled(ghost.clone(), Style::default().fg(Color::DarkGray)));
+    }
+    line
+})
         .style(match app.mode {
             Mode::Normal => Style::default().fg(fg_color),
             Mode::Insert => Style::default().fg(accent_color),
