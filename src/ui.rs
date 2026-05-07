@@ -70,15 +70,49 @@ pub fn draw(f: &mut Frame, app: &App) {
         f.render_widget(sidebar_list, main_area[0]);
     }
 
-    // Active tab messages
-    let active_messages = app.tabs.get(app.active_tab)
-        .map(|t| t.messages.as_slice())
-        .unwrap_or(&[]);
-    let messages: Vec<ListItem> = active_messages
-        .iter()
-        .map(|m| ListItem::new(Line::from(Span::raw(m))))
-        .collect();
-    let messages_list = List::new(messages)
+    // Active tab messages + background tasks
+    let mut all_items: Vec<ListItem> = Vec::new();
+    
+    // Add background tasks if on Tasks tab
+    if app.active_tab == 1 {
+        let task_items: Vec<ListItem> = app.background_tasks.iter()
+            .map(|task| {
+                let status_icon = match task.status {
+                    crate::app::TaskStatus::Running => "⏳",
+                    crate::app::TaskStatus::Completed => "✅",
+                    crate::app::TaskStatus::Failed => "❌",
+                };
+                let time_str = task.started_at.format("%H:%M:%S").to_string();
+                ListItem::new(Line::from(vec![
+                    Span::styled(format!("{} ", status_icon), Style::default().fg(Color::Yellow)),
+                    Span::raw(format!("[{}] {}: {}", task.id, time_str, task.prompt)),
+                ]))
+            })
+            .collect();
+        all_items.extend(task_items);
+        
+        if app.background_tasks.is_empty() {
+            all_items.push(ListItem::new(Line::from(Span::raw("No background tasks yet."))));
+        }
+        
+        // Add separator if there are chat messages
+        if let Some(tab) = app.tabs.get(app.active_tab) {
+            if !tab.messages.is_empty() {
+                let sep_line = Line::from(vec![
+                    Span::styled("--- Chat Messages ---", Style::default().fg(Color::DarkGray))
+                ]);
+                all_items.push(ListItem::new(sep_line));
+                all_items.extend(tab.messages.iter().map(|m| ListItem::new(Line::from(Span::raw(m)))));
+            }
+        }
+    } else {
+        // Chat tab: just show messages
+        if let Some(tab) = app.tabs.get(app.active_tab) {
+            all_items.extend(tab.messages.iter().map(|m| ListItem::new(Line::from(Span::raw(m)))));
+        }
+    }
+    
+    let messages_list = List::new(all_items)
         .block(Block::default()
             .borders(Borders::ALL)
             .title(format!(" {} ", app.tabs.get(app.active_tab).map(|t| t.name.as_str()).unwrap_or("Chat")))

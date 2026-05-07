@@ -416,6 +416,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (prompt_tx, mut prompt_rx) = mpsc::channel::<String>(32);
     let (response_tx, mut response_rx) = mpsc::channel::<String>(32);
     let (approval_tx, mut approval_rx) = mpsc::channel::<bool>(1);
+    let (background_task_tx, mut background_task_rx) = mpsc::channel::<String>(32);
 
     let mut client_clone = llm_client.clone();
     tokio::spawn(async move {
@@ -488,7 +489,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     io::stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
 
-    let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, llm_client.clone());
+    let mut app = App::new(llm_client.config.clone(), prompt_tx, approval_tx, background_task_tx, llm_client.clone());
     app.refresh_sidebar();
 
     // Initialize clipboard manager
@@ -524,6 +525,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     tab.messages.pop();
                 }
             tab.messages.push(response);
+        }
+
+        // Handle background task notifications
+        while let Ok(notification) = background_task_rx.try_recv() {
+            if notification.starts_with("[TASK_COMPLETE]") {
+                let parts: Vec<&str> = notification.strip_prefix("[TASK_COMPLETE]").unwrap().splitn(2, "::").collect();
+                if parts.len() == 2 {
+                    let task_id = parts[0].to_string();
+                    let result = parts[1].to_string();
+                    // Update task status
+                    if let Some(task) = app.background_tasks.iter_mut().find(|t| t.id == task_id) {
+                        task.status = crate::app::TaskStatus::Completed;
+                        task.result = Some(result.clone());
+                    }
+                    // Add to tasks tab
+                    let tasks_tab = &mut app.tabs[1];
+                    tasks_tab.messages.push(format!("Task {} completed: {}", task_id, result));
+                }
+            } else if notification.starts_with("[TASK_FAILED]") {
+                let parts: Vec<&str> = notification.strip_prefix("[TASK_FAILED]").unwrap().splitn(2, "::").collect();
+                if parts.len() == 2 {
+                    let task_id = parts[0].to_string();
+                    let error = parts[1].to_string();
+                    // Update task status
+                    if let Some(task) = app.background_tasks.iter_mut().find(|t| t.id == task_id) {
+                        task.status = crate::app::TaskStatus::Failed;
+                        task.result = Some(error.clone());
+                    }
+                    // Add to tasks tab
+                    let tasks_tab = &mut app.tabs[1];
+                    tasks_tab.messages.push(format!("Task {} failed: {}", task_id, error));
+                }
+            }
         }
 
         terminal.draw(|f| ui::draw(f, &app))?;

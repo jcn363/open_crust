@@ -33,6 +33,22 @@ pub struct ProposedChange {
     pub status: ChangeStatus,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum TaskStatus {
+    Running,
+    Completed,
+    Failed,
+}
+
+#[derive(Clone, Debug)]
+pub struct BackgroundTask {
+    pub id: String,
+    pub prompt: String,
+    pub status: TaskStatus,
+    pub result: Option<String>,
+    pub started_at: chrono::DateTime<chrono::Utc>,
+}
+
 #[derive(Clone, Debug)]
 pub struct Tab {
     pub name: String,
@@ -53,6 +69,8 @@ pub struct App {
     pub llm_client: crate::llm::LlmClient,
     pub mcp_input: String,
     pub show_sidebar: bool,
+    pub background_tasks: Vec<BackgroundTask>, // Track background agent tasks
+    pub background_task_tx: Option<tokio::sync::mpsc::Sender<String>>, // Send notifications for background task completion
     pub sidebar_items: Vec<String>,
     pub history: Vec<String>,
     pub history_index: Option<usize>,
@@ -69,7 +87,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(config: Config, prompt_tx: mpsc::Sender<String>, approval_tx: mpsc::Sender<bool>, llm_client: crate::llm::LlmClient) -> Self {
+    pub fn new(config: Config, prompt_tx: mpsc::Sender<String>, approval_tx: mpsc::Sender<bool>, background_task_tx: tokio::sync::mpsc::Sender<String>, llm_client: crate::llm::LlmClient) -> Self {
         let chat_tab = Tab {
             name: "Chat".to_string(),
             messages: vec![String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.")],
@@ -115,9 +133,42 @@ impl App {
               plan_mode: PlanMode::Disabled,
               // Command palette initialization
               command_palette_selected: 0,
+              // Background tasks initialization
+              background_tasks: Vec::new(),
+              background_task_tx: Some(background_task_tx),
           };
         app.load_history();
         app
+    }
+
+    /// Spawn a background task with the given prompt
+    pub fn spawn_background_task(&mut self, prompt: String) {
+        let task_id = uuid::Uuid::new_v4().to_string();
+        let now = chrono::Utc::now();
+        
+        let task = BackgroundTask {
+            id: task_id.clone(),
+            prompt: prompt.clone(),
+            status: TaskStatus::Running,
+            result: None,
+            started_at: now,
+        };
+        
+        self.background_tasks.push(task);
+        
+        if let Some(tx) = &self.background_task_tx {
+            let tx_clone = tx.clone();
+            let llm = self.llm_client.clone();
+            
+            tokio::spawn(async move {
+                let result = llm.query_simple(&prompt).await;
+                let response = match result {
+                    Ok(content) => format!("[TASK_COMPLETE]{}::{}", task_id, content),
+                    Err(e) => format!("[TASK_FAILED]{}::{}", task_id, e),
+                };
+                let _ = tx_clone.send(response).await;
+            });
+        }
     }
 
     pub fn enter_insert_mode(&mut self) {

@@ -1779,6 +1779,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "url",
+ "uuid",
  "walkdir",
 ]
 
