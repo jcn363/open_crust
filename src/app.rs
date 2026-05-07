@@ -7,6 +7,7 @@ pub enum Mode {
     Insert,
     Review,
     Servers,
+    CommandPalette,  // Ctrl+K command palette
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -59,10 +60,12 @@ pub struct App {
     pub mcp_browser_items: Vec<(String, String, Vec<String>)>, // (name, description, command)
     pub mcp_browser_selected: usize,
     pub mcp_browser_scroll: usize,
-    // Plan mode state
-    #[allow(dead_code)]
-    pub plan_mode: PlanMode,
+    // Plan review index (for diff viewer)
     pub plan_review_index: usize, // Which file in the plan being reviewed
+    // Plan mode state
+    pub plan_mode: PlanMode,
+    // Command palette state
+    pub command_palette_selected: usize,
 }
 
 impl App {
@@ -76,40 +79,43 @@ impl App {
             messages: vec![String::from("No tasks yet.")],
         };
 
-        let mut app = Self {
-            config,
-            mode: Mode::Normal,
-            input: String::new(),
-            tabs: vec![chat_tab, tasks_tab],
-            active_tab: 0,
-            should_quit: false,
-            prompt_tx: Some(prompt_tx),
-            approval_tx: Some(approval_tx),
-            waiting_for_approval: false,
-            proposed_changes: Vec::new(),
-            llm_client,
-            mcp_input: String::new(),
-            show_sidebar: true,
-            sidebar_items: Vec::new(),
-            history: Vec::new(),
-            history_index: None,
-            // MCP Browser initialization
-            mcp_browser_items: vec![
-                ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
-                ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
-                ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
-                ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
-                ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
-                ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
-                ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
-                ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
-            ],
-            mcp_browser_selected: 0,
-            mcp_browser_scroll: 0,
-            // Plan mode initialization
-            plan_mode: PlanMode::Disabled,
-            plan_review_index: 0,
-        };
+          let mut app = Self {
+              config,
+              mode: Mode::Normal,
+              input: String::new(),
+              tabs: vec![chat_tab, tasks_tab],
+              active_tab: 0,
+              should_quit: false,
+              prompt_tx: Some(prompt_tx),
+              approval_tx: Some(approval_tx),
+              waiting_for_approval: false,
+              proposed_changes: Vec::new(),
+              llm_client,
+              mcp_input: String::new(),
+              show_sidebar: true,
+              sidebar_items: Vec::new(),
+              history: Vec::new(),
+              history_index: None,
+              // MCP Browser initialization
+              mcp_browser_items: vec![
+                  ("github".to_string(), "GitHub integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-github".to_string()]),
+                  ("slack".to_string(), "Slack integration".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-slack".to_string()]),
+                  ("filesystem".to_string(), "File system access".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-filesystem".to_string()]),
+                  ("postgres".to_string(), "PostgreSQL database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-postgres".to_string()]),
+                  ("google-drive".to_string(), "Google Drive".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-google-drive".to_string()]),
+                  ("git".to_string(), "Git repository tools".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-git".to_string()]),
+                  ("sqlite".to_string(), "SQLite database".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-sqlite".to_string()]),
+                  ("brave-search".to_string(), "Brave search API".to_string(), vec!["npx".to_string(), "-y".to_string(), "@modelcontextprotocol/server-brave-search".to_string()]),
+              ],
+              mcp_browser_selected: 0,
+              mcp_browser_scroll: 0,
+              // Plan review index (for diff viewer)
+              plan_review_index: 0,
+              // Plan mode state
+              plan_mode: PlanMode::Disabled,
+              // Command palette initialization
+              command_palette_selected: 0,
+          };
         app.load_history();
         app
     }
@@ -180,14 +186,14 @@ impl App {
         }
     }
 
-    fn save_history(&self) {
-        let path = Self::history_path();
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        let content = self.history.join("\n");
-        let _ = std::fs::write(path, content);
-    }
+     pub fn save_history(&self) {
+         let path = Self::history_path();
+         if let Some(parent) = path.parent() {
+             let _ = std::fs::create_dir_all(parent);
+         }
+         let content = self.history.join("\n");
+         let _ = std::fs::write(path, content);
+     }
 
     pub fn handle_char(&mut self, c: char) {
         self.input.push(c);

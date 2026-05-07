@@ -88,30 +88,33 @@ pub fn draw(f: &mut Frame, app: &App) {
 
     // Input Box
     let input = Paragraph::new(app.input.as_str())
-        .style(match app.mode {
-            Mode::Normal => Style::default().fg(fg_color),
-            Mode::Insert => Style::default().fg(accent_color),
-            Mode::Review => Style::default().fg(fg_color),
-            Mode::Servers => Style::default().fg(fg_color),
-        })
-        .block(Block::default()
-            .borders(Borders::ALL)
-            .title(" Input ")
-            .border_style(match app.mode {
-                Mode::Normal => Style::default().fg(border_color),
-                Mode::Insert => Style::default().fg(accent_color),
-                Mode::Review => Style::default().fg(border_color),
-                Mode::Servers => Style::default().fg(border_color),
-            }));
+     .style(match app.mode {
+             Mode::Normal => Style::default().fg(fg_color),
+             Mode::Insert => Style::default().fg(accent_color),
+             Mode::Review => Style::default().fg(fg_color),
+             Mode::Servers => Style::default().fg(fg_color),
+             Mode::CommandPalette => Style::default().fg(fg_color),
+         })
+         .block(Block::default()
+             .borders(Borders::ALL)
+             .title(" Input ")
+             .border_style(match app.mode {
+                 Mode::Normal => Style::default().fg(border_color),
+                 Mode::Insert => Style::default().fg(accent_color),
+                 Mode::Review => Style::default().fg(border_color),
+                 Mode::Servers => Style::default().fg(border_color),
+                 Mode::CommandPalette => Style::default().fg(border_color),
+             }));
     f.render_widget(input, chunks[2]);
 
     // Status bar
-    let mode_str = match app.mode {
-        Mode::Normal  => "NORMAL",
-        Mode::Insert  => "INSERT",
-        Mode::Review  => "REVIEW",
-        Mode::Servers => "SERVERS",
-    };
+     let mode_str = match app.mode {
+         Mode::Normal  => "NORMAL",
+         Mode::Insert  => "INSERT",
+         Mode::Review  => "REVIEW",
+         Mode::Servers => "SERVERS",
+         Mode::CommandPalette => "PALETTE",
+     };
 
     let stats = app.llm_client.usage_stats.try_lock();
     let context_budget = app.config.context_limit();
@@ -148,6 +151,8 @@ pub fn draw(f: &mut Frame, app: &App) {
         draw_review_popup(f, app);
     } else if let Mode::Servers = app.mode {
         draw_servers_popup(f, app);
+    } else if let Mode::CommandPalette = app.mode {
+        draw_command_palette(f, app);
     }
 }
 
@@ -359,6 +364,63 @@ fn draw_servers_popup(f: &mut Frame, app: &App) {
     };
     let status = Paragraph::new(status_text)
         .style(Style::default().bg(accent_color).fg(Color::Black))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
+
+fn draw_command_palette(f: &mut Frame, app: &App) {
+    let area = centered_rect(60, 30, f.area());
+    f.render_widget(Clear, area);
+    
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),   // Title
+            Constraint::Min(1),      // Items
+            Constraint::Length(3),   // Status
+        ].as_ref())
+        .split(area);
+    
+    // Title
+    let title = Paragraph::new("Command Palette")
+        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan)));
+    f.render_widget(title, chunks[0]);
+    
+    // Items
+    let items = vec![
+        ("Switch Provider", format!("Current: {:?}", app.config.provider)),
+        ("Switch Model", format!("Current: {}", app.config.model)),
+        ("Show Stats", "View usage statistics".to_string()),
+        ("Clear Context", "Clear conversation history".to_string()),
+        ("MCP Browser", "Manage MCP servers".to_string()),
+    ];
+    
+    let menu_items: Vec<ListItem> = items
+        .iter()
+        .enumerate()
+        .map(|(i, (label, detail))| {
+            let prefix = if i == app.command_palette_selected { "> " } else { "  " };
+            let style = if i == app.command_palette_selected {
+                Style::default().fg(Color::Yellow)
+            } else {
+                Style::default().fg(Color::White)
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(format!("{}", prefix), style),
+                Span::styled(format!("{}", label), style),
+                Span::styled(format!("  {}", detail), style.dim()),
+            ]))
+        })
+        .collect();
+    
+    let list = List::new(menu_items)
+        .block(Block::default().borders(Borders::ALL).title(" Commands "));
+    f.render_widget(list, chunks[1]);
+    
+    // Status
+    let status = Paragraph::new("[↑/↓] Navigate | [Enter] Select | [Esc] Cancel")
+        .style(Style::default().fg(Color::DarkGray))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }

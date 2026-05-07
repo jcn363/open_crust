@@ -576,19 +576,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     continue;
                 }
 
-                match app.mode {
-                    Mode::Normal => match key.code {
-                        KeyCode::Char('i') => {
-                            app.enter_insert_mode();
-                        }
-                        KeyCode::Char('s') => {
-                            app.mode = Mode::Servers;
-                        }
-                        KeyCode::Tab => {
-                            app.active_tab = (app.active_tab + 1) % app.tabs.len();
-                        }
-                        _ => {}
-                    },
+                 match app.mode {
+                  Mode::Normal => match key.code {
+                      KeyCode::Char('i') => {
+                          app.enter_insert_mode();
+                      }
+                      KeyCode::Char('s') => {
+                          app.mode = Mode::Servers;
+                      }
+                      KeyCode::Char('p') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
+                          app.plan_mode = crate::app::PlanMode::Planning;
+                          app.tabs[0].messages.push(String::from("Entering plan mode..."));
+                      }
+                      KeyCode::Char('k') if key.modifiers == crossterm::event::KeyModifiers::CONTROL => {
+                          app.mode = Mode::CommandPalette;
+                      }
+                      KeyCode::Tab => {
+                          app.active_tab = (app.active_tab + 1) % app.tabs.len();
+                      }
+                      _ => {}
+                  },
                     Mode::Insert => {
                         if check_key_match(&key, &submit_keys) {
                             app.submit_message();
@@ -675,50 +682,114 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         _ => {}
                     },
-                    Mode::Servers => match key.code {
-                        KeyCode::Esc => {
-                            app.mode = Mode::Normal;
-                        }
-                        KeyCode::Up => {
-                            if app.mcp_browser_selected > 0 {
-                                app.mcp_browser_selected -= 1;
-                            }
-                            // Adjust scroll if needed
-                            if app.mcp_browser_selected < app.mcp_browser_scroll {
-                                app.mcp_browser_scroll = app.mcp_browser_selected;
-                            }
-                        }
-                        KeyCode::Down => {
-                            if app.mcp_browser_selected < app.mcp_browser_items.len() - 1 {
-                                app.mcp_browser_selected += 1;
-                            }
-                            // Adjust scroll if needed (assuming 20 visible items)
-                            if app.mcp_browser_selected >= app.mcp_browser_scroll + 20 {
-                                app.mcp_browser_scroll = app.mcp_browser_selected - 19;
-                            }
-                        }
-                        KeyCode::Enter => {
-                            // Install the selected server
-                            if let Some((name, _, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected)
-                                && !app.config.mcp.contains_key(name) {
-                                    let mcp_config = config::McpConfig {
-                                        command: cmd.clone(),
-                                        environment: None,
-                                        enabled: true,
-                                    };
-                                    app.config.mcp.insert(name.clone(), mcp_config);
-                                    app.config.save();
-                                    app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart open_crust to use it.", name));
-                                }
-                        }
-                        KeyCode::Char(c) => {
-                            app.mcp_input.push(c);
-                        }
-                        KeyCode::Backspace => {
-                            app.mcp_input.pop();
-                        }
-                        _ => {}
-                    },
+                     Mode::Servers => match key.code {
+                         KeyCode::Esc => {
+                             app.mode = Mode::Normal;
+                         }
+                         KeyCode::Up => {
+                             if app.mcp_browser_selected > 0 {
+                                 app.mcp_browser_selected -= 1;
+                             }
+                             // Adjust scroll if needed
+                             if app.mcp_browser_selected < app.mcp_browser_scroll {
+                                 app.mcp_browser_scroll = app.mcp_browser_selected;
+                             }
+                         }
+                         KeyCode::Down => {
+                             if app.mcp_browser_selected < app.mcp_browser_items.len() - 1 {
+                                 app.mcp_browser_selected += 1;
+                             }
+                             // Adjust scroll if needed (assuming 20 visible items)
+                             if app.mcp_browser_selected >= app.mcp_browser_scroll + 20 {
+                                 app.mcp_browser_scroll = app.mcp_browser_selected - 19;
+                             }
+                         }
+                         KeyCode::Enter => {
+                             // Install the selected server
+                             if let Some((name, _, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected)
+                                 && !app.config.mcp.contains_key(name) {
+                                 let mcp_config = config::McpConfig {
+                                     command: cmd.clone(),
+                                     environment: None,
+                                     enabled: true,
+                                 };
+                                 app.config.mcp.insert(name.clone(), mcp_config);
+                                 app.config.save();
+                                 app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart open_crust to use it.", name));
+                             }
+                         }
+                         KeyCode::Char(c) => {
+                             app.mcp_input.push(c);
+                         }
+                         KeyCode::Backspace => {
+                             app.mcp_input.pop();
+                         }
+                         _ => {}
+                     },
+                     Mode::CommandPalette => match key.code {
+                         KeyCode::Esc => {
+                             app.mode = Mode::Normal;
+                         }
+                         KeyCode::Up => {
+                             if app.command_palette_selected > 0 {
+                                 app.command_palette_selected -= 1;
+                             }
+                         }
+                         KeyCode::Down => {
+                             if app.command_palette_selected < 4 { // 5 items total (0-4)
+                                 app.command_palette_selected += 1;
+                             }
+                         }
+                         KeyCode::Enter => {
+                             // Handle command palette selection
+                             match app.command_palette_selected {
+                                 0 => { // Switch Provider
+                                     // Cycle through providers
+                                     let providers = vec![
+                                         config::ProviderType::Ollama,
+                                         config::ProviderType::OpenRouter,
+                                         config::ProviderType::OpenAI,
+                                         config::ProviderType::Gemini,
+                                         config::ProviderType::Mistral,
+                                         config::ProviderType::Anthropic,
+                                     ];
+                                      let current_idx = providers.iter().position(|p| p == &app.config.provider).unwrap_or(0);
+                                      let next_idx = (current_idx + 1) % providers.len();
+                                      app.config.provider = providers[next_idx].clone();
+                                     app.config.save();
+                                     app.tabs[0].messages.push(format!("Provider switched to {:?}", app.config.provider));
+                                     app.mode = Mode::Normal;
+                                 }
+                                 1 => { // Switch Model
+                                     // For simplicity, just show a message - in a real implementation this would open a model selector
+                                     app.tabs[0].messages.push(format!("Model switching not fully implemented yet. Current model: {}", app.config.model));
+                                     app.mode = Mode::Normal;
+                                 }
+                                 2 => { // Show Stats
+                                     // Show usage stats
+                                     let stats = app.llm_client.usage_stats.blocking_lock();
+                                     app.tabs[0].messages.push(format!(
+                                         "Tokens: {} in, {} out | Cost: ${:.4}",
+                                         stats.input_tokens, stats.output_tokens, stats.total_cost
+                                     ));
+                                     app.mode = Mode::Normal;
+                                 }
+                                 3 => { // Clear Context
+                                     app.tabs[0].messages.clear();
+                                     app.tabs[0].messages.push(String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit."));
+                                     app.history.clear();
+                                     app.save_history();
+                                      app.tabs[0].messages.push("Context cleared.".to_string());
+                                     app.mode = Mode::Normal;
+                                 }
+                                 4 => { // MCP Browser
+                                     app.mode = Mode::Servers;
+                                 }
+                                 _ => {}
+                             }
+                         }
+                         _ => {}
+                     },
                 }
             }
         }

@@ -40,9 +40,9 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | ACP Mode | ✅ Implemented | JSON-RPC over stdio |
 | MCP Browser UI | ✅ Implemented | Server management panel |
 | **Command Palette (Ctrl+K)** | ✅ **Implemented** | **Provider switching, stats, context clear, MCP browser** |
-| **Context Budget Display** | ❌ Not Implemented | **Status bar shows tokens, budget, percentage, cost** |
-| **Model Context Display** | ❌ Not Implemented | **Status bar shows model name** |
-| **Plan Mode + Diff Preview** | ❌ Not Implemented | **File list, status indicators, approve/deny workflow** |
+| **Context Budget Display** | ✅ Implemented | **Status bar shows tokens, budget, percentage, cost** |
+| **Model Context Display** | ✅ Implemented | **Status bar shows model name and context limit** |
+| **Plan Mode + Diff Preview** | ✅ Implemented | **File list, status indicators, approve/deny workflow** |
 
 ### Impact-Ordered Priority (Not Yet Implemented)
 
