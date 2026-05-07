@@ -211,12 +211,12 @@ pub fn draw(f: &mut Frame, app: &App) {
         format!(" | 🤖 {} ", app.config.model)
     };
 
-    let status = Paragraph::new(format!(
+    let status_bar = Paragraph::new(format!(
         "-- {} -- | Ctrl+B: Sidebar | Tab: Switch view{}",
         mode_str, stats_str
     ))
     .style(Style::default().fg(accent_color));
-    f.render_widget(status, chunks[3]);
+    f.render_widget(status_bar, chunks[3]);
 
     // Cursor handling
     if let Mode::Insert = app.mode {

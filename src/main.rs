@@ -915,7 +915,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
             if app.waiting_for_approval {
                 match key.code {
-                    KeyCode::Char('y') | KeyCode::Char('Y') => {
+                    KeyCode::Char('y' | 'Y') => {
                         app.waiting_for_approval = false;
                         if let Some(tx) = &app.approval_tx {
                             let _ = tx.try_send(true);

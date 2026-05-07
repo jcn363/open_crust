@@ -264,7 +264,7 @@ fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> Strin
     };
 
     format!(
-        r#"
+        r"
 import sys
 import os
 import subprocess
@@ -296,7 +296,7 @@ try:
 except Exception as e:
     print(str(e), file=sys.stderr)
     sys.exit(1)
-"#,
+",
         title, dir, filter_str
     )
 }
