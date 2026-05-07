@@ -105,6 +105,8 @@ pub struct Config {
     pub anthropic_api_key: Option<String>,
     #[serde(default)]
     pub context_budget: Option<u64>,
+    #[serde(default)]
+    pub summarization_threshold: Option<f64>,
 }
 
 impl Default for Keybinds {
@@ -144,6 +146,7 @@ impl Default for Config {
             mistral_api_key: None,
             anthropic_api_key: None,
             context_budget: None,
+            summarization_threshold: None,
         }
     }
 }
@@ -270,6 +273,11 @@ impl Config {
             ProviderType::OpenRouter => 128_000, // depends on the model routed
             ProviderType::Mistral => 32_000,
         }
+    }
+
+    /// Get the summarization threshold (default 0.8 = 80% of context limit)
+    pub fn summarization_threshold(&self) -> f64 {
+        self.summarization_threshold.unwrap_or(0.8)
     }
 }
 

@@ -122,13 +122,21 @@ impl LlmClient {
             "content": prompt
         }));
 
-        // Context Pruning: keep system prompt + last 20 messages if history gets too long
-        if messages_history.len() > 22 {
-            let _ = progress_tx.send(String::from("open_crust: Pruning old context to stay within limits...")).await;
-            let system_prompt = messages_history.remove(0);
-            let last_messages = messages_history.split_off(messages_history.len() - 20);
-            *messages_history = vec![system_prompt];
-            messages_history.extend(last_messages);
+        // Auto-Context Summarization: summarize old messages when approaching budget
+        let (summarized, summary) = self.check_and_summarize_context(messages_history).await;
+        if summarized {
+            if let Some(s) = summary {
+                let _ = progress_tx.send(format!("open_crust: Summarized old context: {}", s)).await;
+            }
+        } else {
+            // Fall back to basic pruning if summarization didn't trigger
+            if messages_history.len() > 22 {
+                let _ = progress_tx.send(String::from("open_crust: Pruning old context to stay within limits...")).await;
+                let system_prompt = messages_history.remove(0);
+                let last_messages = messages_history.split_off(messages_history.len() - 20);
+                *messages_history = vec![system_prompt];
+                messages_history.extend(last_messages);
+            }
         }
 
         loop {
@@ -385,5 +393,109 @@ impl LlmClient {
         } else {
             Err("No content in response".into())
         }
+    }
+
+    /// Auto-summarize context when approaching budget (80% threshold)
+    /// Returns (should_summarize, summary_message)
+    pub async fn check_and_summarize_context(
+        &self,
+        messages_history: &mut Vec<Value>,
+    ) -> (bool, Option<String>) {
+        // Calculate current token usage (rough estimate: 4 chars per token)
+        let total_chars: usize = messages_history.iter()
+            .map(|m| m.get("content").and_then(|c| c.as_str()).map(|s| s.len()).unwrap_or(0))
+            .sum();
+        let estimated_tokens = (total_chars / 4) as u64;
+        
+        let context_limit = self.config.context_limit();
+        let threshold = (context_limit as f64 * self.config.summarization_threshold()) as u64;
+        
+        if estimated_tokens < threshold {
+            return (false, None);
+        }
+        
+        // Find system prompt (first message)
+        let system_prompt = if let Some(first) = messages_history.first() {
+            if first.get("role").and_then(|r| r.as_str()) == Some("system") {
+                Some(first.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        
+        // Collect old messages to summarize (all except system prompt and last 10)
+        if messages_history.len() <= 11 {
+            return (false, None); // Not enough messages to summarize
+        }
+        
+        let split_point = messages_history.len() - 10;
+        let old_messages: Vec<Value> = messages_history.drain(..split_point).collect();
+        
+        // Build summarization prompt
+        let messages_to_summarize: Vec<String> = old_messages.iter()
+            .filter_map(|m| {
+                let role = m.get("role").and_then(|r| r.as_str()).unwrap_or("");
+                let content = m.get("content").and_then(|c| c.as_str()).unwrap_or("");
+                if !content.is_empty() {
+                    Some(format!("{}: {}", role, content))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        
+        let summarize_prompt = format!(
+            "Please provide a concise summary of the following conversation history, preserving key technical details, decisions, and context:\n\n{}",
+            messages_to_summarize.join("\n")
+        );
+        
+        // Generate summary using a simple query
+        // For now, we'll use the existing generate methods
+        // In production, this would use a faster/cheaper model
+        let summary_result = match self.config.provider {
+            crate::config::ProviderType::Ollama => {
+                self.generate_ollama(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+            crate::config::ProviderType::OpenRouter => {
+                self.generate_openrouter(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+            crate::config::ProviderType::OpenAI => {
+                self.generate_openai(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+            crate::config::ProviderType::Gemini => {
+                self.generate_gemini(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+            crate::config::ProviderType::Mistral => {
+                self.generate_mistral(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+            crate::config::ProviderType::Anthropic => {
+                self.generate_anthropic(&vec![json!({"role": "user", "content": &summarize_prompt})]).await
+            }
+        };
+        
+        let summary = match summary_result {
+            Ok(mut res) => {
+                res.get_mut("content").and_then(|c| c.as_str()).unwrap_or("").to_string()
+            }
+            Err(_) => "Previous conversation context (summarized due to length)".to_string()
+        };
+        
+        // Rebuild message history: system prompt + summary + recent messages
+        let mut new_history = Vec::new();
+        if let Some(sp) = system_prompt {
+            new_history.push(sp);
+        }
+        new_history.push(json!({
+            "role": "system",
+            "content": format!("[Previous conversation summary: {}]", summary)
+        }));
+        // messages_history now only contains the last 10 messages (after drain)
+        new_history.extend(messages_history.drain(..));
+        
+        *messages_history = new_history;
+        
+        (true, Some(summary))
     }
 }

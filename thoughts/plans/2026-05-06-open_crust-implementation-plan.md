@@ -46,12 +46,12 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | **Model Context Display** | ✅ Implemented | **Status bar shows model name and context limit** |
 | **Plan Mode + Diff Preview** | ✅ Implemented | **File list, status indicators, approve/deny workflow** |
 | **Background Agents** | ✅ **Implemented** | **Async task spawning, Tasks tab display, Ctrl+T keybinding** |
+| **Auto-Context Summarization** | ✅ **Implemented** | **LLM-based summarization at 80% context threshold, config threshold** |
 
 ### Impact-Ordered Priority (Not Yet Implemented)
 
 | Impact | Feature | Addresses Pain Point | Hours |
 |--------|---------|---------------------|-------|-------|
-| **High** | Auto-Context Summarization | Context loss | 4 |
 | **Medium** | Input Prediction | Typing effort | 5 |
 | **Medium** | Vim Mode | Power user workflows | 5 |
 | **Medium** | Session Forking | Experiment with approaches | 5 |
@@ -64,6 +64,7 @@ Based on competitive analysis against Cursor, Claude Code, and open-source alter
 | Feature | Completed On | Notes |
 |---------|----------------|-------|
 | Background Agents | 2026-05-07 | Async task spawning, Tasks tab display, Ctrl+T keybinding |
+| Auto-Context Summarization | 2026-05-07 | LLM-based summarization at 80% context threshold, config threshold support |
 
 ---
 
