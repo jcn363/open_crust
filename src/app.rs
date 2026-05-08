@@ -10,6 +10,7 @@ pub enum Mode {
     SkillBrowser,   // Ctrl+Shift+K skill browser
     CommandPalette, // Ctrl+K command palette
     McpShowcase,    // Ctrl+M MCP Showcase
+    MissionControl, // Ctrl+G Mission Control
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -99,6 +100,10 @@ pub struct App {
     pub vim_cursor_pos: usize, // Cursor position in input field for vim editing
     // MCP Showcase state (Ctrl+M)
     pub mcp_showcase_ui: Option<crate::mcp_showcase::McpShowcaseUI>,
+    // Mission Control state (Ctrl+G)
+    pub mission_control_ui: Option<crate::mission_control::MissionControlUI>,
+    /// Shared task state from orchestrator for live DAG visualization
+    pub orchestrator_tasks: Option<std::sync::Arc<tokio::sync::RwLock<Vec<crate::orchestrator::task::Task>>>>,
 }
 
 impl App {
@@ -256,6 +261,9 @@ impl App {
             vim_cursor_pos: 0,
             // MCP Showcase state
             mcp_showcase_ui: None,
+            // Mission Control state
+            mission_control_ui: None,
+            orchestrator_tasks: None,
         };
         app.load_history();
         app

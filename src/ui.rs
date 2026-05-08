@@ -174,6 +174,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             Mode::SkillBrowser => Style::default().fg(fg_color),
             Mode::CommandPalette => Style::default().fg(fg_color),
             Mode::McpShowcase => Style::default().fg(fg_color),
+            Mode::MissionControl => Style::default().fg(fg_color),
         })
         .block(
             Block::default()
@@ -187,6 +188,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Mode::SkillBrowser => Style::default().fg(border_color),
                     Mode::CommandPalette => Style::default().fg(border_color),
                     Mode::McpShowcase => Style::default().fg(border_color),
+                    Mode::MissionControl => Style::default().fg(border_color),
                 }),
         );
     f.render_widget(input, chunks[2]);
@@ -200,6 +202,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::SkillBrowser => "SKILLS",
         Mode::CommandPalette => "PALETTE",
         Mode::McpShowcase => "MCP SHOWCASE",
+        Mode::MissionControl => "MISSION CONTROL",
     };
 
     let stats = app.llm_client.usage_stats.try_lock();
@@ -245,6 +248,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         draw_command_palette(f, app);
     } else if let Mode::McpShowcase = app.mode {
         if let Some(ui) = app.mcp_showcase_ui.as_mut() {
+            ui.render(f, f.area());
+        }
+    } else if let Mode::MissionControl = app.mode {
+        if let Some(ui) = app.mission_control_ui.as_mut() {
             ui.render(f, f.area());
         }
     }

@@ -17,6 +17,7 @@ mod lsp;
 mod markdown;
 mod mcp;
 mod mcp_showcase;
+mod mission_control;
 mod orchestrator;
 mod permissions;
 mod planner;
@@ -44,6 +45,7 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use mcp_showcase::McpShowcaseAction;
+use mission_control::MissionControlAction;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use serde_json::Value;
 use std::io;
@@ -1213,6 +1215,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.mode = Mode::McpShowcase;
                             app.mcp_showcase_ui = Some(crate::mcp_showcase::McpShowcaseUI::new(servers));
                         }
+                        KeyCode::Char('g')
+                            if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
+                        {
+                            app.mode = Mode::MissionControl;
+                            if app.mission_control_ui.is_none() {
+                                app.mission_control_ui = Some(crate::mission_control::MissionControlUI::new());
+                            }
+                            // Refresh tasks from orchestrator bridge
+                            if let Some(ref tasks_arc) = app.orchestrator_tasks {
+                                if let Some(ref mut ui) = app.mission_control_ui {
+                                    ui.refresh_tasks(&Some(tasks_arc.clone()));
+                                }
+                            }
+                        }
                         _ => {}
                     },
                     Mode::Insert => {
@@ -1540,6 +1556,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     app.mode = Mode::Normal;
                                 }
                                 McpShowcaseAction::None => {}
+                            }
+                        }
+                    }
+                    Mode::MissionControl => {
+                        if let Some(ref mut ui) = app.mission_control_ui {
+                            // Refresh tasks from orchestrator bridge before handling input
+                            if let Some(ref tasks_arc) = app.orchestrator_tasks {
+                                ui.refresh_tasks(&Some(tasks_arc.clone()));
+                            }
+                            match ui.handle_key(key.code) {
+                                MissionControlAction::ExitMode => {
+                                    app.mode = Mode::Normal;
+                                }
+                                _ => {}
                             }
                         }
                     }
