@@ -218,9 +218,10 @@ pub fn draw(f: &mut Frame, app: &App) {
         format!(" | 🤖 {} ", app.config.model)
     };
 
+    let vim_indicator = if app.vim_mode { " [VIM]" } else { "" };
     let status_bar = Paragraph::new(format!(
-        "-- {} -- | Ctrl+B: Sidebar | Tab: Switch view{}",
-        mode_str, stats_str
+        "-- {} -- {} | Ctrl+B: Sidebar | Tab: Switch view{}",
+        mode_str, vim_indicator, stats_str
     ))
     .style(Style::default().fg(accent_color));
     f.render_widget(status_bar, chunks[3]);

@@ -1052,23 +1052,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::Tab => {
                             app.active_tab = (app.active_tab + 1) % app.tabs.len();
                         }
+                        KeyCode::Char('v')
+                            if key.modifiers == crossterm::event::KeyModifiers::ALT
+                        => {
+                            app.vim_mode = !app.vim_mode;
+                            let mode_str = if app.vim_mode { "enabled" } else { "disabled" };
+                            app.tabs[0]
+                                .messages
+                                .push(format!("Vim Mode {}", mode_str));
+                        }
                         _ => {}
                     },
                     Mode::Insert => {
                         if check_key_match(&key, &submit_keys) {
                             app.submit_message();
-                        } else {
+                        } else if app.vim_mode {
+                            // Vim Mode input editing
                             match key.code {
-                                KeyCode::Tab => {
-                                    // Accept ghost text prediction
-                                    if let Some(ghost) = app.ghost_text.take() {
-                                        app.input.push_str(&ghost);
-                                        // Update last_input_time to prevent immediate re-prediction
-                                        app.last_input_time = Some(std::time::Instant::now());
-                                    }
-                                }
                                 KeyCode::Esc => {
-                                    // Dismiss ghost text if present, otherwise exit Insert mode
                                     if app.ghost_text.is_some() {
                                         app.clear_ghost_text();
                                     } else {
@@ -1078,17 +1079,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 KeyCode::Backspace => {
                                     app.handle_backspace();
                                 }
+                                // Vim navigation (specific chars BEFORE general Char(c))
+                                KeyCode::Char('h') => { app.move_cursor_left(); }
+                                KeyCode::Char('l') => { app.move_cursor_right(); }
+                                KeyCode::Char('w') => { app.move_to_next_word(); }
+                                KeyCode::Char('b') => { app.move_to_prev_word(); }
+                                KeyCode::Char('0') => { app.move_to_line_start(); }
+                                KeyCode::Char('$') => { app.move_to_line_end(); }
+                                KeyCode::Char('a') => { app.move_cursor_right(); }
+                                KeyCode::Char('d') => { app.delete_line(); }
+                                KeyCode::Char('c') => { app.delete_line(); }
+                                KeyCode::Char('y') => { let _ = app.yank_line(&mut clipboard); }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
-                                    // Update last input time for prediction
                                     app.last_input_time = Some(std::time::Instant::now());
                                 }
-                                KeyCode::Up => {
-                                    app.history_up();
+                                _ => {}
+                            }
+                        } else {
+                            match key.code {
+                                KeyCode::Tab => {
+                                    if let Some(ghost) = app.ghost_text.take() {
+                                        app.input.push_str(&ghost);
+                                        app.last_input_time = Some(std::time::Instant::now());
+                                    }
                                 }
-                                KeyCode::Down => {
-                                    app.history_down();
+                                KeyCode::Esc => {
+                                    if app.ghost_text.is_some() {
+                                        app.clear_ghost_text();
+                                    } else {
+                                        app.enter_normal_mode();
+                                    }
                                 }
+                                KeyCode::Backspace => { app.handle_backspace(); }
+                                KeyCode::Char(c) => {
+                                    app.handle_char(c);
+                                    app.last_input_time = Some(std::time::Instant::now());
+                                }
+                                KeyCode::Up => { app.history_up(); }
+                                KeyCode::Down => { app.history_down(); }
                                 _ => {}
                             }
                         }
