@@ -495,19 +495,17 @@ impl Config {
     ///          4. Fall back to main config model (self.model)
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
-        if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL") {
-            if !env_model.is_empty() {
-                return self.parse_model_string(&env_model);
-            }
+        if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL") && !env_model.is_empty() {
+            return self.parse_model_string(&env_model);
         }
 
         // Check subagent config
         if let Some(subagent_config) = &self.subagent_config {
             // Check per-agent override
-            if let Some(agent_type) = agent_type {
-                if let Some(model) = subagent_config.agent_overrides.get(agent_type) {
-                    return self.parse_model_string(model);
-                }
+            if let Some(agent_type) = agent_type
+                && let Some(model) = subagent_config.agent_overrides.get(agent_type)
+            {
+                return self.parse_model_string(model);
             }
 
             // Check default subagent model

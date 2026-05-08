@@ -89,7 +89,7 @@ pub fn extract_numbered_items(md: &str) -> Vec<String> {
     re.captures_iter(md).map(|c| c[1].to_string()).collect()
 }
 
-/// Extract task list items (- [ ] or - [x])
+/// Extract task list items (\- [ ] or \- [x])
 pub fn extract_tasks(md: &str) -> Vec<(bool, String)> {
     let re = Regex::new(r"(?m)^[-*]\s+\[([ x])\]\s+(.+)$").unwrap();
     re.captures_iter(md)

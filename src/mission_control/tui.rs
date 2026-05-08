@@ -2,7 +2,7 @@
 //! Uses ratatui for terminal rendering with split-panel layout:
 //!   - Left 60%: DAG graph with topological layers and unicode edges
 //!   - Right 40%: Task details + system dashboard
-//! Keyboard navigation: arrows, Tab to switch panels, Esc to exit
+//!     Keyboard navigation: arrows, Tab to switch panels, Esc to exit
 
 use ratatui::{
     prelude::*,
@@ -133,7 +133,7 @@ impl MissionControlUI {
 
         // Kahn's algorithm — compute topological order
         let mut queue: Vec<usize> = Vec::new();
-        for i in 0..n {
+        for (i, _) in in_degree.iter().enumerate().take(n) {
             if in_degree[i] == 0 {
                 queue.push(i);
             }
@@ -177,11 +177,7 @@ impl MissionControlUI {
         let mut edge_set: HashSet<(usize, usize)> = HashSet::new();
         for (i, task) in self.tasks.iter().enumerate() {
             for dep_id in &task.dependencies {
-                if let Some(&dep_idx) = id_to_idx.get(dep_id) {
-                    if dep_idx != i {
-                        edge_set.insert((dep_idx, i));
-                    }
-                }
+                if let Some(&dep_idx) = id_to_idx.get(dep_id) && dep_idx != i { edge_set.insert((dep_idx, i)); }
             }
         }
 
@@ -289,29 +285,21 @@ impl MissionControlUI {
                 self.active_panel = (self.active_panel + 1) % 2;
                 return MissionControlAction::TogglePanel;
             }
-            crossterm::event::KeyCode::Up => {
-                if self.active_panel == 0 {
-                    // Navigate up within the current layer
-                    self.navigate_up_in_layer();
-                }
+            crossterm::event::KeyCode::Up if self.active_panel == 0 => {
+                // Navigate up within the current layer
+                self.navigate_up_in_layer();
             }
-            crossterm::event::KeyCode::Down => {
-                if self.active_panel == 0 {
-                    // Navigate down within the current layer
-                    self.navigate_down_in_layer();
-                }
+            crossterm::event::KeyCode::Down if self.active_panel == 0 => {
+                // Navigate down within the current layer
+                self.navigate_down_in_layer();
             }
-            crossterm::event::KeyCode::Left => {
-                if self.active_panel == 0 {
-                    // Move to previous layer
-                    self.navigate_prev_layer();
-                }
+            crossterm::event::KeyCode::Left if self.active_panel == 0 => {
+                // Move to previous layer
+                self.navigate_prev_layer();
             }
-            crossterm::event::KeyCode::Right => {
-                if self.active_panel == 0 {
-                    // Move to next layer
-                    self.navigate_next_layer();
-                }
+            crossterm::event::KeyCode::Right if self.active_panel == 0 => {
+                // Move to next layer
+                self.navigate_next_layer();
             }
             crossterm::event::KeyCode::Enter => {
                 if !self.tasks.is_empty() && self.selected_index < self.tasks.len() {

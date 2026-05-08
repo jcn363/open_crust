@@ -352,7 +352,7 @@ async fn execute_opencrust_tool(name: &str, arguments: &Value) -> Result<String,
             fs::write(path, content).map_err(|e| format!("Error writing file: {}", e))?;
             
             // Format the file if possible
-            let _ = crate::formatters::format_file(std::path::Path::new(path));
+            crate::formatters::format_file(std::path::Path::new(path));
             
             Ok(format!("Successfully wrote to {}", path))
         }

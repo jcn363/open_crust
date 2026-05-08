@@ -378,13 +378,63 @@ opencrust --agent planner                   # Launch in subagent mode
 
 ---
 
-## 📚 Documentation
+## 📚 Documentation Structure
 
-| Document | Description |
-|----------|-------------|
-| `docs/MCP_SERVERS.md` | Complete reference for all 2,500+ MCP servers |
-| `docs/skills.md` | How to create and customize skills |
-| `AGENTS.md` | Repository guidelines for agent-based development |
+OpenCrust documentation is organized by use case and audience. Start with **Tier 1** — it contains everything you need to get productive.
+
+### 🟢 Tier 1: Essential (Start Here)
+
+**For first-time users:**
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — Setup, development environment, PR workflow, testing checklist
+- **[docs/MODULES.md](./docs/MODULES.md)** — Reference guide to all 40+ source modules; lookup table for "where do I change X?"
+
+**For daily usage:**
+- **[docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)** — How-to guides: add custom tools, create skills, integrate MCP servers, add CLI commands, extend TUI, add config options, setup LSP
+- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** — Problem-solution guide for installation, runtime, config, performance, and feature issues
+
+### 🟡 Tier 2: Advanced (Deep Dives)
+
+**For understanding internals:**
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** — System design, data flow, concurrency model, module interactions, security boundaries; includes ASCII diagrams
+- **[docs/SECURITY.md](./docs/SECURITY.md)** — Permissions model, audit system, network gating, sandboxing, secrets management, threat model
+
+**For configuration & optimization:**
+- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — Complete config reference; all 11 LLM providers with examples; MCP/LSP setup; permissions and security settings
+- **[docs/PERFORMANCE.md](./docs/PERFORMANCE.md)** — Profiling, startup/runtime/memory optimization, benchmarking, tuning for production
+
+### 🔵 Tier 3: Practical (Copy-Paste)
+
+**For hands-on tutorials:**
+- **[docs/EXAMPLES.md](./docs/EXAMPLES.md)** — 8 copy-paste-ready tutorials: custom tool, Ollama setup, GitHub MCP, debugging, custom skill, multi-model workflow, keybindings, production lockdown
+- **[docs/TESTING.md](./docs/TESTING.md)** — Unit tests, integration tests, property-based tests, mocking, async testing, benchmarks, PR verification checklist
+
+### Repository Guidelines
+
+- **[AGENTS.md](./AGENTS.md)** — Coding standards, module organization, error handling, testing expectations, commit conventions
+- **[docs/MCP_SERVERS.md](./docs/MCP_SERVERS.md)** — Complete reference for all 2,500+ MCP servers
+- **[docs/skills.md](./docs/skills.md)** — How to create and customize skills
+
+---
+
+### Quick Navigation
+
+**I want to...**
+
+| Goal | Document |
+|------|----------|
+| Get started with OpenCrust | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| Add a custom tool | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md#example-1-create-your-first-custom-tool) → [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-1-create-your-first-custom-tool) |
+| Set up local LLM (Ollama) | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-2-set-up-ollama-for-local-llm) |
+| Integrate GitHub | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-3-add-github-integration-via-mcp) |
+| Debug a failing tool | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-4-debug-a-failing-tool) |
+| Create a skill | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) → [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-5-create-a-custom-skill) |
+| Configure everything | [docs/CONFIGURATION.md](./docs/CONFIGURATION.md) |
+| Understand how it works | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) |
+| Security & permissions | [docs/SECURITY.md](./docs/SECURITY.md) |
+| Fix a problem | [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) |
+| Optimize performance | [docs/PERFORMANCE.md](./docs/PERFORMANCE.md) |
+| Write tests | [docs/TESTING.md](./docs/TESTING.md) |
+| Find where code lives | [docs/MODULES.md](./docs/MODULES.md) |
 
 ---
 
