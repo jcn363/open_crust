@@ -24,6 +24,7 @@ mod security;
 mod sessions;
 mod skills;
 mod stats;
+mod status_bar;
 mod telemetry;
 mod tool_executor;
 mod tools;
@@ -46,6 +47,7 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
+use status_bar::{SharedStatusBarState};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -73,11 +75,11 @@ struct Args {
     #[arg(long, value_name = "DIR")]
     project: Option<String>,
 
-    /// Override provider for this invocation
+    /// Override provider for this invocation (ollama, openrouter, openai, gemini, mistral, anthropic)
     #[arg(long, value_name = "PROVIDER")]
     provider: Option<String>,
 
-    /// Override model for this invocation
+    /// Override model for this invocation (default depends on provider; for openrouter default is openrouter/free-gpt-4o-mini, no API key required)
     #[arg(long, value_name = "MODEL")]
     model: Option<String>,
 }
@@ -195,6 +197,10 @@ enum SkillsCommands {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     let mut config = config::Config::load();
+    // Initialize shared status bar state (will be used by UI and LLM later)
+    let _status_state: SharedStatusBarState = Arc::new(tokio::sync::RwLock::new(
+        status_bar::StatusBarState::new(config.provider.as_str(), &config.model),
+    ));
 
     // Detect Cinnamon desktop environment and apply theming if available
     let cinnamon_info = get_cinnamon_info();

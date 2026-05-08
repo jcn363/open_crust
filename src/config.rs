@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+/// Default OpenRouter free model (no API key required)
+pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free-gpt-4o-mini";
+
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ProviderType {
     Ollama,
@@ -9,6 +12,19 @@ pub enum ProviderType {
     Gemini,
     Mistral,
     Anthropic,
+}
+
+impl ProviderType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ProviderType::Ollama => "ollama",
+            ProviderType::OpenRouter => "openrouter",
+            ProviderType::OpenAI => "openai",
+            ProviderType::Gemini => "gemini",
+            ProviderType::Mistral => "mistral",
+            ProviderType::Anthropic => "anthropic",
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -163,7 +179,11 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             provider: ProviderType::Ollama,
-            model: "llama3".to_string(),
+            // Use provider‑specific default model
+            model: match ProviderType::Ollama {
+                ProviderType::OpenRouter => DEFAULT_OPENROUTER_FREE_MODEL.to_string(),
+                _ => "llama3".to_string(),
+            },
             ollama_url: Some("http://localhost:11434".to_string()),
             openrouter_key: None,
             mcp: default_mcp_servers(),
@@ -224,11 +244,14 @@ impl Config {
                 }
             }
             ProviderType::OpenRouter => {
-                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty()
-                {
-                    eprintln!(
-                        "Warning: OpenRouter provider selected but openrouter_key is not set"
-                    );
+                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty() {
+                    // Skip warning for free models that do not require a key
+                    let is_free = self.model.to_lowercase().contains("free");
+                    if !is_free {
+                        eprintln!(
+                            "Warning: OpenRouter provider selected but openrouter_key is not set"
+                        );
+                    }
                 }
             }
             ProviderType::OpenAI => {
@@ -433,4 +456,27 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
     );
 
     mcp
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn free_model_no_key_no_warning() {
+        let mut cfg = Config::default();
+        cfg.provider = ProviderType::OpenRouter;
+        cfg.model = DEFAULT_OPENROUTER_FREE_MODEL.to_string();
+        cfg.openrouter_key = None;
+        cfg.validate();
+    }
+
+    #[test]
+    fn paid_model_no_key_warns() {
+        let mut cfg = Config::default();
+        cfg.provider = ProviderType::OpenRouter;
+        cfg.model = "openrouter/anthropic/claude-3".to_string();
+        cfg.openrouter_key = None;
+        cfg.validate();
+    }
 }
