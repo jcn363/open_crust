@@ -20,7 +20,7 @@ pub enum TaskState {
 }
 
 /// A unit of work to be executed by an agent
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Task {
     /// Unique identifier
     pub id: Uuid,

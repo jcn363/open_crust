@@ -2,59 +2,72 @@
 
 **The fastest, most secure AI coding agent** — built in Rust for terminal-native development.
 
-OpenCrust empowers developers with a high-intelligence, secure, and fully observable AI partner for complex software engineering tasks. Unlike Python or Node.js-based alternatives, OpenCrust leverages Rust's zero-cost abstractions and memory safety to deliver blazing performance with minimal resource footprint.
+OpenCrust is a high-intelligence AI partner for complex software engineering. Unlike Python or Node.js-based alternatives, it leverages Rust's zero-cost abstractions and memory safety to deliver instant startup and minimal resource footprint. Every feature — from subagent orchestration to LSP integration to network gating — is compiled into a single static binary with no runtime dependencies.
 
 ### Why Rust?
 
 - **⚡ Blazing Fast**: Native compilation means instant startup, sub-millisecond tool execution, and efficient concurrency for multi-agent workflows
 - **🛡️ Memory Safe**: Rust's ownership model eliminates entire classes of vulnerabilities (buffer overflows, use-after-free) inherent in C/C++ tools
-- **🔒 Security First**: Granular permissions, network gating, and persistent auditing — baked into the architecture, not bolted on
-- **📦 Minimal Footprint**: Single static binary, no runtime dependencies, ideal for remote servers and containers
+- **🔒 Security First**: Granular permissions, network gating, persistent auditing — baked into the architecture, not bolted on
+- **📦 Minimal Footprint**: Single static binary, ideal for remote servers, containers, and resource-constrained environments
+
+---
 
 ## 🚀 Key Features
 
 ### 🧠 Advanced Intelligence
 
-- **Recursive Subagents**: Solves complex problems by spawning and managing specialized sub-agents.
-- **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`.
-- **Semantic Search**: Vector-based code search using Ollama embeddings (`nomic-embed-text`). Index with `index_codebase`, then search with `semantic_search`.
-- **Web Intelligence**: Integrated search and automated Markdown conversion for live research.
-- **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping.
-- **Sequential Thinking**: Structured reasoning and step-by-step problem decomposition (MCP).
+- **Recursive Subagents**: Spawns and manages specialized sub-agents for complex, multi-step problems
+- **Multi-Agent Orchestration**: Dedicated `orchestrator/` module for coordinating agent pools with task delegation
+- **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`
+- **Semantic Search**: Vector-based code search using Ollama embeddings (`nomic-embed-text`). Index with `index_codebase`, then search with `semantic_search`
+- **Web Intelligence**: Integrated search and automated Markdown conversion for live research
+- **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping
+- **Skill System**: Load specialized behavior profiles (skills) that reshape the agent's capabilities per-task
 
 ### 🛠️ Industrial Tooling
 
-- **Full MCP & LSP Support**: Native integration with 2,500+ Model Context Protocol and Language Server Protocol servers.
-- **LSP Features**: Code completion, diagnostics (errors/warnings), and code formatting via `textDocument/*` methods.
-- **Runtime Server Addition**: Add new MCP servers interactively without restarting.
-- **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.).
-- **Code Analysis**: AST-based refactoring and code smell detection with Octocode MCP.
-- **Browser Automation**: E2E testing and web automation with Playwright MCP.
+- **Full MCP & LSP Support**: Native integration with 2,500+ Model Context Protocol and Language Server Protocol servers
+- **LSP Features**: Code completion, diagnostics (errors/warnings), code formatting via `textDocument/*` methods
+- **Runtime Server Addition**: Add new MCP servers interactively without restarting
+- **MCP Showcase Browser**: TUI browser to manage, enable/disable MCP servers in real-time (`Ctrl+M`)
+- **Custom Scripting**: Create custom tools using any scripting language (Python, Bash, etc.), auto-discovered from `.opencrust/tools/`
+- **ACP stdio Interface**: Agent Communication Protocol support for multi-agent interoperability
+- **Git Integration**: Native git operations, branch management, and commit automation
 
-### 🛡️ Security & Observability
+### 👮 Security & Observability
 
-- **Granular Permissions**: Fine-grained control over file access and command execution.
-- **Network Gating**: Domain-level whitelisting for all external web requests.
-- **Persistent Auditing**: Every tool call is logged with timestamps, inputs, and results.
-- **Usage Tracking**: Real-time token counts and cost estimation in USD.
-- **Telemetry Export**: Session metrics exported to `telemetry.json` on exit.
+- **Granular Permissions**: Fine-grained control over file access and command execution
+- **Network Gating**: Domain-level whitelisting for all external web requests
+- **Persistent Auditing**: Every tool call logged with timestamps, inputs, and results
+- **Usage Tracking**: Real-time token counts and cost estimation in USD
+- **Telemetry Export**: Session metrics exported to `telemetry.json` on exit
+- **Security Module**: Additional security boundaries for sandboxed execution
 
 ### ⌨️ Professional UX
 
-- **Tabbed Interface**: Switch between `Chat` and `Tasks` views with `[Tab]`.
-- **File Tree Sidebar**: Collapsible project navigator with `[Ctrl+B]`.
-- **Command History**: Persistent history across sessions; navigate with `[↑]`/`[↓]`.
-- **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer.
-- **Context Pinning**: Permanently lock critical files into the agent's context.
-- **MCP Showcase Browser**: Browse and install MCP servers with `[Ctrl+M]`.
-- **Customizable TUI**: Configurable keybinds and theme engine with RGB support.
+- **Tabbed Interface**: Switch between `Chat`, `Tasks`, and `MCP Showcase` views with `Tab`
+- **File Tree Sidebar**: Collapsible project navigator with `Ctrl+B`
+- **Command Palette**: Quick actions (provider switching, stats, context clear) with `Ctrl+K`
+- **Plan Mode**: Review LLM-proposed changes file-by-file before approving (`P`)
+- **Vim Mode**: Modal input editing with `Alt+V` toggle, supports h/j/k/l navigation and yank/delete
+- **Background Agents**: Async task execution with dedicated `Tasks` tab (`Ctrl+T`)
+- **Skill Browser**: Toggle skills active/inactive (`Ctrl+Shift+K` or `S` in normal mode)
+- **Input Prediction**: Ghost text suggestions — `Tab` to accept, `Esc` to dismiss
+- **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer
+- **Context Pinning**: Permanently lock critical files into the agent's context
+- **Context Budget Display**: Real-time token count, budget %, model name, and cost in status bar
+- **Command History**: Persistent history across sessions; navigate with `↑` / `↓`
+- **Customizable TUI**: Configurable keybinds and theme engine with RGB support (Catppuccin Mocha default)
 
-### 🖥️ Desktop Integration (Linux Mint Cinnamon)
+### 🖥️ Desktop Integration (Linux)
 
-- **Smart Notifications**: DBus-first notifications with notify-send fallback for maximum compatibility.
-- **Native File Pickers**: Nemo (Cinnamon), Zenity, or KDialog backends with automatic detection.
-- **Desktop Detection**: Automatic Cinnamon/MATE/GNOME/Plasma environment detection with theme extraction.
-- **CLI Commands**: `opencrust desktop` and `opencrust session` for terminal-native workflows.
+- **Smart Notifications**: DBus-first notifications with notify-send fallback for maximum compatibility
+- **Native File Pickers**: Nemo (Cinnamon), Zenity, or KDialog backends with automatic detection
+- **Desktop Detection**: Automatic Cinnamon/MATE/GNOME/Plasma environment detection with theme extraction
+- **CLI Commands**: `opencrust desktop` and `opencrust session` for terminal-native workflows
+
+---
 
 ## 📦 Installation
 
@@ -64,19 +77,34 @@ cd open_crust
 cargo install --path .
 ```
 
+### Quick Start
+
+```bash
+# Launch the TUI
+opencrust
+
+# One-shot prompt without entering the TUI
+opencrust -p "Explain the Rust ownership model"
+
+# Start with a specific provider and model
+opencrust --provider gemini --model gemini-2.0-flash
+```
+
+---
+
 ## ⚙️ Configuration
 
-Configure your environment in `~/.config/open_crust/config.json`:
+Configure your environment at `~/.config/open_crust/config.json`:
 
 ```json
 {
   "provider": "gemini",
-  "model": "gemini-pro",
+  "model": "gemini-2.0-flash",
   "gemini_api_key": "YOUR_GEMINI_API_KEY",
   "ollama_url": "http://localhost:11434",
   "mcp": {
-    "weather": {
-      "command": ["npx", "-y", "@modelcontextprotocol/server-weather"],
+    "github": {
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
       "enabled": true
     }
   },
@@ -91,7 +119,7 @@ Configure your environment in `~/.config/open_crust/config.json`:
   "tui": {
     "keybinds": {
       "leader": "ctrl+x",
-      "app_exit": "ctrl+c,ctrl+d",
+      "app_exit": "ctrl+q",
       "input_submit": "return"
     }
   },
@@ -104,71 +132,110 @@ Configure your environment in `~/.config/open_crust/config.json`:
 }
 ```
 
-Supported providers: `ollama`, `openrouter`, `openai`, `gemini`.
+**Supported providers (11):** `ollama`, `openrouter`, `openai`, `gemini`, `mistral`, `anthropic`, `groq`, `togetherai`, `replicate`, `deepseek`, `localai`.
+
+Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via the `model_aliases` config section. Subagent-specific provider configs are also supported for multi-agent routing.
+
+---
 
 ## ⌨️ Keybinds
 
 | Key                 | Action                                    |
 |---------------------|-------------------------------------------|
 | `i`                 | Enter Insert (input) mode                 |
-| `Esc`               | Return to Normal mode                     |
-| `Tab`               | Cycle between Chat / Tasks views          |
+| `Esc`               | Return to Normal / dismiss                |
+| `Tab`               | Cycle between Chat / Tasks / MCP views    |
 | `Ctrl+B`            | Toggle file tree sidebar                  |
-| `Ctrl+M`            | Open MCP Showcase browser                |
-| `↑` / `↓`           | Navigate lists (Showcase, History)        |
-| `Enter`             | Submit message / Toggle server (Showcase) |
-| `s`                 | Open Server Management panel              |
+| `Ctrl+K`            | Open Command Palette                      |
+| `Ctrl+M`            | MCP Showcase browser                      |
+| `Ctrl+T`            | Open Background Agents tab                |
+| `Ctrl+Shift+K`      | Open Skill Browser                        |
+| `Alt+V`             | Toggle Vim Mode                           |
+| `p` / `P`           | Enter Plan Mode                            |
+| `k`                 | Command Palette (normal mode)             |
+| `m`                 | MCP Showcase (normal mode)                |
+| `s` / `S`           | Skill Browser / Server panel              |
 | `a`                 | Approve proposed change                   |
 | `d`                 | Deny proposed change                      |
-| `Ctrl+C` / `Ctrl+D` | Quit                                      |
+| `Shift+A`           | Approve all proposed changes              |
+| `↑` / `↓`           | Navigate command history / lists          |
+| `Enter`             | Submit message / confirm                  |
+| `Ctrl+Q`            | Quit                                      |
+
+> **Note:** Default keybinds shown above. All keybinds are fully customizable in `config.json` under `tui.keybinds`.
+
+---
 
 ## 🏗️ Architecture
 
 ```text
 open_crust/
 ├── src/
-│   ├── main.rs        # Entry point, TUI event loop
-│   ├── app.rs         # Application state, tabs, history
-│   ├── ui.rs          # TUI rendering (ratatui)
-│   ├── llm.rs         # LLM client, tool execution loop
-│   ├── tools.rs       # Tool schema definitions
-│   ├── config.rs      # Config loading/saving
-│   ├── mcp.rs         # MCP server management (JSON-RPC)
-│   ├── mcp_showcase/  # MCP Showcase browser module
-│   │   ├── mod.rs     # Module entry point
-│   │   └── tui.rs     # MCP Showcase TUI component
-│   ├── lsp.rs         # LSP client (JSON-RPC)
-│   ├── skills.rs      # Skill discovery and loading
-│   ├── sessions.rs    # Session persistence
-│   ├── planner.rs     # Task planner
-│   ├── rag.rs         # Local semantic search
-│   ├── audit.rs       # Audit logging
-│   ├── stats.rs       # Token & cost tracking
-│   ├── telemetry.rs   # Session telemetry export
-│   ├── permissions.rs # Permission enforcement
-│   ├── web.rs         # Web search integration
-│   ├── acp.rs         # ACP stdio interface
-│   └── desktop/       # Desktop integration module
-│       ├── mod.rs     # Module entry point
-│       ├── detection.rs    # Desktop environment detection
-│       ├── notifications.rs # System notifications
-│       └── file_picker.rs  # Native file pickers
+│   ├── main.rs            # Entry point, CLI args, TUI event loop
+│   ├── app.rs             # Application state, tabs, history, background tasks
+│   ├── ui.rs              # TUI rendering (ratatui)
+│   │
+│   ├── llm.rs             # LLM client, tool execution loop, context management
+│   ├── tools.rs           # Tool schema definitions and routing
+│   ├── config.rs          # Config loading/saving (11 providers, model_aliases, subagent cfg)
+│   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
+│   ├── context.rs         # Context management (@file syntax, pinning, budget)
+│   ├── skills.rs          # Skill discovery, loading, activation/deactivation
+│   │
+│   ├── mcp.rs             # MCP server management (JSON-RPC transport)
+│   ├── mcp_showcase/      # MCP Showcase TUI browser
+│   │   ├── mod.rs
+│   │   └── tui.rs         # MCP Showcase TUI component
+│   ├── lsp.rs             # LSP client (JSON-RPC) with completion, diagnostics, formatting
+│   ├── custom_tools.rs    # Custom tool discovery from .opencrust/tools/
+│   │
+│   ├── planner.rs         # Task planner (multi-step plan generation)
+│   ├── rag.rs             # Local semantic search (vector-based code search)
+│   ├── web.rs             # Web search integration with markdown conversion
+│   ├── git.rs             # Git operations (branch, commit, PR)
+│   │
+│   ├── permissions.rs     # Permission enforcement (file access, command exec)
+│   ├── security.rs        # Additional security module
+│   ├── audit.rs           # Audit logging (every tool call)
+│   ├── stats.rs           # Token & cost tracking
+│   ├── telemetry.rs       # Session telemetry export
+│   │
+│   ├── sessions.rs        # Session persistence (save/load/list/fork)
+│   ├── markdown.rs        # Markdown rendering
+│   ├── events.rs          # Event bus and handler dispatch
+│   ├── status_bar.rs      # Status bar component (model, tokens, cost)
+│   ├── clipboard.rs       # Clipboard integration
+│   ├── formatters.rs      # Auto-formatter integration
+│   ├── json_utils.rs      # JSON path utilities
+│   ├── jsonrpc.rs         # JSON-RPC protocol primitives
+│   ├── acp.rs             # Agent Communication Protocol (ACP) stdio interface
+│   │
+│   ├── orchestrator/      # Multi-agent orchestration
+│   │   ├── mod.rs         # Coordinator entry point
+│   │   ├── task.rs        # Task representation and state
+│   │   └── agent_pool.rs  # Agent pool management
+│   │
+│   └── desktop/           # Desktop integration
+│       ├── mod.rs
+│       ├── detection.rs   # Desktop environment detection
+│       ├── notifications.rs # System notifications (DBus + notify-send)
+│       └── file_picker.rs # Native file pickers (Nemo, Zenity, KDialog)
 ```
+
+---
 
 ## 🔌 MCP Ecosystem Integration
 
-OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **12,000+ community servers** for databases, APIs, productivity tools, and more.
+OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **2,500+ community servers** for databases, APIs, productivity tools, and more.
 
 ### MCP Showcase (TUI Browser)
 
-Press `Ctrl+M` anywhere in the app to open the **MCP Showcase** - a terminal-native browser for managing your MCP servers:
+Press `Ctrl+M` (or `M` in normal mode) to open the **MCP Showcase** — a terminal-native browser for managing your MCP servers:
 
 - **Browse**: See all configured MCP servers with their status (enabled/disabled)
 - **Toggle**: Press `Enter` to enable/disable any server
-- **Navigate**: Use `↑`/`↓` arrows to move through the list
-- **Exit**: Press `Esc` to return to the main interface
-
-Changes take effect immediately and are saved to your config file automatically.
+- **Navigate**: Use `↑` / `↓` arrows to move through the list
+- **Changes** take effect immediately and are saved to your config automatically
 
 ### Quick Start
 
@@ -178,8 +245,6 @@ opencrust mcp list
 
 # Install a server (e.g., GitHub integration)
 opencrust mcp install github
-
-# Restart open_crust to load the new server
 ```
 
 ### Recommended MCP Servers
@@ -208,9 +273,7 @@ Browse all servers at [mcpdirectory.app](https://mcpdirectory.app/) (2,500+ serv
 
 ## 🧠 Built-in Skills
 
-OpenCrust ships with specialized skills that enhance AI behavior for specific tasks. Skills are automatically discovered from `.opencrust/skills/`.
-
-### Included Skills
+OpenCrust ships with 9 specialized skills that reshape AI behavior for specific tasks. Skills are auto-discovered from `.opencrust/skills/`.
 
 | Skill | Description |
 |-------|-------------|
@@ -226,7 +289,7 @@ OpenCrust ships with specialized skills that enhance AI behavior for specific ta
 
 ### Adding Custom Skills
 
-Create a SKILL.md file in `.opencrust/skills/<skill-name>/`:
+Create a `SKILL.md` file in `.opencrust/skills/<skill-name>/`:
 
 ```markdown
 ---
@@ -239,13 +302,13 @@ description: Does something useful
 The agent should follow these steps to accomplish the task...
 ```
 
-See `docs/skills.md` for detailed skill creation guide.
+Skills can be activated/deactivated via the Skill Browser (`Ctrl+Shift+K`) or the CLI: `opencrust skills activate <name>`.
 
 ---
 
 ## 🔧 Custom Tools & Linters
 
-OpenCrust auto-discovers executable tools in `.opencrust/tools/`. Built-in linter tools include:
+OpenCrust auto-discovers executable scripts in `.opencrust/tools/`. Built-in linter tools include:
 
 | Tool | Description |
 |------|-------------|
@@ -264,80 +327,64 @@ echo "Running my tool..."
 
 ---
 
-## 🖥️ CLI Commands
+## 🖥️ CLI Reference
 
-OpenCrust provides terminal-native CLI subcommands for desktop integration and session management.
-
-### Desktop Commands
+### Desktop
 
 ```bash
-# Detect desktop environment (Cinnamon/MATE/GNOME/Plasma)
-opencrust desktop detect
-
-# Send a notification
-opencrust desktop notify --title "OpenCrust" --body "Build complete!"
-
-# Open native file picker
-opencrust desktop file-picker --directory
+opencrust desktop detect                    # Detect DE (Cinnamon/MATE/GNOME/Plasma)
+opencrust desktop notify --title "X" --body "Y"  # Send notification
+opencrust desktop file-picker [--directory]      # Native file picker
 ```
 
-### Session Commands
+### Sessions
 
 ```bash
-# List all saved sessions
-opencrust session list
-
-# Show a specific session
-opencrust session show <session-id>
-
-# Delete a session
-opencrust session delete <session-id>
-
-# Save current session
-opencrust session save --name "my-session"
+opencrust session list                      # List saved sessions
+opencrust session show <id>                 # Show session details
+opencrust session save --name "tag"         # Save current session
+opencrust session delete <id>               # Delete a session
+opencrust session fork <id>                 # Fork a session
 ```
 
-### MCP Server Mode (JSON-RPC stdio)
+### MCP
 
 ```bash
-# Start MCP server on stdio (for tool integration)
-opencrust serve --stdio
+opencrust mcp list                          # List available MCP servers
+opencrust mcp install <name>                # Install an MCP server
+opencrust mcp remove <name>                 # Remove an MCP server
 ```
 
-### Headless Mode (one‑shot prompt)
+### Skills
 
 ```bash
-# Prompt via command line
-opencrust -p "Explain the Rust ownership model"
-
-# Prompt from a file
-opencrust -f prompt.txt
-
-# Override config values (project dir, provider, model)
-opencrust -p "Summarize this repo" --project /path/to/project --provider ollama --model llama3
+opencrust skills list                       # List all skills
+opencrust skills activate <name>            # Activate a skill
+opencrust skills deactivate <name>          # Deactivate a skill
+opencrust skills stats                      # Show skill usage stats
 ```
 
+### Serve & Headless
 
 ```bash
-# List all saved sessions
-opencrust session list
-
-# Show a specific session
-opencrust session show <session-id>
-
-# Delete a session
-opencrust session delete <session-id>
-
-# Save current session
-opencrust session save --name "my-session"
+opencrust serve --stdio                     # MCP server mode (JSON-RPC stdio)
+opencrust -p "prompt"                       # One-shot prompt
+opencrust -f prompt.txt                     # Prompt from file
+opencrust -p "..." --project /path          # Override project directory
+opencrust -p "..." --provider ollama        # Override provider
+opencrust -p "..." --model llama3           # Override model
+opencrust --agent planner                   # Launch in subagent mode
 ```
 
 ---
 
 ## 📚 Documentation
 
-- **MCP Servers Guide**: `docs/MCP_SERVERS.md` - Complete reference for all 12,000+ MCP servers
-- **Skills Guide**: `docs/skills.md` - How to create and customize skills
+| Document | Description |
+|----------|-------------|
+| `docs/MCP_SERVERS.md` | Complete reference for all 2,500+ MCP servers |
+| `docs/skills.md` | How to create and customize skills |
+| `AGENTS.md` | Repository guidelines for agent-based development |
 
 ---
 

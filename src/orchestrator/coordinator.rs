@@ -27,6 +27,8 @@ pub struct CoordinatorResult {
 /// Drives task execution by resolving dependencies and managing concurrency
 pub struct Coordinator {
     pool: AgentPool,
+    /// Shared state for live TUI visualization
+    shared_state: Option<std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>>,
 }
 
 impl Coordinator {
@@ -34,6 +36,23 @@ impl Coordinator {
     pub fn new(agent_config: AgentConfig) -> Self {
         Self {
             pool: AgentPool::new(agent_config),
+            shared_state: None,
+        }
+    }
+
+    /// Attach a shared state bridge for live TUI visualization.
+    /// The coordinator will update this shared state on every task transition.
+    pub fn with_shared_state(mut self, state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>) -> Self {
+        self.shared_state = Some(state);
+        self
+    }
+
+    /// Snapshot current tasks into shared state (if bridge is attached)
+    fn sync_shared_state(&self, tasks: &[Task]) {
+        if let Some(ref shared) = self.shared_state {
+            if let Ok(mut guard) = shared.try_write() {
+                *guard = tasks.to_vec();
+            }
         }
     }
 
@@ -69,6 +88,7 @@ impl Coordinator {
                     tasks[i].state = TaskState::Running {
                         agent_id: tasks[i].agent_type.clone(),
                     };
+                    self.sync_shared_state(tasks);
                     running.insert(tasks[i].id, rx);
                 }
             }
@@ -87,6 +107,7 @@ impl Coordinator {
                         tasks[i].state = TaskState::Failed {
                             error: "dependencies failed or cancelled".into(),
                         };
+                        self.sync_shared_state(tasks);
                         all_failed.push(tasks[i].clone());
                     }
                 }
