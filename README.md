@@ -59,6 +59,7 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Context Budget Display**: Real-time token count, budget %, model name, and cost in status bar
 - **Command History**: Persistent history across sessions; navigate with `↑` / `↓`
 - **Customizable TUI**: Configurable keybinds and theme engine with RGB support (Catppuccin Mocha default)
+- **Mission Control**: Visualize orchestrator task DAG with interactive navigation (`Ctrl+G`)
 
 ### 🖥️ Desktop Integration (Linux)
 
@@ -423,7 +424,7 @@ OpenCrust documentation is organized by use case and audience. Start with **Tier
 | Goal | Document |
 |------|----------|
 | Get started with OpenCrust | [CONTRIBUTING.md](./CONTRIBUTING.md) |
-| Add a custom tool | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md#example-1-create-your-first-custom-tool) → [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-1-create-your-first-custom-tool) |
+| Add a custom tool | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md#1-adding-a-custom-tool) → [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-1-create-your-first-custom-tool) |
 | Set up local LLM (Ollama) | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-2-set-up-ollama-for-local-llm) |
 | Integrate GitHub | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-3-add-github-integration-via-mcp) |
 | Debug a failing tool | [docs/EXAMPLES.md](./docs/EXAMPLES.md#example-4-debug-a-failing-tool) |
