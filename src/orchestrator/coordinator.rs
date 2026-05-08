@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn test_task_dag_sequential() {
         // t2 depends on t1
-        let mut t1 = Task::new("task 1", "agent");
+        let t1 = Task::new("task 1", "agent");
         let mut t2 = Task::new("task 2", "agent");
 
         let t1_id = t1.id;
