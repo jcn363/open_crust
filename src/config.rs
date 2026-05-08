@@ -13,6 +13,11 @@ pub enum ProviderType {
     Gemini,
     Mistral,
     Anthropic,
+    Groq,
+    TogetherAi,
+    Replicate,
+    DeepSeek,
+    LocalAi,
 }
 
 /// Model tiers for cost-aware routing
@@ -68,6 +73,11 @@ impl ProviderType {
             ProviderType::Gemini => "gemini",
             ProviderType::Mistral => "mistral",
             ProviderType::Anthropic => "anthropic",
+            ProviderType::Groq => "groq",
+            ProviderType::TogetherAi => "togetherai",
+            ProviderType::Replicate => "replicate",
+            ProviderType::DeepSeek => "deepseek",
+            ProviderType::LocalAi => "localai",
         }
     }
 }
@@ -203,6 +213,26 @@ pub struct Config {
     /// Model aliases for user-friendly model names
     #[serde(default)]
     pub model_aliases: HashMap<String, ModelAlias>,
+
+    // --- New provider API keys ---
+    #[serde(default)]
+    pub groq_api_key: Option<String>,
+    #[serde(default)]
+    pub together_api_key: Option<String>,
+    #[serde(default)]
+    pub replicate_api_key: Option<String>,
+    #[serde(default)]
+    pub deepseek_api_key: Option<String>,
+    #[serde(default)]
+    pub localai_url: Option<String>,
+    #[serde(default)]
+    pub localai_api_key: Option<String>,
+
+    // --- Orchestrator configuration ---
+    #[serde(default)]
+    pub subagent_max_concurrent: Option<usize>,
+    #[serde(default)]
+    pub subagent_timeout_secs: Option<u64>,
 }
 
 impl Default for Keybinds {
@@ -252,6 +282,14 @@ impl Default for Config {
             summarization_threshold: None,
             subagent_config: Some(SubagentConfig::default()),
             model_aliases: HashMap::new(),
+            groq_api_key: None,
+            together_api_key: None,
+            replicate_api_key: None,
+            deepseek_api_key: None,
+            localai_url: None,
+            localai_api_key: None,
+            subagent_max_concurrent: None,
+            subagent_timeout_secs: None,
         }
     }
 }
@@ -334,6 +372,45 @@ impl Config {
                     );
                 }
             }
+            ProviderType::Groq => {
+                if self.groq_api_key.is_none() || self.groq_api_key.as_ref().unwrap().is_empty() {
+                    eprintln!("Warning: Groq provider selected but groq_api_key is not set");
+                }
+            }
+            ProviderType::TogetherAi => {
+                if self.together_api_key.is_none()
+                    || self.together_api_key.as_ref().unwrap().is_empty()
+                {
+                    eprintln!(
+                        "Warning: TogetherAi provider selected but together_api_key is not set"
+                    );
+                }
+            }
+            ProviderType::Replicate => {
+                if self.replicate_api_key.is_none()
+                    || self.replicate_api_key.as_ref().unwrap().is_empty()
+                {
+                    eprintln!(
+                        "Warning: Replicate provider selected but replicate_api_key is not set"
+                    );
+                }
+            }
+            ProviderType::DeepSeek => {
+                if self.deepseek_api_key.is_none()
+                    || self.deepseek_api_key.as_ref().unwrap().is_empty()
+                {
+                    eprintln!(
+                        "Warning: DeepSeek provider selected but deepseek_api_key is not set"
+                    );
+                }
+            }
+            ProviderType::LocalAi => {
+                if self.localai_url.is_none()
+                    || self.localai_url.as_ref().unwrap().is_empty()
+                {
+                    eprintln!("Warning: LocalAi provider selected but localai_url is not set");
+                }
+            }
         }
 
         // Check model is not empty
@@ -398,6 +475,11 @@ impl Config {
             ProviderType::Ollama => 8_000, // configurable, but default is small
             ProviderType::OpenRouter => 128_000, // depends on the model routed
             ProviderType::Mistral => 32_000,
+            ProviderType::Groq => 128_000,
+            ProviderType::TogetherAi => 128_000,
+            ProviderType::Replicate => 8_000,
+            ProviderType::DeepSeek => 128_000,
+            ProviderType::LocalAi => 8_000,
         }
     }
 

@@ -169,6 +169,11 @@ impl LlmClient {
                 ProviderType::Gemini => self.generate_gemini(messages_history).await?,
                 ProviderType::Mistral => self.generate_mistral(messages_history).await?,
                 ProviderType::Anthropic => self.generate_anthropic(messages_history).await?,
+                ProviderType::Groq => self.generate_groq(messages_history).await?,
+                ProviderType::TogetherAi => self.generate_together_ai(messages_history).await?,
+                ProviderType::Replicate => self.generate_replicate(messages_history).await?,
+                ProviderType::DeepSeek => self.generate_deepseek(messages_history).await?,
+                ProviderType::LocalAi => self.generate_local_ai(messages_history).await?,
             };
 
             if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
@@ -443,6 +448,112 @@ impl LlmClient {
             .unwrap_or(json!({})))
     }
 
+    async fn generate_groq(
+        &self,
+        messages: &[Value],
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.groq_api_key.as_deref().unwrap_or("");
+        let res_json = self
+            .generate_completion(
+                messages,
+                "https://api.groq.com/openai/v1/chat/completions",
+                Some(("Authorization", format!("Bearer {}", api_key))),
+            )
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_together_ai(
+        &self,
+        messages: &[Value],
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.together_api_key.as_deref().unwrap_or("");
+        let res_json = self
+            .generate_completion(
+                messages,
+                "https://api.together.xyz/v1/chat/completions",
+                Some(("Authorization", format!("Bearer {}", api_key))),
+            )
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_replicate(
+        &self,
+        messages: &[Value],
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.replicate_api_key.as_deref().unwrap_or("");
+        let res_json = self
+            .generate_completion(
+                messages,
+                "https://api.replicate.com/v1/chat/completions",
+                Some(("Authorization", format!("Bearer {}", api_key))),
+            )
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_deepseek(
+        &self,
+        messages: &[Value],
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.deepseek_api_key.as_deref().unwrap_or("");
+        let res_json = self
+            .generate_completion(
+                messages,
+                "https://api.deepseek.com/v1/chat/completions",
+                Some(("Authorization", format!("Bearer {}", api_key))),
+            )
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    async fn generate_local_ai(
+        &self,
+        messages: &[Value],
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let base_url = self
+            .config
+            .localai_url
+            .as_deref()
+            .unwrap_or("http://localhost:8080");
+        let api_key = self.config.localai_api_key.as_deref().unwrap_or("");
+        let auth = if api_key.is_empty() {
+            None
+        } else {
+            Some(("Authorization", format!("Bearer {}", api_key)))
+        };
+        let res_json = self
+            .generate_completion(messages, &format!("{}/v1/chat/completions", base_url), auth)
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
     /// Simple query without tool execution - for multi-agent comparison
     pub async fn query_simple(&self, prompt: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
         let messages = vec![json!({"role": "user", "content": prompt})];
@@ -454,6 +565,11 @@ impl LlmClient {
             ProviderType::Gemini => self.generate_gemini(&messages).await?,
             ProviderType::Mistral => self.generate_mistral(&messages).await?,
             ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
+            ProviderType::Groq => self.generate_groq(&messages).await?,
+            ProviderType::TogetherAi => self.generate_together_ai(&messages).await?,
+            ProviderType::Replicate => self.generate_replicate(&messages).await?,
+            ProviderType::DeepSeek => self.generate_deepseek(&messages).await?,
+            ProviderType::LocalAi => self.generate_local_ai(&messages).await?,
         };
 
         // Extract content from response - handle multiple formats:
@@ -572,6 +688,14 @@ impl LlmClient {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
                 self.generate_anthropic(&messages).await
             }
+            crate::config::ProviderType::Groq
+            | crate::config::ProviderType::TogetherAi
+            | crate::config::ProviderType::Replicate
+            | crate::config::ProviderType::DeepSeek
+            | crate::config::ProviderType::LocalAi => {
+                let messages = [json!({"role": "user", "content": &summarize_prompt})];
+                self.generate_openai(&messages).await
+            }
         };
 
         let summary = match summary_result {
@@ -631,6 +755,11 @@ impl LlmClient {
             crate::config::ProviderType::Gemini => self.generate_gemini(&messages).await?,
             crate::config::ProviderType::Mistral => self.generate_mistral(&messages).await?,
             crate::config::ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
+            crate::config::ProviderType::Groq
+            | crate::config::ProviderType::TogetherAi
+            | crate::config::ProviderType::Replicate
+            | crate::config::ProviderType::DeepSeek
+            | crate::config::ProviderType::LocalAi => self.generate_openai(&messages).await?,
         };
 
         // Extract content from the response based on provider
@@ -663,6 +792,17 @@ impl LlmClient {
                 .and_then(|c| c.get(0))
                 .and_then(|c| c.get("text"))
                 .and_then(|t| t.as_str())
+                .unwrap_or(""),
+            crate::config::ProviderType::Groq
+            | crate::config::ProviderType::TogetherAi
+            | crate::config::ProviderType::Replicate
+            | crate::config::ProviderType::DeepSeek
+            | crate::config::ProviderType::LocalAi => result
+                .get("choices")
+                .and_then(|c| c.get(0))
+                .and_then(|c| c.get("message"))
+                .and_then(|m| m.get("content"))
+                .and_then(|c| c.as_str())
                 .unwrap_or(""),
         };
         Ok(content.to_string())

@@ -17,6 +17,7 @@ mod lsp;
 mod markdown;
 mod mcp;
 mod mcp_showcase;
+mod orchestrator;
 mod permissions;
 mod planner;
 mod rag;
@@ -1469,6 +1470,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                         config::ProviderType::Gemini,
                                         config::ProviderType::Mistral,
                                         config::ProviderType::Anthropic,
+                                        config::ProviderType::Groq,
+                                        config::ProviderType::TogetherAi,
+                                        config::ProviderType::Replicate,
+                                        config::ProviderType::DeepSeek,
+                                        config::ProviderType::LocalAi,
                                     ];
                                     let current_idx = providers
                                         .iter()
@@ -1519,61 +1525,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     },
                     Mode::McpShowcase => {
                         if let Some(ref mut ui) = app.mcp_showcase_ui {
-                            match ui.handle_key(key.code, key.modifiers) {
+                            match ui.handle_key(key.code) {
                                 McpShowcaseAction::ToggleServer(name) => {
+                                    // Toggle enabled status in config
                                     if let Some(server_cfg) = app.config.mcp.get_mut(&name) {
                                         server_cfg.enabled = !server_cfg.enabled;
+                                        // Save updated config to disk
                                         app.config.save();
+                                        // Update UI server list to reflect change
                                         ui.toggle_server(&name);
                                     }
                                 }
                                 McpShowcaseAction::ExitMode => {
                                     app.mode = Mode::Normal;
-                                }
-                                McpShowcaseAction::ShowTools(server_name) => {
-                                    let server_name_clone = server_name.clone();
-                                    let tools = mcp_manager.lock().await.list_tools().await;
-                                    let filtered: Vec<_> = tools.iter()
-                                        .filter(|t| {
-                                            t.get("name").and_then(|n| n.as_str())
-                                                .map(|n| n.starts_with(&format!("{}_", server_name_clone)))
-                                                .unwrap_or(false)
-                                        })
-                                        .cloned()
-                                        .collect();
-                                    let parsed = mcp_showcase::parse_tools_from_response(&filtered);
-                                    ui.set_tools_for_server(&server_name, parsed);
-                                    ui.navigate_to_tool_list(&server_name);
-                                }
-                                McpShowcaseAction::BackToServerList => {}
-                                McpShowcaseAction::SelectTool(_, _) => {}
-                                McpShowcaseAction::ExecuteTool(server_name, tool_name) => {
-                                    let args = ui.build_arguments_json(&server_name, &tool_name);
-                                    let full_name = format!("{}_{}", server_name, tool_name);
-                                    match mcp_manager.lock().await.call_tool(&full_name, &args).await {
-                                        Ok(result) => {
-                                            ui.navigate_to_result(&server_name, &tool_name, &result);
-                                        }
-                                        Err(e) => {
-                                            ui.navigate_to_result(&server_name, &tool_name, &format!("Error: {}", e));
-                                        }
-                                    }
-                                }
-                                McpShowcaseAction::InputChanged(field_name, value) => {
-                                    ui.update_input_field(&field_name, value);
-                                }
-                                McpShowcaseAction::NextField => {
-                                    if ui.selected_field + 1 < ui.field_order.len() {
-                                        ui.selected_field += 1;
-                                    }
-                                }
-                                McpShowcaseAction::PrevField => {
-                                    if ui.selected_field > 0 {
-                                        ui.selected_field -= 1;
-                                    }
-                                }
-                                McpShowcaseAction::ScrollResult(delta) => {
-                                    ui.result_scroll = ui.result_scroll.saturating_add_signed(delta as isize);
                                 }
                                 McpShowcaseAction::None => {}
                             }
@@ -1686,6 +1650,7 @@ fn parse_agent_spec(
             config::ProviderType::Gemini => "gemini-pro".to_string(),
             config::ProviderType::Mistral => "mistral-large".to_string(),
             config::ProviderType::Anthropic => "claude-3-opus".to_string(),
+            _ => "default-model".to_string(),
         };
         Ok((provider, model))
     }
