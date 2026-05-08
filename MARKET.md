@@ -35,7 +35,7 @@
 ### 2. Terminal-Native Agents Are Growing
 New entrants in the last 6 months:
 - **Conduit** - Multi-agent TUI orchestration
-- **Golem** - Mission control + durable workflows  
+- **Golem** - Mission control + durable workflows
 - **CruxCLI** - Mode-to-model mapping, 75+ providers
 - **jcode** - Rust-built, self-modifying agent
 
@@ -52,11 +52,11 @@ Tools like Conduit and AgentPipe let users run Claude + GPT + Gemini **side-by-s
 ## OpenCrust's Position
 
 ### Current Strengths to Leverage
-✅ Built in **Rust** (performance, safety, "fastest agent" positioning)  
-✅ **Security-first** (permissions, audit logs - enterprise selling point)  
-✅ **MCP support** (can tap into 2,300+ servers)  
-✅ **TUI-native** (growing trend, no Electron bloat)  
-✅ **Walkdir integration** (safe filesystem traversal)  
+✅ Built in **Rust** (performance, safety, "fastest agent" positioning)
+✅ **Security-first** (permissions, audit logs - enterprise selling point)
+✅ **MCP support** (can tap into 2,300+ servers)
+✅ **TUI-native** (growing trend, no Electron bloat)
+✅ **Walkdir integration** (safe filesystem traversal)
 
 ### Critical Gaps vs Market Leaders
 1. **No multi-agent orchestration** - Competitors let you run Claude + GPT + Gemini simultaneously
@@ -95,7 +95,7 @@ Tools like Conduit and AgentPipe let users run Claude + GPT + Gemini **side-by-s
 ```bash
 # Run multiple agents in tabs
 opencrust --agent claude "complex refactor"
-opencrust --agent gemini "search task"  
+opencrust --agent gemini "search task"
 opencrust --agent codex "quick fix"
 ```
 
@@ -158,5 +158,5 @@ This positions OpenCrust as "the MCP-native agent" - differentiating from Cline 
 
 ---
 
-*Analysis date: 2026-05-05*  
+*Analysis date: 2026-05-05*
 *Sources: IdeaPlan, AgentMarketCap, Zylos Research, Codersera, ToolHalla, NivaLabs*
