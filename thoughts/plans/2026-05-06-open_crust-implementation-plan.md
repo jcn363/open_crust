@@ -943,6 +943,7 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 | 9 | Auto-Context Summarization | High | 4 | Feature 2 | ✅ Done |
 | 3 | Multi-Provider Toggle | High | 6 | None | ✅ Done |
 | 7 | Input Prediction | Medium | 5 | None | ✅ Done |
+| 8 | Vim Mode | Medium | 5 | None | ✅ Done |
 | 11 | Session Forking | Medium | 5 | None | ✅ Done |
 | 10 | **Enhanced Skills** | Lower | 4 | None | ✅ **Done** |
 | 5 | **MCP Server Mode** | Lower | 6 | None | ✅ **Done** |
@@ -954,11 +955,7 @@ pub fn context_limit(provider: &ProviderType, model: &str) -> u64 {
 
 ## Future Enhancements
 
-These features have been deprioritized or require more investigation:
-
-| # | Feature | Impact Tier | Hours | Reason |
-|---|---------|-------------|-------|---------|
-| 8 | **Vim Mode** | Medium | 5 | **Moved to future** - Implementation complexity with delimiter handling in `match` blocks; requires refactoring input handling architecture |
+All planned features have been fully implemented. No remaining future enhancements at this time.
 
 ---
 
@@ -985,4 +982,4 @@ These features have been deprioritized or require more investigation:
 - Feature 5: MCP Server Mode (6h) ⏳ **Pending**
 - Feature 6: Headless Mode (3h) ⏳ **Pending**
 
-> **Note**: Vim Mode (Feature 8) moved to Future Enhancements
+> **Note**: All 12 planned features are now fully implemented (as of 2026-05-08), including Vim Mode (Feature 8) which was previously listed as a future enhancement.

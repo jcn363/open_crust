@@ -16,6 +16,7 @@ mod llm;
 mod lsp;
 mod markdown;
 mod mcp;
+mod mcp_showcase;
 mod permissions;
 mod planner;
 mod rag;
@@ -41,6 +42,7 @@ use crossterm::{
     event::{Event, KeyCode},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
+use mcp_showcase::McpShowcaseAction;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use serde_json::Value;
 use std::io;
@@ -127,6 +129,21 @@ enum McpCommands {
     List,
     /// Install an MCP server by name
     Install { server: String },
+    /// Launch MCP Showcase TUI browser (opens interactive TUI)
+    Browse,
+    /// Print MCP Showcase info to terminal (table of configured servers)
+    Showcase,
+    /// Test an MCP tool by calling it with arguments
+    Test {
+        /// Server name (e.g., "weather", "github")
+        server: String,
+        /// Tool name (e.g., "get_alerts", "get_forecast")
+        tool: String,
+        /// JSON arguments for the tool (e.g., '{"state": "CA"}')
+        args: Option<String>,
+    },
+    /// List all tools across all MCP servers
+    Tools,
 }
 
 #[derive(Subcommand, Debug)]
@@ -481,6 +498,119 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 println!("  Description: {}", description);
                 println!("  Setup: {}", env_help);
                 println!("\nRestart open_crust to use the server.");
+            }
+            McpCommands::Browse => {
+                println!("MCP Showcase TUI Browser");
+                println!();
+                println!("To launch the MCP Showcase TUI:");
+                println!("  1. Run 'opencrust' without arguments to start the interactive TUI");
+                println!("  2. Press Ctrl+M to open the MCP Showcase server browser");
+                println!("  3. Navigate with arrow keys, toggle servers with Enter");
+                println!("  4. Press Esc to return to the main chat");
+                println!();
+                println!("CLI alternatives:");
+                println!("  'opencrust mcp showcase'  - Print server table to terminal");
+                println!("  'opencrust mcp tools'     - List all tools");
+                println!("  'opencrust mcp test <server> <tool> [args]' - Execute a tool");
+            }
+            McpCommands::Showcase => {
+                let config = config::Config::load();
+                println!("=== MCP Showcase ===");
+                println!();
+                if config.mcp.is_empty() {
+                    println!("No MCP servers configured.");
+                    println!("Use 'opencrust mcp list' to see available servers.");
+                    println!("Use 'opencrust mcp install <name>' to install a server.");
+                } else {
+                    println!("{:<20} {:<15} {:<50}", "Name", "Status", "Command");
+                    println!("{:<20} {:<15} {:<50}", "----", "------", "-------");
+                    for (name, mcp_config) in &config.mcp {
+                        let status = if mcp_config.enabled { "Enabled" } else { "Disabled" };
+                        let cmd = mcp_config.command.join(" ");
+                        let cmd_display = if cmd.len() > 47 {
+                            format!("{}...", &cmd[..47])
+                        } else {
+                            cmd
+                        };
+                        println!("{:<20} {:<15} {:<50}", name, status, cmd_display);
+                    }
+                }
+            }
+            McpCommands::Test { server, tool, args } => {
+                let config = config::Config::load();
+                let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
+                mcp_manager.lock().await.load_from_config(&config.mcp).await;
+
+                let arguments = match args {
+                    Some(json_str) => serde_json::from_str(&json_str)
+                        .map_err(|e| format!("Invalid JSON arguments: {}", e)),
+                    None => Ok(serde_json::json!({})),
+                };
+
+                match arguments {
+                    Ok(args_val) => {
+                        let full_name = format!("{}_{}", server, tool);
+                        println!("Calling MCP tool '{}' on server '{}'...", tool, server);
+                        println!("Arguments: {}", serde_json::to_string_pretty(&args_val).unwrap_or_default());
+                        println!();
+                        match mcp_manager.lock().await.call_tool(&full_name, &args_val).await {
+                            Ok(result) => {
+                                println!("=== Result ===");
+                                println!("{}", result);
+                            }
+                            Err(e) => {
+                                eprintln!("Error: {}", e);
+                                std::process::exit(1);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+            McpCommands::Tools => {
+                let config = config::Config::load();
+                let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
+                mcp_manager.lock().await.load_from_config(&config.mcp).await;
+
+                println!("=== MCP Tools ===");
+                println!();
+
+                let tools = mcp_manager.lock().await.list_tools().await;
+                if tools.is_empty() {
+                    println!("No tools found. Make sure you have MCP servers configured and enabled.");
+                    println!("Use 'opencrust mcp list' to see available servers.");
+                    println!("Use 'opencrust mcp install <name>' to install a server.");
+                } else {
+                    println!("Found {} tools:", tools.len());
+                    println!();
+                    for tool in &tools {
+                        let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("unknown");
+                        let desc = tool.get("description").and_then(|v| v.as_str()).unwrap_or("No description");
+                        println!("  {} {}", name, desc);
+                        if let Some(schema) = tool.get("inputSchema") {
+                            if let Some(props) = schema.get("properties") {
+                                if let Some(props_obj) = props.as_object() {
+                                    if !props_obj.is_empty() {
+                                        println!("    Arguments:");
+                                        for (prop_name, prop_info) in props_obj {
+                                            let prop_type = prop_info.get("type").and_then(|v| v.as_str()).unwrap_or("any");
+                                            let prop_desc = prop_info.get("description").and_then(|v| v.as_str()).unwrap_or("");
+                                            if prop_desc.is_empty() {
+                                                println!("      - {}: {}", prop_name, prop_type);
+                                            } else {
+                                                println!("      - {} ({}): {}", prop_name, prop_type, prop_desc);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        println!();
+                    }
+                }
             }
         }
         return Ok(());
@@ -946,7 +1076,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
 
-        terminal.draw(|f| ui::draw(f, &app))?;
+        terminal.draw(|f| ui::draw(f, &mut app))?;
 
         if let Some(Event::Key(key)) = events::next_event().await? {
             // Check for Copy (Ctrl+C) - copy current input to clipboard
@@ -1060,6 +1190,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.tabs[0]
                                 .messages
                                 .push(format!("Vim Mode {}", mode_str));
+                        }
+                        KeyCode::Char('m')
+                            if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
+                        {
+                            // Build server list from config
+                            let servers: Vec<crate::mcp_showcase::McpServerInfo> = app
+                                .config
+                                .mcp
+                                .iter()
+                                .map(|(name, mcp_config)| {
+                                    crate::mcp_showcase::McpServerInfo {
+                                        name: name.clone(),
+                                        description: crate::mcp_showcase::get_server_description(name),
+                                        installed: true,
+                                        enabled: mcp_config.enabled,
+                                        command: mcp_config.command.join(" "),
+                                    }
+                                })
+                                .collect();
+                            app.mode = Mode::McpShowcase;
+                            app.mcp_showcase_ui = Some(crate::mcp_showcase::McpShowcaseUI::new(servers));
                         }
                         _ => {}
                     },
@@ -1366,6 +1517,68 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         _ => {}
                     },
+                    Mode::McpShowcase => {
+                        if let Some(ref mut ui) = app.mcp_showcase_ui {
+                            match ui.handle_key(key.code, key.modifiers) {
+                                McpShowcaseAction::ToggleServer(name) => {
+                                    if let Some(server_cfg) = app.config.mcp.get_mut(&name) {
+                                        server_cfg.enabled = !server_cfg.enabled;
+                                        app.config.save();
+                                        ui.toggle_server(&name);
+                                    }
+                                }
+                                McpShowcaseAction::ExitMode => {
+                                    app.mode = Mode::Normal;
+                                }
+                                McpShowcaseAction::ShowTools(server_name) => {
+                                    let server_name_clone = server_name.clone();
+                                    let tools = mcp_manager.lock().await.list_tools().await;
+                                    let filtered: Vec<_> = tools.iter()
+                                        .filter(|t| {
+                                            t.get("name").and_then(|n| n.as_str())
+                                                .map(|n| n.starts_with(&format!("{}_", server_name_clone)))
+                                                .unwrap_or(false)
+                                        })
+                                        .cloned()
+                                        .collect();
+                                    let parsed = mcp_showcase::parse_tools_from_response(&filtered);
+                                    ui.set_tools_for_server(&server_name, parsed);
+                                    ui.navigate_to_tool_list(&server_name);
+                                }
+                                McpShowcaseAction::BackToServerList => {}
+                                McpShowcaseAction::SelectTool(_, _) => {}
+                                McpShowcaseAction::ExecuteTool(server_name, tool_name) => {
+                                    let args = ui.build_arguments_json(&server_name, &tool_name);
+                                    let full_name = format!("{}_{}", server_name, tool_name);
+                                    match mcp_manager.lock().await.call_tool(&full_name, &args).await {
+                                        Ok(result) => {
+                                            ui.navigate_to_result(&server_name, &tool_name, &result);
+                                        }
+                                        Err(e) => {
+                                            ui.navigate_to_result(&server_name, &tool_name, &format!("Error: {}", e));
+                                        }
+                                    }
+                                }
+                                McpShowcaseAction::InputChanged(field_name, value) => {
+                                    ui.update_input_field(&field_name, value);
+                                }
+                                McpShowcaseAction::NextField => {
+                                    if ui.selected_field + 1 < ui.field_order.len() {
+                                        ui.selected_field += 1;
+                                    }
+                                }
+                                McpShowcaseAction::PrevField => {
+                                    if ui.selected_field > 0 {
+                                        ui.selected_field -= 1;
+                                    }
+                                }
+                                McpShowcaseAction::ScrollResult(delta) => {
+                                    ui.result_scroll = ui.result_scroll.saturating_add_signed(delta as isize);
+                                }
+                                McpShowcaseAction::None => {}
+                            }
+                        }
+                    }
                 }
             }
         }

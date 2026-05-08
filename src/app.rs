@@ -9,6 +9,7 @@ pub enum Mode {
     Servers,
     SkillBrowser,   // Ctrl+Shift+K skill browser
     CommandPalette, // Ctrl+K command palette
+    McpShowcase,    // Ctrl+M MCP Showcase
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -96,6 +97,8 @@ pub struct App {
     // Vim Mode state
     pub vim_mode: bool,
     pub vim_cursor_pos: usize, // Cursor position in input field for vim editing
+    // MCP Showcase state (Ctrl+M)
+    pub mcp_showcase_ui: Option<crate::mcp_showcase::McpShowcaseUI>,
 }
 
 impl App {
@@ -251,6 +254,8 @@ impl App {
             // Vim Mode state
             vim_mode: false,
             vim_cursor_pos: 0,
+            // MCP Showcase state
+            mcp_showcase_ui: None,
         };
         app.load_history();
         app

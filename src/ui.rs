@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::app::{App, ChangeStatus, Mode};
 
-pub fn draw(f: &mut Frame, app: &App) {
+pub fn draw(f: &mut Frame, app: &mut App) {
     let theme = app.config.theme.as_ref();
     let bg_color = parse_color(theme.map(|t| t.background.as_str()).unwrap_or("#1e1e1e"));
     let fg_color = parse_color(theme.map(|t| t.foreground.as_str()).unwrap_or("#ffffff"));
@@ -173,6 +173,7 @@ pub fn draw(f: &mut Frame, app: &App) {
             Mode::Servers => Style::default().fg(fg_color),
             Mode::SkillBrowser => Style::default().fg(fg_color),
             Mode::CommandPalette => Style::default().fg(fg_color),
+            Mode::McpShowcase => Style::default().fg(fg_color),
         })
         .block(
             Block::default()
@@ -185,6 +186,7 @@ pub fn draw(f: &mut Frame, app: &App) {
                     Mode::Servers => Style::default().fg(border_color),
                     Mode::SkillBrowser => Style::default().fg(border_color),
                     Mode::CommandPalette => Style::default().fg(border_color),
+                    Mode::McpShowcase => Style::default().fg(border_color),
                 }),
         );
     f.render_widget(input, chunks[2]);
@@ -197,6 +199,7 @@ pub fn draw(f: &mut Frame, app: &App) {
         Mode::Servers => "SERVERS",
         Mode::SkillBrowser => "SKILLS",
         Mode::CommandPalette => "PALETTE",
+        Mode::McpShowcase => "MCP SHOWCASE",
     };
 
     let stats = app.llm_client.usage_stats.try_lock();
@@ -240,6 +243,10 @@ pub fn draw(f: &mut Frame, app: &App) {
         draw_skill_browser(f, app);
     } else if let Mode::CommandPalette = app.mode {
         draw_command_palette(f, app);
+    } else if let Mode::McpShowcase = app.mode {
+        if let Some(ui) = app.mcp_showcase_ui.as_mut() {
+            ui.render(f, f.area());
+        }
     }
 }
 

@@ -39,6 +39,17 @@ pub struct LlmClient {
 }
 
 impl LlmClient {
+    /// Create a new LlmClient configured for a subagent with resolved model
+    /// Uses config.resolve_subagent_model() to enforce free/default model policies
+    #[allow(dead_code)]
+    pub fn for_subagent(&self, agent_type: Option<&str>) -> Self {
+        let mut subagent_client = self.clone();
+        let (provider, model) = self.config.resolve_subagent_model(agent_type);
+        subagent_client.config.provider = provider;
+        subagent_client.config.model = model;
+        subagent_client
+    }
+
     pub fn new(
         config: Config,
         mcp_manager: Arc<Mutex<McpManager>>,

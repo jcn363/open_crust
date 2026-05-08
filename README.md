@@ -46,6 +46,7 @@ OpenCrust empowers developers with a high-intelligence, secure, and fully observ
 - **Command History**: Persistent history across sessions; navigate with `[↑]`/`[↓]`.
 - **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer.
 - **Context Pinning**: Permanently lock critical files into the agent's context.
+- **MCP Showcase Browser**: Browse and install MCP servers with `[Ctrl+M]`.
 - **Customizable TUI**: Configurable keybinds and theme engine with RGB support.
 
 ### 🖥️ Desktop Integration (Linux Mint Cinnamon)
@@ -113,9 +114,10 @@ Supported providers: `ollama`, `openrouter`, `openai`, `gemini`.
 | `Esc`               | Return to Normal mode                     |
 | `Tab`               | Cycle between Chat / Tasks views          |
 | `Ctrl+B`            | Toggle file tree sidebar                  |
-| `↑` / `↓`           | Navigate command history (in Insert mode) |
+| `Ctrl+M`            | Open MCP Showcase browser                |
+| `↑` / `↓`           | Navigate lists (Showcase, History)        |
+| `Enter`             | Submit message / Toggle server (Showcase) |
 | `s`                 | Open Server Management panel              |
-| `Enter`             | Submit message                            |
 | `a`                 | Approve proposed change                   |
 | `d`                 | Deny proposed change                      |
 | `Ctrl+C` / `Ctrl+D` | Quit                                      |
@@ -132,6 +134,9 @@ open_crust/
 │   ├── tools.rs       # Tool schema definitions
 │   ├── config.rs      # Config loading/saving
 │   ├── mcp.rs         # MCP server management (JSON-RPC)
+│   ├── mcp_showcase/  # MCP Showcase browser module
+│   │   ├── mod.rs     # Module entry point
+│   │   └── tui.rs     # MCP Showcase TUI component
 │   ├── lsp.rs         # LSP client (JSON-RPC)
 │   ├── skills.rs      # Skill discovery and loading
 │   ├── sessions.rs    # Session persistence
@@ -153,6 +158,17 @@ open_crust/
 ## 🔌 MCP Ecosystem Integration
 
 OpenCrust provides first-class support for the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), giving you access to **12,000+ community servers** for databases, APIs, productivity tools, and more.
+
+### MCP Showcase (TUI Browser)
+
+Press `Ctrl+M` anywhere in the app to open the **MCP Showcase** - a terminal-native browser for managing your MCP servers:
+
+- **Browse**: See all configured MCP servers with their status (enabled/disabled)
+- **Toggle**: Press `Enter` to enable/disable any server
+- **Navigate**: Use `↑`/`↓` arrows to move through the list
+- **Exit**: Press `Esc` to return to the main interface
+
+Changes take effect immediately and are saved to your config file automatically.
 
 ### Quick Start
 

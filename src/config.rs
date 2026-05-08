@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 
 /// Default OpenRouter free model (no API key required)
@@ -12,6 +13,50 @@ pub enum ProviderType {
     Gemini,
     Mistral,
     Anthropic,
+}
+
+/// Model tiers for cost-aware routing
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub enum ModelTier {
+    Fast,      // Cheap, quick responses
+    Balanced,  // Good price/performance
+    Powerful,  // Expensive, capable models
+}
+
+/// Model alias for user-friendly model names
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ModelAlias {
+    pub alias: String,
+    pub provider: ProviderType,
+    pub model_id: String,
+    pub tier: ModelTier,
+}
+
+/// Configuration for subagent model selection
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SubagentConfig {
+    /// Default model for all subagents (e.g., "openrouter/free-gpt-4o-mini")
+    pub default_model: Option<String>,
+    /// Fall back to free models if primary model fails
+    #[serde(default = "default_true")]
+    pub fallback_to_free: bool,
+    /// Per-agent-type model overrides (e.g., "researcher" -> "openrouter/free-gpt-4o-mini")
+    #[serde(default)]
+    pub agent_overrides: HashMap<String, String>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for SubagentConfig {
+    fn default() -> Self {
+        Self {
+            default_model: Some(DEFAULT_OPENROUTER_FREE_MODEL.to_string()),
+            fallback_to_free: true,
+            agent_overrides: HashMap::new(),
+        }
+    }
 }
 
 impl ProviderType {
@@ -152,6 +197,12 @@ pub struct Config {
     pub context_budget: Option<u64>,
     #[serde(default)]
     pub summarization_threshold: Option<f64>,
+    /// Subagent model configuration (enforces free models for subagents)
+    #[serde(default)]
+    pub subagent_config: Option<SubagentConfig>,
+    /// Model aliases for user-friendly model names
+    #[serde(default)]
+    pub model_aliases: HashMap<String, ModelAlias>,
 }
 
 impl Default for Keybinds {
@@ -199,6 +250,8 @@ impl Default for Config {
             anthropic_api_key: None,
             context_budget: None,
             summarization_threshold: None,
+            subagent_config: Some(SubagentConfig::default()),
+            model_aliases: HashMap::new(),
         }
     }
 }
@@ -351,6 +404,69 @@ impl Config {
     /// Get the summarization threshold (default 0.8 = 80% of context limit)
     pub fn summarization_threshold(&self) -> f64 {
         self.summarization_threshold.unwrap_or(0.8)
+    }
+
+    /// Resolve which model a subagent should use
+    /// Priority: 1. Environment variable OPENCRUST_SUBAGENT_MODEL
+    ///          2. Per-agent override in subagent_config.agent_overrides
+    ///          3. Default subagent model in subagent_config.default_model
+    ///          4. Fall back to main config model (self.model)
+    pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
+        // Check environment variable first
+        if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL") {
+            if !env_model.is_empty() {
+                return self.parse_model_string(&env_model);
+            }
+        }
+
+        // Check subagent config
+        if let Some(subagent_config) = &self.subagent_config {
+            // Check per-agent override
+            if let Some(agent_type) = agent_type {
+                if let Some(model) = subagent_config.agent_overrides.get(agent_type) {
+                    return self.parse_model_string(model);
+                }
+            }
+
+            // Check default subagent model
+            if let Some(default_model) = &subagent_config.default_model {
+                return self.parse_model_string(default_model);
+            }
+
+            // If fallback_to_free is enabled and no model specified, use free model
+            if subagent_config.fallback_to_free && self.openrouter_key.is_none() {
+                return self.parse_model_string(DEFAULT_OPENROUTER_FREE_MODEL);
+            }
+        }
+
+        // Fall back to main config model
+        (self.provider.clone(), self.model.clone())
+    }
+
+    /// Parse a model string in "provider/model" format
+    /// Returns (provider, model_id)
+    fn parse_model_string(&self, model_str: &str) -> (ProviderType, String) {
+        // Check if it's a model alias first
+        if let Some(alias) = self.model_aliases.get(model_str) {
+            return (alias.provider.clone(), alias.model_id.clone());
+        }
+
+        // Check "provider/model" format
+        if let Some((provider_str, model_id)) = model_str.split_once('/') {
+            let provider = match provider_str {
+                "ollama" => ProviderType::Ollama,
+                "openrouter" => ProviderType::OpenRouter,
+                "openai" => ProviderType::OpenAI,
+                "gemini" => ProviderType::Gemini,
+                "mistral" => ProviderType::Mistral,
+                "anthropic" => ProviderType::Anthropic,
+                _ => self.provider.clone(),
+            };
+            return (provider, model_id.to_string());
+        }
+
+        // If just a model name without provider, assume current provider
+        (self.provider.clone(), model_str.to_string())
     }
 }
 
