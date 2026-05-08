@@ -1,70 +1,148 @@
-# Rust build artifacts
-/target
-# Note: Cargo.lock IS committed for binary reproducibility
-*.rs.bk
-*.pdb
+# Rust-specific
+**/*.rs.bk
+*.rlib
+*.rmeta
+.cargo/config
+.cargo/credentials
 
-# Project-specific directories
-/thoughts
-/thoughts/**
-
-# Log files
-bacon-ls.log
-*.log
-telemetry.json
-
-# IDE and Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-.sublime-project
-.sublime-workspace
-*.iml
-*.code-workspace
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# OS-specific files
-Thumbs.db
+# Build artifacts
+/target/
+/target-arm/
+/target-arm64/
+crates/plato-android/target/
+*.o
+*.obj
 *.exe
 *.dll
 *.so
 *.dylib
+*.a
+*.lib
+*.out
+*.pdb
+*.dSYM/
 
-# Node.js (if used for MCP servers)
+# Cargo
+Cargo.lock
+/.cargo/
+debian/cargo/*
+debian/.debhelper/*
+
+# Project-specific build artifacts
+/extra
+/archives
+/resources
+/libs
+/bin
+/dist
+/bundle
+/plato
+/plato-*.zip
+/actions-runner
+
+# Third-party builds
+/thirdparty/*/*
+!/thirdparty/*/*kobo*
+!/thirdparty/*/build-ios.sh
+!/thirdparty/*/build-kobo.sh
+
+# User data and runtime state
+/Settings.toml
+/.agents
+/.git
+/.github
+/.opencode
+/.opencrust
+/.qodo
+/.qwen
+/.metadata.json
+/.reading-states
+/.fat32-epoch
+/.thumbnail-previews
+/.trash
+/css/*-user.css
+/hyphenation-patterns
+/dictionaries
+/thoughts
+/target
+
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
-
-# Python (if used for custom tools)
+venv/
+.venv/
 __pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-dist/
+.mypy_cache/
+.pytest_cache/
+.gradle/
+.agents/
+.roo/
+.windsurf/
 build/
+tmp/
 
-# Temporary files
+# Logs and temp files
+*.log
 *.tmp
-.tmp/
-*.bak
 *.swp
+*.swo
+*~
+*.bak
+.bacon-ls.log
+.codex
 
-# Development/debugging
-.gdb_history
-.lldb_history
-perf.data
-perf.data.old
+# Environment
+.env
+.env.local
+*.env.*
 
-# Session files
-*.session
-.session/
+# Editors
+.vscode/
+.idea/
+*.sublime-*
 
-# OpenCode agent files
-.opencode/
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+*.profraw
+*.profdata
+
+# Compressed archives (distribution bundles)
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+.lzh
+.cab
+.arj
+.rpm
+.deb
+.Z
+.lz
+.lzo
+crates/core/tmp/
+debian/
+
+# AppImage
+*.AppImage
+AppDir/
+
+# Telemetry and npm
+telemetry.json
+.npmignore
