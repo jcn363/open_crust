@@ -27,7 +27,7 @@ pub fn load_rules(instructions: &[String]) -> String {
         let mut dir = current_dir;
         loop {
             let agents_md = dir.join("AGENTS.md");
-            let claude_md = dir.join("CLAUDE.md");
+            let claude_md = dir.join("RULES.md");
 
             if agents_md.exists()
                 && let Ok(content) = fs::read_to_string(agents_md)
@@ -38,7 +38,7 @@ pub fn load_rules(instructions: &[String]) -> String {
             } else if claude_md.exists()
                 && let Ok(content) = fs::read_to_string(claude_md)
             {
-                rules.push_str("\n\n### Project Rules (CLAUDE.md fallback)\n");
+                rules.push_str("\n\n### Project Rules (RULES.md fallback)\n");
                 rules.push_str(&content);
                 break;
             }
