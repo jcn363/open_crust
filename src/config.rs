@@ -651,6 +651,34 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
         },
     );
 
+    // Sequential Thinking - Step-by-step reasoning for complex problems
+    mcp.insert(
+        "sequentialthinking".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-sequential-thinking".to_string(),
+            ],
+            environment: None,
+            enabled: true, // Enabled by default
+        },
+    );
+
+    // Critical Thinking - Analytical reasoning and evaluation
+    mcp.insert(
+        "criticalthinking".to_string(),
+        McpConfig {
+            command: vec![
+                "npx".to_string(),
+                "-y".to_string(),
+                "@modelcontextprotocol/server-critical-thinking".to_string(),
+            ],
+            environment: None,
+            enabled: true, // Enabled by default
+        },
+    );
+
     mcp
 }
 
