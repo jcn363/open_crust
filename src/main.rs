@@ -594,7 +594,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 mcp_manager.lock().await.load_from_config(&config.mcp).await;
 
                 let arguments = match args {
-                    Some(json_str) => serde_json::from_str(&json_str)
+                    Some(json_str) => serde_json::from_str(json_str.as_str())
                         .map_err(|e| format!("Invalid JSON arguments: {}", e)),
                     None => Ok(serde_json::json!({})),
                 };
@@ -642,10 +642,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("unknown");
                         let desc = tool.get("description").and_then(|v| v.as_str()).unwrap_or("No description");
                         println!("  {} {}", name, desc);
-                        if let Some(schema) = tool.get("inputSchema") {
-                            if let Some(props) = schema.get("properties") {
-                                if let Some(props_obj) = props.as_object() {
-                                    if !props_obj.is_empty() {
+                        if let Some(schema) = tool.get("inputSchema")
+                            && let Some(props) = schema.get("properties")
+                            && let Some(props_obj) = props.as_object()
+                            && !props_obj.is_empty() {
                                         println!("    Arguments:");
                                         for (prop_name, prop_info) in props_obj {
                                             let prop_type = prop_info.get("type").and_then(|v| v.as_str()).unwrap_or("any");
@@ -1420,10 +1420,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 app.mission_control_ui = Some(crate::mission_control::MissionControlUI::new());
                             }
                             // Refresh tasks from orchestrator bridge
-                            if let Some(ref tasks_arc) = app.orchestrator_tasks {
-                                if let Some(ref mut ui) = app.mission_control_ui {
-                                    ui.refresh_tasks(&Some(tasks_arc.clone()));
-                                }
+                            if let Some(ref tasks_arc) = app.orchestrator_tasks
+                                && let Some(ref mut ui) = app.mission_control_ui {
+                                ui.refresh_tasks(&Some(tasks_arc.clone()));
                             }
                         }
                         _ => {}
@@ -1762,11 +1761,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             if let Some(ref tasks_arc) = app.orchestrator_tasks {
                                 ui.refresh_tasks(&Some(tasks_arc.clone()));
                             }
-                            match ui.handle_key(key.code) {
-                                MissionControlAction::ExitMode => {
-                                    app.mode = Mode::Normal;
-                                }
-                                _ => {}
+                            if let MissionControlAction::ExitMode = ui.handle_key(key.code) {
+                                app.mode = Mode::Normal;
                             }
                         }
                     }
@@ -1975,6 +1971,7 @@ async fn run_multi_agent(
 }
 
 /// Run OpenCrust in headless mode (no TUI, just prompt and response)
+#[allow(clippy::too_many_arguments)]
 async fn run_headless(
     prompt: &str,
     file: Option<&str>,

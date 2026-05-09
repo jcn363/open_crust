@@ -365,6 +365,15 @@ opencrust skills deactivate <name>          # Deactivate a skill
 opencrust skills stats                      # Show skill usage stats
 ```
 
+### Audit
+
+```bash
+opencrust audit export --from <DATE> --to <DATE> [--format csv|json] [--output <FILE>]
+opencrust audit query [--from <DATE>] [--to <DATE>] [--action <PATTERN>] [--status approved|denied]
+opencrust audit evidence [--output-dir <DIR>]
+opencrust audit report [--from <DATE>] [--to <DATE>]
+```
+
 ### Serve & Headless
 
 ```bash

@@ -107,7 +107,7 @@ impl ComplianceReport {
         }
 
         let mut most_used: Vec<(String, usize)> = tool_counts.into_iter().collect();
-        most_used.sort_by(|a, b| b.1.cmp(&a.1));
+        most_used.sort_by_key(|a| std::cmp::Reverse(a.1));
         most_used.truncate(10);
 
         let date_range = if !min_date.is_empty() && !max_date.is_empty() {

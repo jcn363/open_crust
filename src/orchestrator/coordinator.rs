@@ -49,10 +49,9 @@ impl Coordinator {
 
     /// Snapshot current tasks into shared state (if bridge is attached)
     fn sync_shared_state(&self, tasks: &[Task]) {
-        if let Some(ref shared) = self.shared_state {
-            if let Ok(mut guard) = shared.try_write() {
-                *guard = tasks.to_vec();
-            }
+        if let Some(ref shared) = self.shared_state
+            && let Ok(mut guard) = shared.try_write() {
+            *guard = tasks.to_vec();
         }
     }
 
@@ -83,14 +82,13 @@ impl Coordinator {
 
         // Spawn all initially ready tasks
         for i in 0..total {
-            if tasks[i].is_ready(&completed_ids) && !tasks[i].is_terminal() {
-                if let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone()) {
-                    tasks[i].state = TaskState::Running {
-                        agent_id: tasks[i].agent_type.clone(),
-                    };
-                    self.sync_shared_state(tasks);
-                    running.insert(tasks[i].id, rx);
-                }
+            if tasks[i].is_ready(&completed_ids) && !tasks[i].is_terminal()
+                && let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone()) {
+                tasks[i].state = TaskState::Running {
+                    agent_id: tasks[i].agent_type.clone(),
+                };
+                self.sync_shared_state(tasks);
+                running.insert(tasks[i].id, rx);
             }
         }
 
@@ -179,14 +177,13 @@ impl Coordinator {
                 completed_ids.insert(resolved_id);
 
                 // Spawn newly-ready tasks
-                for i in 0..total {
-                    if tasks[i].is_ready(&completed_ids) && !tasks[i].is_terminal() {
-                        if let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone()) {
-                            tasks[i].state = TaskState::Running {
-                                agent_id: tasks[i].agent_type.clone(),
-                            };
-                            receivers.push((tasks[i].id, rx));
-                        }
+                for task in tasks.iter_mut() {
+                    if task.is_ready(&completed_ids) && !task.is_terminal()
+                        && let Ok(rx) = self.pool.spawn_agent(task, llm_client.clone()) {
+                        task.state = TaskState::Running {
+                            agent_id: task.agent_type.clone(),
+                        };
+                        receivers.push((task.id, rx));
                     }
                 }
             }

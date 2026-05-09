@@ -250,10 +250,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         if let Some(ui) = app.mcp_showcase_ui.as_mut() {
             ui.render(f, f.area());
         }
-    } else if let Mode::MissionControl = app.mode {
-        if let Some(ui) = app.mission_control_ui.as_mut() {
-            ui.render(f, f.area());
-        }
+    } else if let Mode::MissionControl = app.mode
+        && let Some(ui) = app.mission_control_ui.as_mut() {
+        ui.render(f, f.area());
     }
 }
 

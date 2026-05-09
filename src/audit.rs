@@ -11,6 +11,7 @@ pub struct AuditLogger {
     session_id: String,
     agent_type: Option<String>,
     max_size_bytes: u64,
+    compliance_mode: bool,
 }
 
 impl AuditLogger {
@@ -32,6 +33,7 @@ impl AuditLogger {
             session_id: String::new(),
             agent_type: None,
             max_size_bytes,
+            compliance_mode: false,
         }
     }
 
@@ -42,6 +44,11 @@ impl AuditLogger {
 
     pub fn with_agent_type(mut self, agent_type: Option<String>) -> Self {
         self.agent_type = agent_type;
+        self
+    }
+
+    pub fn with_compliance_mode(mut self, enabled: bool) -> Self {
+        self.compliance_mode = enabled;
         self
     }
 
@@ -77,37 +84,41 @@ impl AuditLogger {
     }
 
     pub fn check_rotation(&self) {
-        if let Ok(metadata) = fs::metadata(&self.log_path) {
-            if metadata.len() > self.max_size_bytes {
-                let date_str = Local::now().format("%Y-%m-%d").to_string();
-                let rotated_path = self.log_path.with_file_name(format!("audit.{}.log", date_str));
-                let _ = fs::rename(&self.log_path, &rotated_path);
-                let _ = OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .open(&self.log_path);
-            }
+        // In compliance mode, logs must never be rotated (append-only audit trail)
+        if self.compliance_mode {
+            return;
+        }
+        if let Ok(metadata) = fs::metadata(&self.log_path) && metadata.len() > self.max_size_bytes {
+            let date_str = Local::now().format("%Y-%m-%d").to_string();
+            let rotated_path = self.log_path.with_file_name(format!("audit.{}.log", date_str));
+            let _ = fs::rename(&self.log_path, &rotated_path);
+            let _ = OpenOptions::new()
+                .create(true)
+                .truncate(true)
+                .write(true)
+                .open(&self.log_path);
         }
     }
 
     pub fn cleanup_old_logs(&self, retention_days: u64) {
+        // In compliance mode, logs must never be deleted (immutable audit trail)
+        if self.compliance_mode {
+            return;
+        }
         let log_dir = self.log_path.parent().unwrap_or(Path::new("."));
-        if let Ok(entries) = fs::read_dir(log_dir) {
-            let cutoff = Local::now() - chrono::Duration::days(retention_days as i64);
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                    if file_name.starts_with("audit.") && file_name.ends_with(".log") {
-                        if let Ok(metadata) = fs::metadata(&path) {
-                            if let Ok(modified) = metadata.modified() {
-                                let datetime: chrono::DateTime<Local> = modified.into();
-                                if datetime < cutoff {
-                                    let _ = fs::remove_file(&path);
-                                }
-                            }
-                        }
-                    }
-                }
+        let Ok(entries) = fs::read_dir(log_dir) else { return };
+        let cutoff = Local::now() - chrono::Duration::days(retention_days as i64);
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else { continue };
+            if !file_name.starts_with("audit.") || !file_name.ends_with(".log") {
+                continue;
+            }
+            let Ok(metadata) = fs::metadata(&path) else { continue };
+            let Ok(modified) = metadata.modified() else { continue };
+            let datetime: chrono::DateTime<Local> = modified.into();
+            if datetime < cutoff {
+                let _ = fs::remove_file(&path);
             }
         }
     }
@@ -178,10 +189,9 @@ impl AuditQuery {
         if let Ok(dir_entries) = fs::read_dir(log_dir) {
             for entry in dir_entries.flatten() {
                 let path = entry.path();
-                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    if name.starts_with("audit.") && name.ends_with(".log") && &path != log_path {
-                        log_files.push(path);
-                    }
+                let Some(name) = path.file_name().and_then(|n| n.to_str()) else { continue };
+                if name.starts_with("audit.") && name.ends_with(".log") && path != *log_path {
+                    log_files.push(path);
                 }
             }
         }
@@ -190,12 +200,9 @@ impl AuditQuery {
             if let Ok(file) = fs::File::open(file_path) {
                 let reader = BufReader::new(file);
                 for line in reader.lines() {
-                    if let Ok(line) = line {
-                        if let Some(entry) = Self::parse_entry(&line) {
-                            if self.matches(&entry) {
-                                entries.push(entry);
-                            }
-                        }
+                    let Ok(line) = line else { continue };
+                    if let Some(entry) = Self::parse_entry(&line) && self.matches(&entry) {
+                        entries.push(entry);
                     }
                 }
             }
@@ -248,33 +255,25 @@ impl AuditQuery {
     }
 
     fn matches(&self, entry: &AuditEntry) -> bool {
-        if let Some(from) = self.from_date {
-            if let Ok(entry_date) =
+        if let Some(from) = self.from_date
+            && let Ok(entry_date) =
                 NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
-            {
-                if entry_date < from {
-                    return false;
-                }
-            }
+            && entry_date < from
+        {
+            return false;
         }
-        if let Some(to) = self.to_date {
-            if let Ok(entry_date) =
+        if let Some(to) = self.to_date
+            && let Ok(entry_date) =
                 NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
-            {
-                if entry_date > to {
-                    return false;
-                }
-            }
+            && entry_date > to
+        {
+            return false;
         }
-        if let Some(ref pattern) = self.action_pattern {
-            if !entry.tool.contains(pattern) {
-                return false;
-            }
+        if let Some(ref pattern) = self.action_pattern && !entry.tool.contains(pattern) {
+            return false;
         }
-        if let Some(status) = self.status_filter {
-            if entry.approved != status {
-                return false;
-            }
+        if let Some(status) = self.status_filter && entry.approved != status {
+            return false;
         }
         true
     }

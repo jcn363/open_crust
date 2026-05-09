@@ -78,7 +78,7 @@ impl CacheManager {
             models,
             fetched_at: now,
         };
-        if let Some(content) = serde_json::to_string_pretty(&entry).ok() {
+        if let Ok(content) = serde_json::to_string_pretty(&entry) {
             let _ = std::fs::create_dir_all(&self.cache_dir);
             let path = self.cache_dir.join(format!("{}.json", provider));
             let _ = std::fs::write(path, content);

@@ -61,7 +61,7 @@ Tools like Conduit and AgentPipe let users run Claude + GPT + Gemini **side-by-s
 | ✅ **MCP Showcase browser** | TUI-based MCP server browser (`Ctrl+M`), one-click install/enable/disable. `opencrust mcp list/install/remove` CLI. |
 | ✅ **TUI-native** | Ratatui-based, no Electron bloat, Vim mode, command palette, plan mode — professional UX |
 | ✅ **2,500+ MCP servers** | Full MCP + LSP support. Runtime server addition. Custom scripting. |
-| ✅ **Skill system** | 9 built-in skills, custom SKILL.md discovery, skill browser (`Ctrl+Shift+K`) |
+| ✅ **Skill system** | 11 built-in skills, custom SKILL.md discovery, skill browser (`Ctrl+Shift+K`) |
 | ✅ **Observability built-in** | Token tracking, cost estimation, telemetry export, audit logging |
 
 ### Critical Gaps vs Market Leaders
@@ -139,7 +139,7 @@ The security architecture is **already enterprise-ready**. Package it:
 | **Multi-agent** | ✅ (orchestrator + --agent) | ❌ | ❌ | ❌ | ❌ |
 | **Security-first** | ✅ (perm + audit + gating) | ❌ | ❌ | ⚠️ | ❌ |
 | **Model flexibility** | ✅ (11 providers) | ⚠️ (Claude) | ✅ (5+) | ✅ (BYOK) | ✅ (75+) |
-| **Built-in skills** | ✅ (9 skills) | ❌ | ❌ | ❌ | ❌ |
+| **Built-in skills** | ✅ (11 skills) | ❌ | ❌ | ❌ | ❌ |
 | **Audit logging** | ✅ (persistent) | ❌ | ❌ | ❌ | ❌ |
 | **Community** | New | Large | Large | Large | Large |
 

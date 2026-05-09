@@ -706,9 +706,34 @@ grep '"event_type":"file_accessed".*"result":"permission_denied"' \
 
 ---
 
+## Enterprise Compliance
+
+OpenCrust provides structured audit logging, evidence packaging, and compliance reporting for SOC 2 and ISO 27001 requirements.
+
+**Key features:**
+
+- **Append-only audit trail** — All tool executions are logged with timestamps, session IDs, and approval status
+- **Compliance mode** — When enabled (`compliance_mode: true`), log rotation and deletion are disabled, ensuring an immutable audit trail
+- **Evidence packaging** — The `opencrust audit evidence` command produces a tamper-evident package with SHA256 manifest
+- **Compliance reporting** — `opencrust audit report` generates per-session and per-tool summaries with integrity checks
+
+**CLI commands:**
+
+```bash
+opencrust audit export --from <DATE> --to <DATE> [--format csv|json] [--output <FILE>]
+opencrust audit query [--from <DATE>] [--to <DATE>] [--action <PATTERN>] [--status approved|denied]
+opencrust audit evidence [--output-dir <DIR>]
+opencrust audit report [--from <DATE>] [--to <DATE>]
+```
+
+**See also:** [docs/COMPLIANCE.md](./COMPLIANCE.md) — full compliance guide with SOC 2 control mappings and production deployment best practices.
+
+---
+
 ## References
 
 - **ARCHITECTURE.md** — How security boundaries are enforced
 - **DEVELOPMENT.md** — Writing secure custom tools
 - **CONFIGURATION.md** — All permission options
 - **CONTRIBUTING.md** — Security review checklist for PRs
+- **COMPLIANCE.md** — Enterprise compliance guide, SOC 2 mapping, evidence package structure

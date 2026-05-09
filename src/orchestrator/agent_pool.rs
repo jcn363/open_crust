@@ -131,7 +131,7 @@ impl AgentPool {
 
     /// Cancel a running agent (aborts the tokio task)
     pub fn cancel(&mut self, task_id: &uuid::Uuid) -> bool {
-        self.active_agents.remove(task_id).map_or(false, |h| {
+        self.active_agents.remove(task_id).is_some_and(|h| {
             h.abort();
             true
         })

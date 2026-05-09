@@ -301,10 +301,8 @@ impl MissionControlUI {
                 // Move to next layer
                 self.navigate_next_layer();
             }
-            crossterm::event::KeyCode::Enter => {
-                if !self.tasks.is_empty() && self.selected_index < self.tasks.len() {
-                    return MissionControlAction::SelectTask(self.selected_index);
-                }
+            crossterm::event::KeyCode::Enter if !self.tasks.is_empty() && self.selected_index < self.tasks.len() => {
+                return MissionControlAction::SelectTask(self.selected_index);
             }
             _ => {}
         }
@@ -597,7 +595,7 @@ impl MissionControlUI {
                     self.tasks.iter()
                         .find(|t| t.id == *id)
                         .map(|t| Self::truncate(&t.description, 20))
-                        .unwrap_or_else(|| format!("{}", &id.to_string()[..8]))
+                        .unwrap_or_else(|| id.to_string()[..8].to_string())
                 })
                 .collect();
             format!("  Depends on: {}", dep_ids.join(", "))

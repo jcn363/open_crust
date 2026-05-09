@@ -65,7 +65,7 @@ fn default_true() -> bool {
 impl Default for SubagentConfig {
     fn default() -> Self {
         Self {
-            default_model: Some(DEFAULT_OPENROUTER_FREE_MODEL.to_string()),
+            default_model: Some("big-pickle".to_string()),
             fallback_to_free: true,
             agent_overrides: HashMap::new(),
         }
