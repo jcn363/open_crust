@@ -114,6 +114,59 @@ Already configured in `~/.config/open_crust/config.json`:
 
 ---
 
+## 🧠 YOLO
+
+**Package**: `@modelcontextprotocol/server-yolo`
+**Status**: ✅ Installed and enabled
+**Description**: Real‑time object detection using YOLO models
+
+### What It Does
+
+Provides on‑device image analysis:
+- Detects objects in images or video frames
+- Supports multiple YOLO variants (yolov8n, yolov8s, etc.)
+- Returns bounding boxes, class labels, and confidence scores
+- Can be used for image classification, counting, or tracking
+
+### Usage
+
+The AI will automatically use YOLO when:
+- Analyzing images for object presence
+- Performing visual search or image tagging
+- Building computer‑vision pipelines
+- Generating annotated datasets
+
+### Example Prompts
+
+```
+"Detect objects in this image"
+→ AI uses YOLO to:
+  1. Load the image
+  2. Run the selected YOLO model
+  3. Return bounding boxes and labels
+  4. Provide confidence scores
+
+"Count cars in this traffic photo"
+→ AI uses YOLO to:
+  1. Detect all vehicles
+  2. Filter by class "car"
+  3. Return the count
+```
+
+### Configuration
+
+Already configured in `~/.config/open_crust/config.json`:
+```json
+{
+  "yolo": {
+    "command": ["yolo", "detect", "predict"],
+    "enabled": true
+  }
+}
+```
+
+---
+
 ## 🔧 Octocode
 
 **Package**: `@octocode/mcp-server`

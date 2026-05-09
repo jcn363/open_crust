@@ -35,6 +35,14 @@ pub struct ModelAlias {
     pub provider: ProviderType,
     pub model_id: String,
     pub tier: ModelTier,
+    /// Whether this model supports tool/function calling
+    /// Set to false for models that don't support tools (saves tokens by skipping tool schemas)
+    #[serde(default = "default_tool_capable")]
+    pub tool_capable: bool,
+}
+
+fn default_tool_capable() -> bool {
+    true
 }
 
 /// Configuration for subagent model selection
@@ -676,6 +684,16 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
             ],
             environment: None,
             enabled: true, // Enabled by default
+        },
+    );
+
+    // YOLO - Object detection for image analysis
+    mcp.insert(
+        "yolo".to_string(),
+        McpConfig {
+            command: vec!["yolo".to_string(), "detect".to_string(), "predict".to_string()],
+            environment: None,
+            enabled: false, // Requires ultralytics installation: pip install ultralytics
         },
     );
 
