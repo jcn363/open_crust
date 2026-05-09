@@ -56,6 +56,64 @@ Already configured in `~/.config/open_crust/config.json`:
 
 ---
 
+## 🧠 Critical Thinking
+
+**Package**: `@modelcontextprotocol/server-critical-thinking`
+**Status**: ✅ Installed and enabled
+**Description**: Analytical reasoning and evaluation for complex problems
+
+### What It Does
+
+Provides structured analytical capabilities:
+- Logical reasoning and argument analysis
+- Evidence evaluation and validation
+- Risk assessment and mitigation
+- Decision-making frameworks
+- Critical evaluation of assumptions
+
+### Usage
+
+The AI will automatically use critical thinking when:
+- Analyzing complex problems with multiple variables
+- Evaluating evidence and claims
+- Making strategic decisions
+- Assessing risks and trade-offs
+- Challenging assumptions and biases
+
+### Example Prompts
+
+```
+"Analyze this security vulnerability assessment"
+→ AI uses critical thinking to:
+  1. Evaluate the evidence presented
+  2. Identify potential false positives/negatives
+  3. Assess risk factors and impact
+  4. Consider alternative explanations
+  5. Provide balanced evaluation
+
+"Should we adopt this new technology stack?"
+→ AI uses critical thinking to:
+  1. Analyze pros and cons objectively
+  2. Evaluate long-term implications
+  3. Consider team skill requirements
+  4. Assess maintenance costs
+  5. Identify potential risks
+```
+
+### Configuration
+
+Already configured in `~/.config/open_crust/config.json`:
+```json
+{
+  "criticalthinking": {
+    "command": ["npx", "-y", "@modelcontextprotocol/server-critical-thinking"],
+    "enabled": true
+  }
+}
+```
+
+---
+
 ## 🔧 Octocode
 
 **Package**: `@octocode/mcp-server`
