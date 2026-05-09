@@ -44,6 +44,15 @@ impl PermissionManager {
 
         PermissionAction::Ask
     }
+    
+    /// Verification helper: Check if a tool is allowed without prompting
+    #[allow(dead_code)]
+    pub fn is_allowed_without_prompt(&self, tool_name: &str, input: &str) -> bool {
+        matches!(
+            self.check_permission(tool_name, input),
+            PermissionAction::Allow
+        )
+    }
 
     pub fn check_network_permission(&self, url_str: &str) -> bool {
         if self.config.allowed_domains.is_empty() {

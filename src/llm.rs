@@ -201,32 +201,36 @@ impl LlmClient {
                         _ => args_str,
                     };
 
-                    // Check if tool requires approval
-                    let permission = self
-                        .permission_manager
-                        .check_permission(name, input_summary);
-                    let approved = match permission {
-                        PermissionAction::Allow => true,
-                        PermissionAction::Deny => false,
-                        PermissionAction::Ask => {
-                            // Handle tools that need user approval
-                            if name == "write" {
-                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                let proposed =
-                                    args.get("content").and_then(|v| v.as_str()).unwrap_or("");
-                                let original = std::fs::read_to_string(path).unwrap_or_default();
-                                let _ = progress_tx
-                                    .send(format!(
-                                        "[DIFF_REQUIRED]{}|{}|{}",
-                                        path, original, proposed
-                                    ))
-                                    .await;
-                            } else {
-                                let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
-                            }
-                            approval_rx.recv().await.unwrap_or(false)
-                        }
-                    };
+                      // Check if tool requires approval
+                      let mut approved = self
+                          .permission_manager
+                          .is_allowed_without_prompt(name, input_summary);
+                      if !approved {
+                          let permission = self
+                              .permission_manager
+                              .check_permission(name, input_summary);
+                          if permission == PermissionAction::Ask {
+                              // Handle tools that need user approval
+                              if name == "write" {
+                                  let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                  let proposed =
+                                      args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+                                  let original = std::fs::read_to_string(path).unwrap_or_default();
+                                  let _ = progress_tx
+                                      .send(format!(
+                                          "[DIFF_REQUIRED]{}|{}|{}",
+                                          path, original, proposed
+                                      ))
+                                      .await;
+                              } else {
+                                  let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
+                              }
+                              approved = approval_rx.recv().await.unwrap_or(false);
+                          } else {
+                              // PermissionAction::Deny
+                              approved = false;
+                          }
+                      }
 
                     self.audit_logger.log_action(name, input_summary, approved);
 
