@@ -16,6 +16,7 @@ mod llm;
 mod lsp;
 mod markdown;
 mod mcp;
+mod models;
 mod mcp_showcase;
 mod mission_control;
 mod orchestrator;

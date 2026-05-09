@@ -241,6 +241,38 @@ pub struct Config {
     pub subagent_max_concurrent: Option<usize>,
     #[serde(default)]
     pub subagent_timeout_secs: Option<u64>,
+
+    // --- Model auto-refresh configuration ---
+    #[serde(default)]
+    pub model_auto_refresh: Option<ModelAutoRefreshConfig>,
+}
+
+/// Controls automatic background refresh of provider model lists
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModelAutoRefreshConfig {
+    /// Whether auto-refresh is enabled (default: true)
+    #[serde(default = "default_model_auto_refresh_enabled")]
+    pub enabled: bool,
+    /// Interval in seconds between refreshes (default: 3600 = 1 hour)
+    #[serde(default = "default_model_auto_refresh_interval")]
+    pub interval_secs: u64,
+}
+
+fn default_model_auto_refresh_enabled() -> bool {
+    true
+}
+
+fn default_model_auto_refresh_interval() -> u64 {
+    3600
+}
+
+impl Default for ModelAutoRefreshConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            interval_secs: 3600,
+        }
+    }
 }
 
 impl Default for Keybinds {
@@ -298,6 +330,7 @@ impl Default for Config {
             localai_api_key: None,
             subagent_max_concurrent: None,
             subagent_timeout_secs: None,
+            model_auto_refresh: Some(ModelAutoRefreshConfig::default()),
         }
     }
 }
