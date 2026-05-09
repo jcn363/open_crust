@@ -61,6 +61,23 @@ Security-focused code review and vulnerability detection.
 
 ---
 
+### summarize (Priority: Medium)
+
+Use when you need to summarize text, videos, or web pages. Supports summarizing URLs, local files, and YouTube links. ships with specialized skills: summarize (brew install summarize)
+
+**When to use:**
+- Summarizing web articles, documents, or YouTube videos
+- Extracting key points from lengthy content
+- Getting quick overviews of online resources
+
+**Key behaviors:**
+- Use `summarize` CLI tool with appropriate flags
+- Support for URL, local file, and YouTube inputs
+- Multiple AI provider support (OpenAI, Anthropic, xAI, Google)
+- Configurable models and extraction options
+
+---
+
 ### git-workflow (Priority: Medium)
 
 Git branch management, commit conventions, and PR workflows.
@@ -130,6 +147,99 @@ README creation, API documentation, and CHANGELOG generation.
 - Include usage examples in docs
 - Generate CHANGELOG from git history
 - Keep README concise but complete
+
+---
+
+### sequentialthinking (Priority: Medium)
+
+Specialized assistant for sequential thinking and step-by-step problem solving.
+
+**When to use:**
+- Complex problems requiring step-by-step reasoning
+- Mathematical problem solving
+- Algorithm design and implementation
+- Debugging processes
+- Decision making with multiple factors
+- Planning multi-step tasks or projects
+
+**Key behaviors:**
+- Break down problems into smaller, manageable steps
+- Ensure logical flow between steps
+- State assumptions clearly at each step
+- Validate intermediate results before proceeding
+- Document reasoning for each step
+- Use structured frameworks for problem solving
+- Show work and explain the "why" behind actions
+
+---
+
+### criticalthinking (Priority: Medium)
+
+Specialized assistant for critical thinking, analysis, and evaluation.
+
+**When to use:**
+- Evaluating claims, arguments, or proposals
+- Analyzing complex issues or problems
+- Making reasoned judgments or decisions
+- Reviewing designs, implementations, or solutions
+- Identifying biases, fallacies, or weaknesses in reasoning
+- Synthesizing information from multiple sources
+
+**Key behaviors:**
+- Question assumptions and examine underlying premises
+- Evaluate evidence for quality, relevance, and sufficiency
+- Consider alternative explanations or solutions
+- Identify cognitive biases, logical fallacies, and rhetorical devices
+- Assess the validity and soundness of reasoning processes
+- Synthesize information from multiple sources
+- Weigh evidence objectively and acknowledge uncertainty
+- State conclusions clearly with appropriate qualifications
+
+---
+
+### rust-ai-ide-rules (Priority: Medium)
+
+Global rules for Rust AI IDE development ensuring best practices in code structure, development processes, performance, and security.
+
+**When to use:**
+- Rust code organization and modular design
+- Development practices and task decomposition
+- Code and test separation strategies
+- Performance optimization and user experience
+- Code scanning and security vulnerability detection
+
+**Key behaviors:**
+- Prioritize modular design with single responsibility modules
+- Use composition over inheritance and dependency injection
+- Break tasks into sequential steps for progressive verification
+- Implement incremental changes with targeted testing
+- Strictly separate tests from production code
+- Focus on load time reduction and code splitting
+- Integrate Snyk for vulnerability scanning and remediation
+- Follow modification sequence: dependencies → imports → types → quality → validation
+
+---
+
+### global-dev-rules (Priority: Medium)
+
+Global development rules and best practices for maintaining high-quality, secure, and performant code across all projects.
+
+**When to use:**
+- Code and test separation strategies
+- Code organization and modular design
+- Development practices and task execution
+- Performance optimization techniques
+- Security scanning and code quality assurance
+
+**Key behaviors:**
+- Enforce absolute segregation between test and production code
+- Modularize code with single responsibilities using traits for abstraction
+- Decompose tasks incrementally with frequent validation
+- Focus on perceived performance metrics (FCP, TTI)
+- Mandate Snyk Code and SCA scanning for vulnerabilities
+- Follow error resolution sequence: dependencies → imports → types → quality → validation
+- Use selective imports, lazy loading, and asset optimization
+- Remediate security issues promptly and re-scan after fixes
 
 ---
 

@@ -72,6 +72,7 @@ impl LlmClient {
             Arc::new(WebManager::new()),
             Arc::new(Mutex::new(Planner::new())),
             Arc::new(Mutex::new(RagManager::new(&config))),
+            pinned_files.clone(),
         ));
 
         Self {

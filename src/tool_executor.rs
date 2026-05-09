@@ -34,6 +34,7 @@ pub struct ToolExecutor {
     pub web_manager: Arc<WebManager>,
     pub planner: Arc<Mutex<Planner>>,
     pub rag_manager: Arc<Mutex<RagManager>>,
+    pub pinned_files: Arc<Mutex<Vec<String>>>,
 }
 
 impl ToolExecutor {
@@ -47,6 +48,7 @@ impl ToolExecutor {
         web_manager: Arc<WebManager>,
         planner: Arc<Mutex<Planner>>,
         rag_manager: Arc<Mutex<RagManager>>,
+        pinned_files: Arc<Mutex<Vec<String>>>,
     ) -> Self {
         Self {
             mcp_manager,
@@ -57,6 +59,7 @@ impl ToolExecutor {
             web_manager,
             planner,
             rag_manager,
+            pinned_files,
         }
     }
 
@@ -288,15 +291,33 @@ impl ToolExecutor {
     }
 
     async fn execute_pin(&self, args: &Value) -> ToolResult {
-        // Pin functionality is handled by LlmClient's pinned_files
-        // This is a placeholder - actual implementation would need access to pinned_files
-        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-        Ok(format!("Pin requested for: {}", path))
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if path.is_empty() {
+            return Ok("Error: No path provided for pinning".to_string());
+        }
+
+        let mut pinned = self.pinned_files.lock().await;
+        if !pinned.contains(&path) {
+            pinned.push(path.clone());
+            Ok(format!("Successfully pinned: {}", path))
+        } else {
+            Ok(format!("Already pinned: {}", path))
+        }
     }
 
     async fn execute_unpin(&self, args: &Value) -> ToolResult {
-        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-        Ok(format!("Unpin requested for: {}", path))
+        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        if path.is_empty() {
+            return Ok("Error: No path provided for unpinning".to_string());
+        }
+
+        let mut pinned = self.pinned_files.lock().await;
+        if let Some(pos) = pinned.iter().position(|p| p == &path) {
+            pinned.remove(pos);
+            Ok(format!("Successfully unpinned: {}", path))
+        } else {
+            Ok(format!("Not pinned: {}", path))
+        }
     }
 
     async fn execute_create_plan(&self, args: &Value) -> ToolResult {
@@ -419,4 +440,67 @@ pub async fn get_all_tool_schemas(
     }
 
     tools_schema
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use serde_json::json;
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
+
+    #[tokio::test]
+    async fn test_pin_unpin_functionality() {
+        // Create mock managers
+        let mcp_manager = Arc::new(Mutex::new(McpManager::new()));
+        let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
+        let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
+        let custom_tool_manager = Arc::new(Mutex::new(CustomToolManager::new()));
+        let permission_manager = Arc::new(PermissionManager::new(Config::default()));
+        let web_manager = Arc::new(WebManager::new());
+        let planner = Arc::new(Mutex::new(Planner::new()));
+        let rag_manager = Arc::new(Mutex::new(RagManager::new(&Config::default())));
+        let pinned_files = Arc::new(Mutex::new(Vec::new()));
+
+        // Create tool executor
+        let tool_executor = ToolExecutor::new(
+            mcp_manager,
+            lsp_manager,
+            skill_manager,
+            custom_tool_manager,
+            permission_manager,
+            web_manager,
+            planner,
+            rag_manager,
+            pinned_files.clone(),
+        );
+
+        // Test pinning a file
+        let pin_args = json!({ "path": "/test/file.rs" });
+        let result = tool_executor.execute_pin(&pin_args).await.unwrap();
+        assert_eq!(result, "Successfully pinned: /test/file.rs");
+
+        // Test pinning the same file again (should show already pinned)
+        let result = tool_executor.execute_pin(&pin_args).await.unwrap();
+        assert_eq!(result, "Already pinned: /test/file.rs");
+
+        // Test unpinning the file
+        let unpin_args = json!({ "path": "/test/file.rs" });
+        let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
+        assert_eq!(result, "Successfully unpinned: /test/file.rs");
+
+        // Test unpinning a file that wasn't pinned
+        let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
+        assert_eq!(result, "Not pinned: /test/file.rs");
+
+        // Test pinning with empty path
+        let empty_args = json!({ "path": "" });
+        let result = tool_executor.execute_pin(&empty_args).await.unwrap();
+        assert_eq!(result, "Error: No path provided for pinning");
+
+        // Test unpinning with empty path
+        let result = tool_executor.execute_unpin(&empty_args).await.unwrap();
+        assert_eq!(result, "Error: No path provided for unpinning");
+    }
 }
