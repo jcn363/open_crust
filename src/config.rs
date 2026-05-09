@@ -245,11 +245,29 @@ pub struct Config {
     // --- Model auto-refresh configuration ---
     #[serde(default)]
     pub model_auto_refresh: Option<ModelAutoRefreshConfig>,
+
+    // --- Compliance / Audit configuration ---
+    #[serde(default)]
+    pub compliance_mode: bool,
+    #[serde(default)]
+    pub compliance_log_path: Option<String>,
+    #[serde(default = "default_audit_retention")]
+    pub audit_retention_days: u64,
+    #[serde(default = "default_audit_max_size")]
+    pub audit_max_size_bytes: u64,
+}
+
+fn default_audit_retention() -> u64 {
+    90
+}
+
+fn default_audit_max_size() -> u64 {
+    10_485_760
 }
 
 /// Controls automatic background refresh of provider model lists
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ModelAutoRefreshConfig {
+    #[derive(Debug, Serialize, Deserialize, Clone)]
+    pub struct ModelAutoRefreshConfig {
     /// Whether auto-refresh is enabled (default: true)
     #[serde(default = "default_model_auto_refresh_enabled")]
     pub enabled: bool,
@@ -331,6 +349,10 @@ impl Default for Config {
             subagent_max_concurrent: None,
             subagent_timeout_secs: None,
             model_auto_refresh: Some(ModelAutoRefreshConfig::default()),
+            compliance_mode: false,
+            compliance_log_path: None,
+            audit_retention_days: default_audit_retention(),
+            audit_max_size_bytes: default_audit_max_size(),
         }
     }
 }

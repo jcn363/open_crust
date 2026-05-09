@@ -1,9 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": ["~/Desktop/extras/micode"],
-  "model": "ollama/coder11v/mycode1",
+  "model": "opencode/big-pickle",
   "tools": {
     "bash": false
+  },
+  "provider": {
+    "opencode": {
+      "models": {
+        "big-pickle": {
+          "_launch": true,
+          "name": "big-pickle"
+        }
+      }
+    }
   },
   "provider": {
     "ollama": {
@@ -24,24 +34,7 @@
     "gemini": {
       "name": "gemini",
       "description": "Gemini CLI for one-shot Q&A, summaries, and generation.",
-      "homepage": "https://ai.google.dev/",
-      "metadata": {
-        "openclaw": {
-          "emoji": "♊️",
-          "requires": {
-            "bins": ["gemini"]
-          },
-          "install": [
-            {
-              "id": "brew",
-              "kind": "brew",
-              "formula": "gemini-cli",
-              "bins": ["gemini"],
-              "label": "Install Gemini CLI (brew)"
-            }
-          ]
-        }
-      }
+      "homepage": "https://ai.google.dev/"
     }
   }
 }

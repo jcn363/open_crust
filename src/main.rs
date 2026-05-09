@@ -3,6 +3,7 @@ mod acp;
 mod app;
 mod audit;
 mod clipboard;
+mod compliance;
 mod config;
 mod context;
 mod custom_tools;
@@ -116,6 +117,11 @@ enum Commands {
         #[command(subcommand)]
         cmd: SkillsCommands,
     },
+    /// Audit log management and compliance
+    Audit {
+        #[command(subcommand)]
+        cmd: AuditCommands,
+    },
     /// Run as an MCP server (expose OpenCrust tools via MCP protocol)
     Serve {
         /// Port to listen on (default: 8765)
@@ -124,6 +130,48 @@ enum Commands {
         /// Use stdio transport instead of TCP
         #[arg(long)]
         stdio: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum AuditCommands {
+    /// Export audit logs to CSV or JSON
+    Export {
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+        #[arg(long)]
+        action: Option<String>,
+        #[arg(long)]
+        status: Option<String>,
+        #[arg(long, default_value = "csv")]
+        format: String,
+        #[arg(long)]
+        output: Option<String>,
+    },
+    /// Query audit logs and display as table
+    Query {
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+        #[arg(long)]
+        action: Option<String>,
+        #[arg(long)]
+        status: Option<String>,
+    },
+    /// Build evidence package with SHA256 manifest
+    Evidence {
+        #[arg(long)]
+        output_dir: Option<String>,
+    },
+    /// Generate compliance report
+    Report {
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
     },
 }
 
@@ -789,6 +837,154 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
         return Ok(());
     }
+    // Audit and compliance commands
+    if let Some(Commands::Audit { cmd }) = &args.command {
+        let config = config::Config::load();
+        let log_dir = dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("open_crust/logs");
+        let audit_log_path = log_dir.join("audit.log");
+
+        match cmd {
+            AuditCommands::Export {
+                from,
+                to,
+                action,
+                status,
+                format,
+                output,
+            } => {
+                let from_date = from
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+                let to_date = to
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+                let status_filter = status.as_ref().map(|s| s == "approved");
+
+                let query = audit::AuditQuery {
+                    from_date,
+                    to_date,
+                    action_pattern: action.clone(),
+                    status_filter,
+                };
+
+                match query.execute(&audit_log_path) {
+                    Ok(entries) => {
+                        let fmt = match format.as_str() {
+                            "json" => audit::ExportFormat::Json,
+                            _ => audit::ExportFormat::Csv,
+                        };
+
+                        match output {
+                            Some(path) => {
+                                let out_path = std::path::Path::new(&path);
+                                audit::AuditExport::export_to_file(&entries, fmt, out_path)
+                                    .unwrap_or_else(|e| eprintln!("Export error: {}", e));
+                                println!(
+                                    "Exported {} entries to {}",
+                                    entries.len(),
+                                    path
+                                );
+                            }
+                            None => {
+                                audit::AuditExport::export(&entries, fmt, &mut std::io::stdout())
+                                    .unwrap_or_else(|e| eprintln!("Export error: {}", e));
+                            }
+                        }
+                    }
+                    Err(e) => eprintln!("Error querying audit log: {}", e),
+                }
+            }
+            AuditCommands::Query {
+                from,
+                to,
+                action,
+                status,
+            } => {
+                let from_date = from
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+                let to_date = to
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+                let status_filter = status.as_ref().map(|s| s == "approved");
+
+                let query = audit::AuditQuery {
+                    from_date,
+                    to_date,
+                    action_pattern: action.clone(),
+                    status_filter,
+                };
+
+                match query.execute(&audit_log_path) {
+                    Ok(entries) => {
+                        if entries.is_empty() {
+                            println!("No matching audit entries found.");
+                        } else {
+                            println!(
+                                "{:<26} {:<16} {:<10} {:<20} {:<8}",
+                                "Timestamp", "Session", "Agent", "Tool", "Status"
+                            );
+                            println!("{}", "-".repeat(80));
+                            for entry in &entries {
+                                let status_str = if entry.approved {
+                                    "APPROVED"
+                                } else {
+                                    "DENIED"
+                                };
+                                println!(
+                                    "{:<26} {:<16} {:<10} {:<20} {:<8}",
+                                    entry.timestamp,
+                                    entry.session_id.chars().take(14).collect::<String>(),
+                                    entry.agent_type.chars().take(8).collect::<String>(),
+                                    entry.tool.chars().take(18).collect::<String>(),
+                                    status_str,
+                                );
+                            }
+                            println!("\nTotal: {} entries", entries.len());
+                        }
+                    }
+                    Err(e) => eprintln!("Error querying audit log: {}", e),
+                }
+            }
+            AuditCommands::Evidence { output_dir } => {
+                let out_dir = output_dir
+                    .clone()
+                    .map(std::path::PathBuf::from)
+                    .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+                match compliance::EvidencePackage::build(&audit_log_path, &config, &out_dir) {
+                    Ok(()) => {}
+                    Err(e) => eprintln!("Error building evidence package: {}", e),
+                }
+            }
+            AuditCommands::Report { from, to } => {
+                let from_date = from
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+                let to_date = to
+                    .as_ref()
+                    .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+
+                let query = audit::AuditQuery {
+                    from_date,
+                    to_date,
+                    action_pattern: None,
+                    status_filter: None,
+                };
+
+                match query.execute(&audit_log_path) {
+                    Ok(entries) => {
+                        let report = compliance::ComplianceReport::generate(&entries);
+                        println!("{}", report.to_string());
+                    }
+                    Err(e) => eprintln!("Error generating report: {}", e),
+                }
+            }
+        }
+        return Ok(());
+    }
+
     // Skill management commands
     if let Some(Commands::Skills { cmd }) = &args.command {
         let mut skills = skill_manager.lock().await;
