@@ -126,6 +126,7 @@ Already configured in `~/.config/open_crust/config.json`:
 | **github** | ✅ Enabled | GitHub API integration (repos, issues, PRs) |
 | **playwright** | ✅ Enabled | Browser automation & E2E testing |
 | **sequentialthinking** | ✅ Enabled | Structured thinking and reasoning |
+| **criticalthinking** | ✅ Enabled | Analytical reasoning and evaluation |
 | **octocode** | ✅ Enabled | Code analysis and refactoring |
 
 ### Managing MCP Servers
