@@ -125,28 +125,30 @@ impl ComplianceReport {
             date_range,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for ComplianceReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let approval_rate = if self.total_calls > 0 {
             self.approved as f64 / self.total_calls as f64 * 100.0
         } else {
             0.0
         };
 
-        let mut output = String::new();
-        output.push_str("=== Compliance Report ===\n\n");
-        output.push_str(&format!("Total tool calls: {}\n", self.total_calls));
-        output.push_str(&format!("Approved: {}\n", self.approved));
-        output.push_str(&format!("Denied: {}\n", self.denied));
-        output.push_str(&format!("Approval rate: {:.1}%\n", approval_rate));
-        output.push_str(&format!("Unique sessions: {}\n", self.session_count));
+        writeln!(f, "=== Compliance Report ===")?;
+        writeln!(f)?;
+        writeln!(f, "Total tool calls: {}", self.total_calls)?;
+        writeln!(f, "Approved: {}", self.approved)?;
+        writeln!(f, "Denied: {}", self.denied)?;
+        writeln!(f, "Approval rate: {:.1}%", approval_rate)?;
+        writeln!(f, "Unique sessions: {}", self.session_count)?;
         if let Some((from, to)) = &self.date_range {
-            output.push_str(&format!("Date range: {} to {}\n", from, to));
+            writeln!(f, "Date range: {} to {}", from, to)?;
         }
-        output.push_str("\nMost used tools:\n");
+        writeln!(f, "\nMost used tools:")?;
         for (i, (tool, count)) in self.most_used_tools.iter().enumerate() {
-            output.push_str(&format!("  {}. {} ({} calls)\n", i + 1, tool, count));
+            writeln!(f, "  {}. {} ({} calls)", i + 1, tool, count)?;
         }
-        output
+        Ok(())
     }
 }

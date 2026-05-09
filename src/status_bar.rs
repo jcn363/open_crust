@@ -1,39 +1,53 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::Style,
+    widgets::Paragraph,
+};
 
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct StatusBarState {
-    pub provider: String,
-    pub model: String,
-    pub prompt_tokens: u64,
-    pub completion_tokens: u64,
-}
+use crate::app::App;
+use crate::ui::ThemeContext;
 
-impl StatusBarState {
-    pub fn new(provider: &str, model: &str) -> Self {
-        Self {
-            provider: provider.to_string(),
-            model: model.to_string(),
-            prompt_tokens: 0,
-            completion_tokens: 0,
-        }
-    }
-}
+pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
+    let mode_str = match app.mode {
+        crate::app::Mode::Normal => "NORMAL",
+        crate::app::Mode::Insert => "INSERT",
+        crate::app::Mode::Review => "REVIEW",
+        crate::app::Mode::Servers => "SERVERS",
+        crate::app::Mode::SkillBrowser => "SKILLS",
+        crate::app::Mode::CommandPalette => "PALETTE",
+        crate::app::Mode::McpShowcase => "MCP SHOWCASE",
+        crate::app::Mode::MissionControl => "MISSION CONTROL",
+    };
 
-pub type SharedStatusBarState = Arc<RwLock<StatusBarState>>;
+    let stats = app.llm_client.usage_stats.try_lock();
+    let context_budget = app.config.context_limit();
 
-// Helper functions to update the state
-#[allow(dead_code)]
-pub async fn set_provider_model(state: &SharedStatusBarState, provider: &str, model: &str) {
-    let mut w = state.write().await;
-    w.provider = provider.to_string();
-    w.model = model.to_string();
-}
+    let stats_str = if let Ok(s) = stats {
+        let total_tokens = s.total_tokens();
+        let context_percent = if context_budget > 0 {
+            (total_tokens as f64 / context_budget as f64 * 100.0) as u16
+        } else {
+            0
+        };
 
-#[allow(dead_code)]
-pub async fn update_usage(state: &SharedStatusBarState, prompt: u64, completion: u64) {
-    let mut w = state.write().await;
-    w.prompt_tokens = prompt;
-    w.completion_tokens = completion;
+        format!(
+            " | 🤖 {} | Context: {}/{} ({}%) | Cost: ${:.4}",
+            app.config.model,
+            total_tokens,
+            context_budget,
+            context_percent,
+            s.total_cost
+        )
+    } else {
+        format!(" | 🤖 {} ", app.config.model)
+    };
+
+    let vim_indicator = if app.vim_mode { " [VIM]" } else { "" };
+    let status_bar = Paragraph::new(format!(
+        "-- {} -- {} | Ctrl+B: Sidebar | Tab: Switch view{}",
+        mode_str, vim_indicator, stats_str
+    ))
+    .style(Style::default().fg(theme.accent));
+    f.render_widget(status_bar, area);
 }

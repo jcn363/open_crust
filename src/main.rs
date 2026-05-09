@@ -54,7 +54,7 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
-use status_bar::{SharedStatusBarState};
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -266,11 +266,6 @@ enum SkillsCommands {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     let mut config = config::Config::load();
-    // Initialize shared status bar state (will be used by UI and LLM later)
-    let _status_state: SharedStatusBarState = Arc::new(tokio::sync::RwLock::new(
-        status_bar::StatusBarState::new(config.provider.as_str(), &config.model),
-    ));
-
     // Detect Cinnamon desktop environment and apply theming if available
     let cinnamon_info = get_cinnamon_info();
     if cinnamon_info.desktop.is_cinnamon() {
@@ -646,17 +641,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             && let Some(props) = schema.get("properties")
                             && let Some(props_obj) = props.as_object()
                             && !props_obj.is_empty() {
-                                        println!("    Arguments:");
-                                        for (prop_name, prop_info) in props_obj {
-                                            let prop_type = prop_info.get("type").and_then(|v| v.as_str()).unwrap_or("any");
-                                            let prop_desc = prop_info.get("description").and_then(|v| v.as_str()).unwrap_or("");
-                                            if prop_desc.is_empty() {
-                                                println!("      - {}: {}", prop_name, prop_type);
-                                            } else {
-                                                println!("      - {} ({}): {}", prop_name, prop_type, prop_desc);
-                                            }
-                                        }
-                                    }
+                            println!("    Arguments:");
+                            for (prop_name, prop_info) in props_obj {
+                                let prop_type = prop_info.get("type").and_then(|v| v.as_str()).unwrap_or("any");
+                                let prop_desc = prop_info.get("description").and_then(|v| v.as_str()).unwrap_or("");
+                                if prop_desc.is_empty() {
+                                    println!("      - {}: {}", prop_name, prop_type);
+                                } else {
+                                    println!("      - {} ({}): {}", prop_name, prop_type, prop_desc);
                                 }
                             }
                         }
@@ -973,13 +965,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     status_filter: None,
                 };
 
-                match query.execute(&audit_log_path) {
-                    Ok(entries) => {
-                        let report = compliance::ComplianceReport::generate(&entries);
-                        println!("{}", report.to_string());
-                    }
-                    Err(e) => eprintln!("Error generating report: {}", e),
-                }
+                 match query.execute(&audit_log_path) {
+                     Ok(entries) => {
+                         let report = compliance::ComplianceReport::generate(&entries);
+                         println!("{}", report);
+                     }
+                     Err(e) => eprintln!("Error generating report: {}", e),
+                 }
             }
         }
         return Ok(());
