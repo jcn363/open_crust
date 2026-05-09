@@ -1,0 +1,513 @@
+use ratatui::{
+    Frame,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
+};
+
+use crate::app::{App, ChangeStatus};
+use super::layout::centered_rect;
+use super::ThemeContext;
+
+pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
+    if app.proposed_changes.is_empty() {
+        return;
+    }
+
+    let area = centered_rect(90, 90, f.area());
+    f.render_widget(Clear, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Min(1),    // Main content
+                Constraint::Length(3), // Status bar
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    let main_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage(30), // File list
+                Constraint::Percentage(70), // Diff view
+            ]
+            .as_ref(),
+        )
+        .split(chunks[0]);
+
+    // File list (left panel)
+    let file_list: Vec<ListItem> = app
+        .proposed_changes
+        .iter()
+        .enumerate()
+        .map(|(i, change)| {
+            let status_icon = match change.status {
+                ChangeStatus::Pending => "○",
+                ChangeStatus::Approved => "✓",
+                ChangeStatus::Denied => "✗",
+            };
+            let style = match change.status {
+                ChangeStatus::Pending => Style::default().fg(Color::Yellow),
+                ChangeStatus::Approved => Style::default().fg(Color::Green),
+                ChangeStatus::Denied => Style::default().fg(Color::Red),
+            };
+            let prefix = if i == app.plan_review_index {
+                "> "
+            } else {
+                "  "
+            };
+            ListItem::new(Line::from(vec![Span::styled(
+                format!("{}{} {}", prefix, status_icon, change.path),
+                style,
+            )]))
+        })
+        .collect();
+
+    let file_list_widget = List::new(file_list)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Files ")
+                .border_style(Style::default().fg(theme.accent)),
+        )
+        .highlight_style(Style::default().bg(Color::DarkGray));
+    f.render_widget(file_list_widget, main_chunks[0]);
+
+    // Diff view (right panel)
+    if let Some(change) = app.proposed_changes.get(app.plan_review_index) {
+        let diff_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(main_chunks[1]);
+
+        let original = Paragraph::new(change.original.as_str()).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Original ")
+                .border_style(Style::default().fg(Color::Red)),
+        );
+        let proposed = Paragraph::new(change.proposed.as_str()).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Proposed ")
+                .border_style(Style::default().fg(Color::Green)),
+        );
+
+        f.render_widget(original, diff_chunks[0]);
+        f.render_widget(proposed, diff_chunks[1]);
+    }
+
+    // Status bar
+    let approved_count = app
+        .proposed_changes
+        .iter()
+        .filter(|c| c.status == ChangeStatus::Approved)
+        .count();
+    let denied_count = app
+        .proposed_changes
+        .iter()
+        .filter(|c| c.status == ChangeStatus::Denied)
+        .count();
+    let pending_count = app
+        .proposed_changes
+        .iter()
+        .filter(|c| c.status == ChangeStatus::Pending)
+        .count();
+
+    let status_text = format!(
+        " [↑/↓] Navigate | [A]pprove [D]eny | [Shift+A] Approve All | [Enter] Execute Approved | [Esc] Cancel | Pending: {} Approved: {} Denied: {} ",
+        pending_count, approved_count, denied_count
+    );
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(Color::Blue).fg(Color::White))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[1]);
+}
+
+pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
+    let area = centered_rect(90, 80, f.area());
+    f.render_widget(Clear, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3), // Title
+                Constraint::Min(1),    // Content
+                Constraint::Length(3), // Status bar
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    // Title
+    let title = Paragraph::new("MCP Server Browser")
+        .style(
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        )
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.accent)),
+        );
+    f.render_widget(title, chunks[0]);
+
+    // Content area
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+        .split(chunks[1]);
+
+    // Left panel: Available MCP Servers list
+    let available_servers: Vec<ListItem> = app
+        .mcp_browser_items
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _desc, _))| {
+            let is_installed = app.config.mcp.contains_key(name);
+            let prefix = if i == app.mcp_browser_selected {
+                "> "
+            } else {
+                "  "
+            };
+            let suffix = if is_installed { " [INSTALLED]" } else { "" };
+            let style = if i == app.mcp_browser_selected {
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD)
+            } else if is_installed {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(theme.fg)
+            };
+            ListItem::new(Line::from(vec![Span::styled(
+                format!("{}{}{}", prefix, name, suffix),
+                style,
+            )]))
+        })
+        .collect();
+
+    let list_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Available Servers ")
+        .border_style(Style::default().fg(theme.accent));
+
+    let list = List::new(available_servers).block(list_block);
+    f.render_widget(list, content_chunks[0]);
+
+    // Right panel: Selected server details
+    if let Some((name, desc, cmd)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
+        let is_installed = app.config.mcp.contains_key(name);
+        let cmd_str = cmd.join(" ");
+
+        let details = vec![
+            Line::from(vec![
+                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    name,
+                    Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().fg(Color::Yellow),
+            )]),
+            Line::from(desc.as_str()),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "Command: ",
+                Style::default().fg(Color::Yellow),
+            )]),
+            Line::from(cmd_str),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if is_installed {
+                        "Installed"
+                    } else {
+                        "Not installed"
+                    },
+                    Style::default().fg(if is_installed {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    }),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if is_installed {
+                        "Restart open_crust to use this server."
+                    } else {
+                        "Press [Enter] to install."
+                    },
+                    Style::default().fg(theme.fg),
+                ),
+            ]),
+        ];
+
+        let details_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Server Details ")
+            .border_style(Style::default().fg(theme.accent));
+
+        let details_para = Paragraph::new(details)
+            .block(details_block)
+            .wrap(Wrap { trim: true });
+        f.render_widget(details_para, content_chunks[1]);
+    }
+
+    // Status bar
+    let status_text = if app.config.mcp.contains_key(
+        &app.mcp_browser_items
+            .get(app.mcp_browser_selected)
+            .map(|(name, _, _)| name.clone())
+            .unwrap_or_default(),
+    ) {
+        " [↑/↓] Navigate | [Esc] Close "
+    } else {
+        " [↑/↓] Navigate | [Enter] Install | [Esc] Close "
+    };
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(theme.accent).fg(Color::Black))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
+
+pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
+    let area = centered_rect(60, 30, f.area());
+    f.render_widget(Clear, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3), // Title
+                Constraint::Min(1),    // Items
+                Constraint::Length(3), // Status
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    // Title
+    let title = Paragraph::new("Command Palette")
+        .style(
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        )
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.accent)),
+        );
+    f.render_widget(title, chunks[0]);
+
+    // Items
+    let items = [
+        (
+            "Switch Provider",
+            format!("Current: {:?}", app.config.provider),
+        ),
+        ("Switch Model", format!("Current: {}", app.config.model)),
+        ("Show Stats", "View usage statistics".to_string()),
+        ("Clear Context", "Clear conversation history".to_string()),
+        ("MCP Browser", "Manage MCP servers".to_string()),
+    ];
+
+    let menu_items: Vec<ListItem> = items
+        .iter()
+        .enumerate()
+        .map(|(i, (label, detail))| {
+            let prefix = if i == app.command_palette_selected {
+                "> "
+            } else {
+                "  "
+            };
+            let style = if i == app.command_palette_selected {
+                Style::default().fg(Color::Yellow)
+            } else {
+                Style::default().fg(theme.fg)
+            };
+            ListItem::new(Line::from(vec![
+                Span::styled(prefix.to_string(), style),
+                Span::styled(label.to_string(), style),
+                Span::styled(format!("  {}", detail), style.dim()),
+            ]))
+        })
+        .collect();
+
+    let list = List::new(menu_items).block(Block::default().borders(Borders::ALL).title(" Commands "));
+    f.render_widget(list, chunks[1]);
+
+    // Status
+    let status = Paragraph::new("[↑/↓] Navigate | [Enter] Select | [Esc] Cancel")
+        .style(Style::default().fg(Color::DarkGray))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
+
+pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
+    let area = centered_rect(70, 60, f.area());
+    f.render_widget(Clear, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3), // Title
+                Constraint::Min(1),    // Content
+                Constraint::Length(3), // Status
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    // Title
+    let title = Paragraph::new("Skill Browser (Ctrl+Shift+K)")
+        .style(
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        )
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.accent)),
+        );
+    f.render_widget(title, chunks[0]);
+
+    // Content area
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+        .split(chunks[1]);
+
+    // Left panel: Available Skills list
+    let skill_list: Vec<ListItem> = app
+        .skill_browser_items
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _desc, active, _usage, _latency))| {
+            let prefix = if i == app.skill_browser_selected {
+                "> "
+            } else {
+                "  "
+            };
+            let status = if *active { "[ACTIVE]" } else { "[INACTIVE]" };
+            let style = if i == app.skill_browser_selected {
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD)
+            } else if *active {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(theme.fg)
+            };
+            ListItem::new(Line::from(vec![Span::styled(
+                format!("{}{} {}", prefix, name, status),
+                style,
+            )]))
+        })
+        .collect();
+
+    let list_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Available Skills ")
+        .border_style(Style::default().fg(theme.accent));
+
+    let list = List::new(skill_list).block(list_block);
+    f.render_widget(list, content_chunks[0]);
+
+    // Right panel: Selected skill details
+    if let Some((name, desc, active, usage_count, avg_latency_ms)) =
+        app.skill_browser_items.get(app.skill_browser_selected)
+    {
+        let status_text = if *active { "ACTIVE" } else { "INACTIVE" };
+        let status_color = if *active { Color::Green } else { Color::Red };
+
+        let details = vec![
+            Line::from(vec![
+                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    name,
+                    Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().fg(Color::Yellow),
+            )]),
+            Line::from(desc.as_str()),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    status_text,
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Usage Count: ", Style::default().fg(Color::Yellow)),
+                Span::styled(usage_count.to_string(), Style::default().fg(theme.fg)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Avg Latency: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if *avg_latency_ms > 0 {
+                        format!("{}ms", avg_latency_ms)
+                    } else {
+                        "N/A".to_string()
+                    },
+                    Style::default().fg(theme.fg),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if *active {
+                        "Skill is active and will be used by the LLM. Press [Enter] to deactivate."
+                    } else {
+                        "Skill is inactive. Press [Enter] to activate."
+                    },
+                    Style::default().fg(theme.fg),
+                ),
+            ]),
+        ];
+
+        let details_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Skill Details ")
+            .border_style(Style::default().fg(theme.accent));
+
+        let details_para = Paragraph::new(details)
+            .block(details_block)
+            .wrap(Wrap { trim: true });
+        f.render_widget(details_para, content_chunks[1]);
+    }
+
+    // Status bar
+    let status_text = "[↑/↓] Navigate | [Enter] Toggle Active | [Esc/q] Close";
+    let status = Paragraph::new(status_text)
+        .style(Style::default().bg(theme.accent).fg(Color::Black))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
