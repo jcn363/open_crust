@@ -1,12 +1,12 @@
 //! MCP Showcase TUI component for browsing/installing MCP servers
 //! Uses ratatui for terminal rendering
 
+use crate::mcp_showcase::McpServerInfo;
 use ratatui::{
+    layout::{Constraint, Direction, Layout},
     prelude::*,
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
-    layout::{Layout, Constraint, Direction},
 };
-use crate::mcp_showcase::McpServerInfo;
 
 /// Actions that can be returned by MCP Showcase TUI
 pub enum McpShowcaseAction {
@@ -69,9 +69,7 @@ impl McpShowcaseUI {
                 }
                 McpShowcaseAction::None
             }
-            crossterm::event::KeyCode::Esc => {
-                McpShowcaseAction::ExitMode
-            }
+            crossterm::event::KeyCode::Esc => McpShowcaseAction::ExitMode,
             _ => McpShowcaseAction::None,
         }
     }
@@ -82,7 +80,7 @@ impl McpShowcaseUI {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(3), // Title
-                Constraint::Min(0),  // Server list
+                Constraint::Min(0),    // Server list
                 Constraint::Length(3), // Help
             ])
             .split(area);
@@ -94,16 +92,22 @@ impl McpShowcaseUI {
         f.render_widget(title, chunks[0]);
 
         // Server list with checkbox indicators
-        let items: Vec<ListItem> = self.servers
+        let items: Vec<ListItem> = self
+            .servers
             .iter()
             .map(|server| {
                 let checkbox = if server.enabled { "[✓]" } else { "[ ]" };
-                let status = if server.installed {
-                    if server.enabled { "✅ Enabled" } else { "⚫ Disabled" }
-                } else {
+                let status = if !server.installed {
                     "📦 Not Installed"
+                } else if server.enabled {
+                    "✅ Enabled"
+                } else {
+                    "⚫ Disabled"
                 };
-                let line = format!("{} {} - {} [{}]", checkbox, server.name, server.description, status);
+                let line = format!(
+                    "{} {} - {} [{}]",
+                    checkbox, server.name, server.description, status
+                );
                 ListItem::new(line)
             })
             .collect();
@@ -136,21 +140,18 @@ mod tests {
                 description: "Test server 1".to_string(),
                 installed: true,
                 enabled: true,
-                command: "cmd1".to_string(),
             },
             McpServerInfo {
                 name: "server2".to_string(),
                 description: "Test server 2".to_string(),
                 installed: true,
                 enabled: false,
-                command: "cmd2".to_string(),
             },
             McpServerInfo {
                 name: "server3".to_string(),
                 description: "Test server 3".to_string(),
                 installed: false,
                 enabled: false,
-                command: "cmd3".to_string(),
             },
         ];
         McpShowcaseUI::new(servers)

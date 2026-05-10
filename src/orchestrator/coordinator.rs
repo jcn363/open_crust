@@ -42,7 +42,10 @@ impl Coordinator {
 
     /// Attach a shared state bridge for live TUI visualization.
     /// The coordinator will update this shared state on every task transition.
-    pub fn with_shared_state(mut self, state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>) -> Self {
+    pub fn with_shared_state(
+        mut self,
+        state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,
+    ) -> Self {
         self.shared_state = Some(state);
         self
     }
@@ -50,7 +53,8 @@ impl Coordinator {
     /// Snapshot current tasks into shared state (if bridge is attached)
     fn sync_shared_state(&self, tasks: &[Task]) {
         if let Some(ref shared) = self.shared_state
-            && let Ok(mut guard) = shared.try_write() {
+            && let Ok(mut guard) = shared.try_write()
+        {
             *guard = tasks.to_vec();
         }
     }
@@ -82,8 +86,10 @@ impl Coordinator {
 
         // Spawn all initially ready tasks
         for i in 0..total {
-            if tasks[i].is_ready(&completed_ids) && !tasks[i].is_terminal()
-                && let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone()) {
+            if tasks[i].is_ready(&completed_ids)
+                && !tasks[i].is_terminal()
+                && let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone())
+            {
                 tasks[i].state = TaskState::Running {
                     agent_id: tasks[i].agent_type.clone(),
                 };
@@ -178,8 +184,10 @@ impl Coordinator {
 
                 // Spawn newly-ready tasks
                 for task in tasks.iter_mut() {
-                    if task.is_ready(&completed_ids) && !task.is_terminal()
-                        && let Ok(rx) = self.pool.spawn_agent(task, llm_client.clone()) {
+                    if task.is_ready(&completed_ids)
+                        && !task.is_terminal()
+                        && let Ok(rx) = self.pool.spawn_agent(task, llm_client.clone())
+                    {
                         task.state = TaskState::Running {
                             agent_id: task.agent_type.clone(),
                         };

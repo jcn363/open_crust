@@ -17,9 +17,9 @@ mod llm;
 mod lsp;
 mod markdown;
 mod mcp;
-mod models;
 mod mcp_showcase;
 mod mission_control;
+mod models;
 mod orchestrator;
 mod permissions;
 mod planner;
@@ -54,7 +54,6 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -572,7 +571,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     println!("{:<20} {:<15} {:<50}", "Name", "Status", "Command");
                     println!("{:<20} {:<15} {:<50}", "----", "------", "-------");
                     for (name, mcp_config) in &config.mcp {
-                        let status = if mcp_config.enabled { "Enabled" } else { "Disabled" };
+                        let status = if mcp_config.enabled {
+                            "Enabled"
+                        } else {
+                            "Disabled"
+                        };
                         let cmd = mcp_config.command.join(" ");
                         let cmd_display = if cmd.len() > 47 {
                             format!("{}...", &cmd[..47])
@@ -598,9 +601,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     Ok(args_val) => {
                         let full_name = format!("{}_{}", server, tool);
                         println!("Calling MCP tool '{}' on server '{}'...", tool, server);
-                        println!("Arguments: {}", serde_json::to_string_pretty(&args_val).unwrap_or_default());
+                        println!(
+                            "Arguments: {}",
+                            serde_json::to_string_pretty(&args_val).unwrap_or_default()
+                        );
                         println!();
-                        match mcp_manager.lock().await.call_tool(&full_name, &args_val).await {
+                        match mcp_manager
+                            .lock()
+                            .await
+                            .call_tool(&full_name, &args_val)
+                            .await
+                        {
                             Ok(result) => {
                                 println!("=== Result ===");
                                 println!("{}", result);
@@ -627,28 +638,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                 let tools = mcp_manager.lock().await.list_tools().await;
                 if tools.is_empty() {
-                    println!("No tools found. Make sure you have MCP servers configured and enabled.");
+                    println!(
+                        "No tools found. Make sure you have MCP servers configured and enabled."
+                    );
                     println!("Use 'opencrust mcp list' to see available servers.");
                     println!("Use 'opencrust mcp install <name>' to install a server.");
                 } else {
                     println!("Found {} tools:", tools.len());
                     println!();
                     for tool in &tools {
-                        let name = tool.get("name").and_then(|v| v.as_str()).unwrap_or("unknown");
-                        let desc = tool.get("description").and_then(|v| v.as_str()).unwrap_or("No description");
+                        let name = tool
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("unknown");
+                        let desc = tool
+                            .get("description")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("No description");
                         println!("  {} {}", name, desc);
                         if let Some(schema) = tool.get("inputSchema")
                             && let Some(props) = schema.get("properties")
                             && let Some(props_obj) = props.as_object()
-                            && !props_obj.is_empty() {
+                            && !props_obj.is_empty()
+                        {
                             println!("    Arguments:");
                             for (prop_name, prop_info) in props_obj {
-                                let prop_type = prop_info.get("type").and_then(|v| v.as_str()).unwrap_or("any");
-                                let prop_desc = prop_info.get("description").and_then(|v| v.as_str()).unwrap_or("");
+                                let prop_type = prop_info
+                                    .get("type")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("any");
+                                let prop_desc = prop_info
+                                    .get("description")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("");
                                 if prop_desc.is_empty() {
                                     println!("      - {}: {}", prop_name, prop_type);
                                 } else {
-                                    println!("      - {} ({}): {}", prop_name, prop_type, prop_desc);
+                                    println!(
+                                        "      - {} ({}): {}",
+                                        prop_name, prop_type, prop_desc
+                                    );
                                 }
                             }
                         }
@@ -873,11 +902,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 let out_path = std::path::Path::new(&path);
                                 audit::AuditExport::export_to_file(&entries, fmt, out_path)
                                     .unwrap_or_else(|e| eprintln!("Export error: {}", e));
-                                println!(
-                                    "Exported {} entries to {}",
-                                    entries.len(),
-                                    path
-                                );
+                                println!("Exported {} entries to {}", entries.len(), path);
                             }
                             None => {
                                 audit::AuditExport::export(&entries, fmt, &mut std::io::stdout())
@@ -920,11 +945,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             );
                             println!("{}", "-".repeat(80));
                             for entry in &entries {
-                                let status_str = if entry.approved {
-                                    "APPROVED"
-                                } else {
-                                    "DENIED"
-                                };
+                                let status_str = if entry.approved { "APPROVED" } else { "DENIED" };
                                 println!(
                                     "{:<26} {:<16} {:<10} {:<20} {:<8}",
                                     entry.timestamp,
@@ -965,13 +986,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     status_filter: None,
                 };
 
-                 match query.execute(&audit_log_path) {
-                     Ok(entries) => {
-                         let report = compliance::ComplianceReport::generate(&entries);
-                         println!("{}", report);
-                     }
-                     Err(e) => eprintln!("Error generating report: {}", e),
-                 }
+                match query.execute(&audit_log_path) {
+                    Ok(entries) => {
+                        let report = compliance::ComplianceReport::generate(&entries);
+                        println!("{}", report);
+                    }
+                    Err(e) => eprintln!("Error generating report: {}", e),
+                }
             }
         }
         return Ok(());
@@ -1375,13 +1396,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.active_tab = (app.active_tab + 1) % app.tabs.len();
                         }
                         KeyCode::Char('v')
-                            if key.modifiers == crossterm::event::KeyModifiers::ALT
-                        => {
+                            if key.modifiers == crossterm::event::KeyModifiers::ALT =>
+                        {
                             app.vim_mode = !app.vim_mode;
                             let mode_str = if app.vim_mode { "enabled" } else { "disabled" };
-                            app.tabs[0]
-                                .messages
-                                .push(format!("Vim Mode {}", mode_str));
+                            app.tabs[0].messages.push(format!("Vim Mode {}", mode_str));
                         }
                         KeyCode::Char('m')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
@@ -1391,29 +1410,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 .config
                                 .mcp
                                 .iter()
-                                .map(|(name, mcp_config)| {
-                                    crate::mcp_showcase::McpServerInfo {
-                                        name: name.clone(),
-                                        description: crate::mcp_showcase::get_server_description(name),
-                                        installed: true,
-                                        enabled: mcp_config.enabled,
-                                        command: mcp_config.command.join(" "),
-                                    }
+                                .map(|(name, mcp_config)| crate::mcp_showcase::McpServerInfo {
+                                    name: name.clone(),
+                                    description: crate::mcp_showcase::get_server_description(name),
+                                    installed: true,
+                                    enabled: mcp_config.enabled,
                                 })
                                 .collect();
                             app.mode = Mode::McpShowcase;
-                            app.mcp_showcase_ui = Some(crate::mcp_showcase::McpShowcaseUI::new(servers));
+                            app.mcp_showcase_ui =
+                                Some(crate::mcp_showcase::McpShowcaseUI::new(servers));
                         }
                         KeyCode::Char('g')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
                         {
                             app.mode = Mode::MissionControl;
                             if app.mission_control_ui.is_none() {
-                                app.mission_control_ui = Some(crate::mission_control::MissionControlUI::new());
+                                app.mission_control_ui =
+                                    Some(crate::mission_control::MissionControlUI::new());
                             }
                             // Refresh tasks from orchestrator bridge
                             if let Some(ref tasks_arc) = app.orchestrator_tasks
-                                && let Some(ref mut ui) = app.mission_control_ui {
+                                && let Some(ref mut ui) = app.mission_control_ui
+                            {
                                 ui.refresh_tasks(&Some(tasks_arc.clone()));
                             }
                         }
@@ -1436,16 +1455,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     app.handle_backspace();
                                 }
                                 // Vim navigation (specific chars BEFORE general Char(c))
-                                KeyCode::Char('h') => { app.move_cursor_left(); }
-                                KeyCode::Char('l') => { app.move_cursor_right(); }
-                                KeyCode::Char('w') => { app.move_to_next_word(); }
-                                KeyCode::Char('b') => { app.move_to_prev_word(); }
-                                KeyCode::Char('0') => { app.move_to_line_start(); }
-                                KeyCode::Char('$') => { app.move_to_line_end(); }
-                                KeyCode::Char('a') => { app.move_cursor_right(); }
-                                KeyCode::Char('d') => { app.delete_line(); }
-                                KeyCode::Char('c') => { app.delete_line(); }
-                                KeyCode::Char('y') => { let _ = app.yank_line(&mut clipboard); }
+                                KeyCode::Char('h') => {
+                                    app.move_cursor_left();
+                                }
+                                KeyCode::Char('l') => {
+                                    app.move_cursor_right();
+                                }
+                                KeyCode::Char('w') => {
+                                    app.move_to_next_word();
+                                }
+                                KeyCode::Char('b') => {
+                                    app.move_to_prev_word();
+                                }
+                                KeyCode::Char('0') => {
+                                    app.move_to_line_start();
+                                }
+                                KeyCode::Char('$') => {
+                                    app.move_to_line_end();
+                                }
+                                KeyCode::Char('a') => {
+                                    app.move_cursor_right();
+                                }
+                                KeyCode::Char('d') => {
+                                    app.delete_line();
+                                }
+                                KeyCode::Char('c') => {
+                                    app.delete_line();
+                                }
+                                KeyCode::Char('y') => {
+                                    let _ = app.yank_line(&mut clipboard);
+                                }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
                                     app.last_input_time = Some(std::time::Instant::now());
@@ -1467,13 +1506,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                         app.enter_normal_mode();
                                     }
                                 }
-                                KeyCode::Backspace => { app.handle_backspace(); }
+                                KeyCode::Backspace => {
+                                    app.handle_backspace();
+                                }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
                                     app.last_input_time = Some(std::time::Instant::now());
                                 }
-                                KeyCode::Up => { app.history_up(); }
-                                KeyCode::Down => { app.history_down(); }
+                                KeyCode::Up => {
+                                    app.history_up();
+                                }
+                                KeyCode::Down => {
+                                    app.history_down();
+                                }
                                 _ => {}
                             }
                         }
@@ -1827,10 +1872,10 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
             && key.modifiers.contains(target_modifiers)
         {
             return true;
-            }
         }
-        false
     }
+    false
+}
 
 /// Parse agent spec (format: "provider:model" or just "provider")
 fn parse_agent_spec(

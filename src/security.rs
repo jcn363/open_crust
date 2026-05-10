@@ -95,13 +95,16 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
 pub fn validate_command(command: &str) -> Result<(), SecurityError> {
     // Reject commands containing null bytes
     if command.contains('\0') {
-        return Err(SecurityError::UnsafeCommand("Null byte in command".to_string()));
+        return Err(SecurityError::UnsafeCommand(
+            "Null byte in command".to_string(),
+        ));
     }
 
     let dangerous_patterns = [
         "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$($)",
+        "$(cat", "$(whoami", "$(ls", "$(id", "$(pwd", "$(date", "$(head", "$(tail", "$(grep",
+        "$(find", "$(curl", "$(wget",
     ];
-
 
     let lower_cmd = command.to_lowercase();
 
@@ -109,13 +112,6 @@ pub fn validate_command(command: &str) -> Result<(), SecurityError> {
         if lower_cmd.contains(pattern) {
             return Err(SecurityError::UnsafeCommand(command.to_string()));
         }
-    }
-
-    // Check for null bytes
-    if command.contains('\0') {
-        return Err(SecurityError::UnsafeCommand(
-            "Null byte in command".to_string(),
-        ));
     }
 
     Ok(())
@@ -152,7 +148,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(SecurityError::UnsafePath(_)) => (),
-            _ => panic!("Expected UnsafePath error"),
+            other => panic!("Expected UnsafePath error, got {:?}", other),
         }
     }
 
@@ -209,7 +205,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(SecurityError::UnsafeCommand(_)) => (),
-            _ => panic!("Expected UnsafeCommand error"),
+            other => panic!("Expected UnsafeCommand error, got {:?}", other),
         }
     }
 

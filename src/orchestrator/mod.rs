@@ -43,7 +43,10 @@ impl Orchestrator {
             max_concurrent: config.subagent_max_concurrent.unwrap_or(5),
             timeout_secs: config.subagent_timeout_secs.unwrap_or(300),
             max_retries: 3,
-            model_override: config.subagent_config.as_ref().and_then(|sc| sc.default_model.clone()),
+            model_override: config
+                .subagent_config
+                .as_ref()
+                .and_then(|sc| sc.default_model.clone()),
         };
 
         Self {
@@ -78,10 +81,7 @@ impl Orchestrator {
 
         // Research phase
         if lower.contains("research") || lower.contains("search") || lower.contains("find") {
-            tasks.push(Task::new(
-                format!("Research: {}", request),
-                "researcher",
-            ));
+            tasks.push(Task::new(format!("Research: {}", request), "researcher"));
         }
 
         // Code/implementation phase
@@ -91,10 +91,7 @@ impl Orchestrator {
             || lower.contains("build")
         {
             let research_id = tasks.first().map(|t| t.id);
-            let mut code_task = Task::new(
-                format!("Implement: {}", request),
-                "coder",
-            );
+            let mut code_task = Task::new(format!("Implement: {}", request), "coder");
             if let Some(id) = research_id {
                 code_task.add_dependency(id);
             }
@@ -106,10 +103,7 @@ impl Orchestrator {
             // Find the code task
             let code_id = tasks.iter().find(|t| t.agent_type == "coder").map(|t| t.id);
             let research_id = tasks.first().map(|t| t.id);
-            let mut test_task = Task::new(
-                format!("Test: {}", request),
-                "tester",
-            );
+            let mut test_task = Task::new(format!("Test: {}", request), "tester");
             if let Some(id) = code_id {
                 test_task.add_dependency(id);
             } else if let Some(id) = research_id {
@@ -159,7 +153,8 @@ mod tests {
     fn test_decompose_full_workflow() {
         let config = Arc::new(Config::default());
         let orch = Orchestrator::new(config);
-        let tasks = orch.decompose_request("Research and implement a sorting algorithm, then test it");
+        let tasks =
+            orch.decompose_request("Research and implement a sorting algorithm, then test it");
         assert!(tasks.len() >= 3);
         let types: Vec<&str> = tasks.iter().map(|t| t.agent_type.as_str()).collect();
         assert!(types.contains(&"researcher"));

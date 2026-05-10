@@ -57,5 +57,50 @@ pub fn undo() -> Result<String, String> {
 }
 
 pub fn redo() -> Result<String, String> {
-    Err("Redo is not yet implemented. You can manually inspect `git reflog`.".to_string())
+    let output = Command::new("git")
+        .arg("reflog")
+        .output()
+        .map_err(|e| format!("Failed to execute git reflog: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "git reflog failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let reflog = String::from_utf8_lossy(&output.stdout);
+    let head_pos = reflog.find("HEAD@{0}").unwrap_or(0);
+    // Find the next entry after HEAD@{0}
+    let next_entry = reflog[head_pos..].find("HEAD@{1}").map(|i| head_pos + i);
+
+    match next_entry {
+        Some(pos) => {
+            // Extract the reflog entry line
+            let line_end = reflog[pos..]
+                .find('\n')
+                .map(|i| pos + i)
+                .unwrap_or(reflog.len());
+            let entry = &reflog[pos..line_end].trim();
+            // Reset to that entry
+            let reset_output = Command::new("git")
+                .arg("reset")
+                .arg("--hard")
+                .arg(entry)
+                .output()
+                .map_err(|e| format!("Failed to execute git reset: {}", e))?;
+
+            if reset_output.status.success() {
+                Ok(format!("Redone to: {}", entry))
+            } else {
+                Err(format!(
+                    "Failed to redo: {}",
+                    String::from_utf8_lossy(&reset_output.stderr)
+                ))
+            }
+        }
+        None => {
+            Err("No previous state to redo to. Use `git reflog` to inspect history.".to_string())
+        }
+    }
 }

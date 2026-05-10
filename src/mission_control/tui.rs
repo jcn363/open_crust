@@ -4,12 +4,12 @@
 //!   - Right 40%: Task details + system dashboard
 //!     Keyboard navigation: arrows, Tab to switch panels, Esc to exit
 
+use crate::orchestrator::task::{Task, TaskState};
 use ratatui::{
+    layout::{Constraint, Direction, Layout},
     prelude::*,
     widgets::{Block, Borders, Paragraph, Wrap},
-    layout::{Layout, Constraint, Direction},
 };
-use crate::orchestrator::task::{Task, TaskState};
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -177,7 +177,11 @@ impl MissionControlUI {
         let mut edge_set: HashSet<(usize, usize)> = HashSet::new();
         for (i, task) in self.tasks.iter().enumerate() {
             for dep_id in &task.dependencies {
-                if let Some(&dep_idx) = id_to_idx.get(dep_id) && dep_idx != i { edge_set.insert((dep_idx, i)); }
+                if let Some(&dep_idx) = id_to_idx.get(dep_id)
+                    && dep_idx != i
+                {
+                    edge_set.insert((dep_idx, i));
+                }
             }
         }
 
@@ -196,10 +200,10 @@ impl MissionControlUI {
             return;
         }
 
-        let node_width: u16 = 22;  // Width of each node block in chars
-        let node_height: u16 = 3;   // Height of each node block
-        let h_gap: u16 = 4;         // Horizontal gap between layers
-        let v_gap: u16 = 1;         // Vertical gap between nodes in same layer
+        let node_width: u16 = 22; // Width of each node block in chars
+        let node_height: u16 = 3; // Height of each node block
+        let h_gap: u16 = 4; // Horizontal gap between layers
+        let v_gap: u16 = 1; // Vertical gap between nodes in same layer
 
         let mut positions = vec![NodePosition::default(); n];
         let mut x_cursor: u16 = 1;
@@ -301,7 +305,9 @@ impl MissionControlUI {
                 // Move to next layer
                 self.navigate_next_layer();
             }
-            crossterm::event::KeyCode::Enter if !self.tasks.is_empty() && self.selected_index < self.tasks.len() => {
+            crossterm::event::KeyCode::Enter
+                if !self.tasks.is_empty() && self.selected_index < self.tasks.len() =>
+            {
                 return MissionControlAction::SelectTask(self.selected_index);
             }
             _ => {}
@@ -401,8 +407,8 @@ impl MissionControlUI {
     /// Render the DAG panel (left side)
     fn render_dag_panel(&mut self, f: &mut Frame, area: Rect) {
         if self.tasks.is_empty() || self.layers.is_empty() {
-            let empty = Paragraph::new("No active task graph")
-                .style(Style::default().fg(Color::Gray));
+            let empty =
+                Paragraph::new("No active task graph").style(Style::default().fg(Color::Gray));
             f.render_widget(empty, area);
             return;
         }
@@ -454,12 +460,16 @@ impl MissionControlUI {
             let is_selected = task_idx == self.selected_index && self.active_panel == 0;
 
             // Build node content
-            let desc_short = Self::truncate(&task.description, (node_width as usize).saturating_sub(4));
-            let agent_short = Self::truncate(&task.agent_type, (node_width as usize).saturating_sub(6));
+            let desc_short =
+                Self::truncate(&task.description, (node_width as usize).saturating_sub(4));
+            let agent_short =
+                Self::truncate(&task.agent_type, (node_width as usize).saturating_sub(6));
             let content = format!(" {} {}\n {} {}", icon, desc_short, "⎔", agent_short);
 
             let border_style = if is_selected {
-                Style::default().fg(state_color).add_modifier(ratatui::style::Modifier::BOLD)
+                Style::default()
+                    .fg(state_color)
+                    .add_modifier(ratatui::style::Modifier::BOLD)
             } else {
                 Style::default().fg(state_color)
             };
@@ -515,7 +525,11 @@ impl MissionControlUI {
                 }
                 // If horizontal offset, draw horizontal line at dst top
                 if src_cx != dst_cx {
-                    let (left, right) = if src_cx < dst_cx { (src_cx, dst_cx) } else { (dst_cx, src_cx) };
+                    let (left, right) = if src_cx < dst_cx {
+                        (src_cx, dst_cx)
+                    } else {
+                        (dst_cx, src_cx)
+                    };
                     for x in left..=right {
                         set_char(x, dst_cy, '─');
                     }
@@ -539,8 +553,7 @@ impl MissionControlUI {
                 edge_text.push_str(&row_str);
                 edge_text.push('\n');
             }
-            let edge_para = Paragraph::new(edge_text)
-                .style(Style::default().fg(Color::DarkGray));
+            let edge_para = Paragraph::new(edge_text).style(Style::default().fg(Color::DarkGray));
             f.render_widget(edge_para, area);
         }
     }
@@ -557,10 +570,7 @@ impl MissionControlUI {
         // Split detail panel: top 60% task details, bottom 40% dashboard
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage(60),
-                Constraint::Percentage(40),
-            ])
+            .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
             .split(area);
 
         // --- Task Details (top) ---
@@ -589,10 +599,13 @@ impl MissionControlUI {
         let dep_info = if dep_count == 0 {
             "  No dependencies".to_string()
         } else {
-            let dep_ids: Vec<String> = task.dependencies.iter()
+            let dep_ids: Vec<String> = task
+                .dependencies
+                .iter()
                 .map(|id| {
                     // Try to find the task name by looking it up
-                    self.tasks.iter()
+                    self.tasks
+                        .iter()
                         .find(|t| t.id == *id)
                         .map(|t| Self::truncate(&t.description, 20))
                         .unwrap_or_else(|| id.to_string()[..8].to_string())
@@ -602,13 +615,16 @@ impl MissionControlUI {
         };
 
         // Dependents (tasks that depend on this one)
-        let dependents: Vec<&Task> = self.tasks.iter()
+        let dependents: Vec<&Task> = self
+            .tasks
+            .iter()
             .filter(|t| t.dependencies.contains(&task.id))
             .collect();
         let dependents_info = if dependents.is_empty() {
             "  No dependents".to_string()
         } else {
-            let dep_names: Vec<String> = dependents.iter()
+            let dep_names: Vec<String> = dependents
+                .iter()
                 .map(|t| Self::truncate(&t.description, 20))
                 .collect();
             format!("  Blocking: {}", dep_names.join(", "))
@@ -621,7 +637,8 @@ impl MissionControlUI {
              {}\n\
              {}\n\n\
              {}",
-            icon, desc_display,
+            icon,
+            desc_display,
             task.agent_type,
             state_str,
             dep_info,
@@ -673,11 +690,16 @@ impl MissionControlUI {
              Completed: {}  Failed: {}\n\
              Progress: [{:<20}] {:.0}%\n\
              Tokens: In={}  Out={}  Cost=${:.4}",
-            s.total, s.pending, s.running,
-            s.completed, s.failed,
+            s.total,
+            s.pending,
+            s.running,
+            s.completed,
+            s.failed,
             "█".repeat((total_bar * 20.0) as usize),
             total_bar * 100.0,
-            s.input_tokens, s.output_tokens, s.total_cost,
+            s.input_tokens,
+            s.output_tokens,
+            s.total_cost,
         );
 
         let dash = Paragraph::new(dash_text)
@@ -690,10 +712,7 @@ impl MissionControlUI {
     pub fn render(&mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(60),
-                Constraint::Percentage(40),
-            ])
+            .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
             .split(area);
 
         // DAG panel (left 60%)
@@ -711,8 +730,8 @@ impl MissionControlUI {
         f.render_widget(dag_block, chunks[0]);
 
         if self.tasks.is_empty() {
-            let empty = Paragraph::new("No active task graph")
-                .style(Style::default().fg(Color::Gray));
+            let empty =
+                Paragraph::new("No active task graph").style(Style::default().fg(Color::Gray));
             f.render_widget(empty, dag_inner);
         } else {
             self.render_dag_panel(f, dag_inner);
@@ -775,9 +794,25 @@ mod tests {
         let d = Uuid::new_v4();
 
         let tasks = vec![
-            make_task(a, "Task A", "agent1", vec![], TaskState::Completed { output: "done".into() }),
+            make_task(
+                a,
+                "Task A",
+                "agent1",
+                vec![],
+                TaskState::Completed {
+                    output: "done".into(),
+                },
+            ),
             make_task(b, "Task B", "agent1", vec![a], TaskState::Pending),
-            make_task(c, "Task C", "agent2", vec![a], TaskState::Running { agent_id: "pool-1".into() }),
+            make_task(
+                c,
+                "Task C",
+                "agent2",
+                vec![a],
+                TaskState::Running {
+                    agent_id: "pool-1".into(),
+                },
+            ),
             make_task(d, "Task D", "agent3", vec![b, c], TaskState::Pending),
         ];
 
@@ -868,9 +903,7 @@ mod tests {
     #[test]
     fn test_layout_single() {
         let a = Uuid::new_v4();
-        let tasks = vec![
-            make_task(a, "Only", "a", vec![], TaskState::Pending),
-        ];
+        let tasks = vec![make_task(a, "Only", "a", vec![], TaskState::Pending)];
 
         let mut ui = MissionControlUI::new();
         ui.tasks = tasks;
@@ -902,10 +935,42 @@ mod tests {
 
         let tasks = vec![
             make_task(a, "P", "a", vec![], TaskState::Pending),
-            make_task(b, "R1", "b", vec![], TaskState::Running { agent_id: "x".into() }),
-            make_task(c, "R2", "c", vec![], TaskState::Running { agent_id: "y".into() }),
-            make_task(d, "C", "d", vec![], TaskState::Completed { output: "ok".into() }),
-            make_task(e, "F", "e", vec![], TaskState::Failed { error: "err".into() }),
+            make_task(
+                b,
+                "R1",
+                "b",
+                vec![],
+                TaskState::Running {
+                    agent_id: "x".into(),
+                },
+            ),
+            make_task(
+                c,
+                "R2",
+                "c",
+                vec![],
+                TaskState::Running {
+                    agent_id: "y".into(),
+                },
+            ),
+            make_task(
+                d,
+                "C",
+                "d",
+                vec![],
+                TaskState::Completed {
+                    output: "ok".into(),
+                },
+            ),
+            make_task(
+                e,
+                "F",
+                "e",
+                vec![],
+                TaskState::Failed {
+                    error: "err".into(),
+                },
+            ),
         ];
 
         let mut ui = MissionControlUI::new();
@@ -1022,7 +1087,15 @@ mod tests {
 
     #[test]
     fn test_task_style_running() {
-        let task = make_task(Uuid::new_v4(), "t", "a", vec![], TaskState::Running { agent_id: "x".into() });
+        let task = make_task(
+            Uuid::new_v4(),
+            "t",
+            "a",
+            vec![],
+            TaskState::Running {
+                agent_id: "x".into(),
+            },
+        );
         let (icon, color) = MissionControlUI::task_style(&task);
         assert_eq!(icon, '▶');
         assert_eq!(color, Color::Yellow);
@@ -1030,7 +1103,15 @@ mod tests {
 
     #[test]
     fn test_task_style_completed() {
-        let task = make_task(Uuid::new_v4(), "t", "a", vec![], TaskState::Completed { output: "ok".into() });
+        let task = make_task(
+            Uuid::new_v4(),
+            "t",
+            "a",
+            vec![],
+            TaskState::Completed {
+                output: "ok".into(),
+            },
+        );
         let (icon, color) = MissionControlUI::task_style(&task);
         assert_eq!(icon, '✓');
         assert_eq!(color, Color::Green);
@@ -1038,7 +1119,15 @@ mod tests {
 
     #[test]
     fn test_task_style_failed() {
-        let task = make_task(Uuid::new_v4(), "t", "a", vec![], TaskState::Failed { error: "err".into() });
+        let task = make_task(
+            Uuid::new_v4(),
+            "t",
+            "a",
+            vec![],
+            TaskState::Failed {
+                error: "err".into(),
+            },
+        );
         let (icon, color) = MissionControlUI::task_style(&task);
         assert_eq!(icon, '✗');
         assert_eq!(color, Color::Red);
@@ -1048,6 +1137,8 @@ mod tests {
     fn test_select_task_returns_action() {
         let mut ui = create_populated_ui();
         let action = ui.handle_key(KeyCode::Enter);
-        assert!(matches!(action, MissionControlAction::SelectTask(idx) if idx == 0 || idx < ui.tasks.len()));
+        assert!(
+            matches!(action, MissionControlAction::SelectTask(idx) if idx == 0 || idx < ui.tasks.len())
+        );
     }
 }

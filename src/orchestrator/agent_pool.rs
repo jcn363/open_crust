@@ -94,23 +94,26 @@ impl AgentPool {
                     tokio::time::sleep(backoff).await;
                 }
 
-                let result = tokio::time::timeout(timeout, llm_client.query_simple(&description)).await;
+                let result =
+                    tokio::time::timeout(timeout, llm_client.query_simple(&description)).await;
 
                 match result {
                     Ok(Ok(output)) => {
-                        let _ = tx.send(AgentResult {
-                            task_id,
-                            output,
-                            success: true,
-                        })
-                        .await;
+                        let _ = tx
+                            .send(AgentResult {
+                                task_id,
+                                output,
+                                success: true,
+                            })
+                            .await;
                         return;
                     }
                     Ok(Err(e)) => {
                         last_error = format!("attempt {}: {}", attempt, e);
                     }
                     Err(_) => {
-                        last_error = format!("attempt {}: timeout ({}s)", attempt, timeout.as_secs());
+                        last_error =
+                            format!("attempt {}: timeout ({}s)", attempt, timeout.as_secs());
                     }
                 }
             }

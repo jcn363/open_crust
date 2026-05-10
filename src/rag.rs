@@ -22,7 +22,6 @@ pub struct VectorStore {
     pub embeddings: HashMap<String, StoredEmbedding>,
 }
 
-#[allow(dead_code)]
 impl VectorStore {
     pub fn new() -> Self {
         Self {
@@ -73,11 +72,13 @@ impl VectorStore {
     }
 
     /// Clear all embeddings
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.embeddings.clear();
     }
 
     /// Get statistics
+    #[allow(dead_code)]
     pub fn stats(&self) -> (usize, usize) {
         let num_embeddings = self.embeddings.len();
         let dim = self
@@ -154,7 +155,6 @@ pub async fn generate_embedding(ollama_url: &str, text: &str) -> Result<Vec<f32>
 }
 
 /// Chunk text into smaller pieces for embedding
-#[allow(dead_code)]
 pub fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
     let mut chunks = Vec::new();
     let mut current_chunk = String::new();
@@ -181,12 +181,10 @@ pub fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
 
 pub struct RagManager {
     vector_store: VectorStore,
-    #[allow(dead_code)]
     config_dir: std::path::PathBuf,
     ollama_url: String,
 }
 
-#[allow(dead_code)]
 impl RagManager {
     pub fn new(config: &Config) -> Self {
         let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
@@ -305,19 +303,20 @@ impl RagManager {
     }
 
     /// Clear all indexed data
+    #[allow(dead_code)]
     pub fn clear_index(&mut self) {
         self.vector_store.clear();
         self.vector_store.save(&self.config_dir);
     }
 
     /// Get index statistics
+    #[allow(dead_code)]
     pub fn stats(&self) -> (usize, usize) {
         self.vector_store.stats()
     }
 }
 
 /// Check if a file is a code file based on extension
-#[allow(dead_code)]
 fn is_code_file(path: &str) -> bool {
     let code_extensions = [
         "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp", "rb", "php",

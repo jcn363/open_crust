@@ -7,6 +7,7 @@
 use crate::custom_tools::CustomToolManager;
 use crate::lsp::LspManager;
 use crate::mcp::McpManager;
+use crate::orchestrator::Orchestrator;
 use crate::permissions::PermissionManager;
 use crate::planner::Planner;
 use crate::rag::RagManager;
@@ -35,6 +36,7 @@ pub struct ToolExecutor {
     pub planner: Arc<Mutex<Planner>>,
     pub rag_manager: Arc<Mutex<RagManager>>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
+    pub orchestrator: Arc<Mutex<Orchestrator>>,
 }
 
 impl ToolExecutor {
@@ -49,6 +51,7 @@ impl ToolExecutor {
         planner: Arc<Mutex<Planner>>,
         rag_manager: Arc<Mutex<RagManager>>,
         pinned_files: Arc<Mutex<Vec<String>>>,
+        orchestrator: Arc<Mutex<Orchestrator>>,
     ) -> Self {
         Self {
             mcp_manager,
@@ -60,6 +63,7 @@ impl ToolExecutor {
             planner,
             rag_manager,
             pinned_files,
+            orchestrator,
         }
     }
 
@@ -259,10 +263,35 @@ impl ToolExecutor {
     }
 
     async fn execute_task(&self, args: &Value) -> ToolResult {
-        let sub_prompt = args.get("prompt").and_then(|v| v.as_str()).unwrap_or("");
+        let sub_prompt = args
+            .get("prompt")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
 
-        // This would need access to the LLM client - simplified for now
-        Ok(format!("Subtask '{}' would be executed here", sub_prompt))
+        if sub_prompt.is_empty() {
+            return Ok("No prompt provided for subtask".to_string());
+        }
+
+        let mut orchestrator = self.orchestrator.lock().await;
+        let llm_client = {
+            // Create a minimal LlmClient for the orchestrator to use
+            let config = crate::config::Config::default();
+            Arc::new(crate::llm::LlmClient::new(
+                config,
+                self.mcp_manager.clone(),
+                self.lsp_manager.clone(),
+                self.skill_manager.clone(),
+                self.custom_tool_manager.clone(),
+            ))
+        };
+
+        let result = orchestrator.execute_request(&sub_prompt, llm_client).await;
+        Ok(format!(
+            "Subtask completed: {} tasks executed. Summary: {}",
+            result.completed.len() + result.failed.len(),
+            result.summary
+        ))
     }
 
     async fn execute_web_search(&self, args: &Value) -> ToolResult {
@@ -291,7 +320,11 @@ impl ToolExecutor {
     }
 
     async fn execute_pin(&self, args: &Value) -> ToolResult {
-        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if path.is_empty() {
             return Ok("Error: No path provided for pinning".to_string());
         }
@@ -306,7 +339,11 @@ impl ToolExecutor {
     }
 
     async fn execute_unpin(&self, args: &Value) -> ToolResult {
-        let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let path = args
+            .get("path")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
         if path.is_empty() {
             return Ok("Error: No path provided for unpinning".to_string());
         }
@@ -446,6 +483,7 @@ pub async fn get_all_tool_schemas(
 mod tests {
     use super::*;
     use crate::config::Config;
+    use crate::orchestrator::Orchestrator;
     use serde_json::json;
     use std::sync::Arc;
     use tokio::sync::Mutex;
@@ -462,6 +500,7 @@ mod tests {
         let planner = Arc::new(Mutex::new(Planner::new()));
         let rag_manager = Arc::new(Mutex::new(RagManager::new(&Config::default())));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(Arc::new(Config::default()))));
 
         // Create tool executor
         let tool_executor = ToolExecutor::new(
@@ -473,7 +512,8 @@ mod tests {
             web_manager,
             planner,
             rag_manager,
-            pinned_files.clone(),
+            pinned_files,
+            orchestrator,
         );
 
         // Test pinning a file

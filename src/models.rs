@@ -107,7 +107,6 @@ impl CacheManager {
     }
 
     /// Get the last update timestamp for a provider
-    #[allow(dead_code)]
     pub fn last_updated(&self, provider: &str) -> Option<u64> {
         let path = self.cache_dir.join(format!("{}.json", provider));
         let content = std::fs::read_to_string(&path).ok()?;
@@ -129,6 +128,7 @@ pub struct ModelFetcher {
     cache: CacheManager,
 }
 
+#[allow(dead_code)]
 impl ModelFetcher {
     pub fn new() -> Self {
         Self {
@@ -147,7 +147,6 @@ impl ModelFetcher {
     /// - ollama: http://localhost:11434/api/tags
     ///
     /// For providers that require an API key, pass it via `api_key`.
-    #[allow(dead_code)]
     pub async fn fetch(
         &self,
         provider: &str,
@@ -181,11 +180,12 @@ impl ModelFetcher {
         }
 
         // Fallback to cache (accept stale data)
-        self.cache.load(provider, Duration::from_secs(7 * 86400)).unwrap_or_default()
+        self.cache
+            .load(provider, Duration::from_secs(7 * 86400))
+            .unwrap_or_default()
     }
 
     /// Refresh models in the background and return updated list.
-    #[allow(dead_code)]
     pub async fn refresh(
         &self,
         provider: &str,
@@ -199,16 +199,14 @@ impl ModelFetcher {
         match provider {
             "openai" => "https://api.openai.com/v1/models".to_string(),
             "openrouter" => "https://openrouter.ai/api/v1/models".to_string(),
-            "anthropic" => base_url
-                .unwrap_or("https://api.anthropic.com")
-                .to_string()
-                + "/v1/models",
+            "anthropic" => {
+                base_url.unwrap_or("https://api.anthropic.com").to_string() + "/v1/models"
+            }
             "ollama" => {
                 let ollama_url = base_url.unwrap_or("http://localhost:11434");
                 format!("{}/api/tags", ollama_url)
             }
-            "gemini" => "https://generativelanguage.googleapis.com/v1beta/models"
-                .to_string(),
+            "gemini" => "https://generativelanguage.googleapis.com/v1beta/models".to_string(),
             "mistral" => "https://api.mistral.ai/v1/models".to_string(),
             "groq" => "https://api.groq.com/openai/v1/models".to_string(),
             "togetherai" => "https://api.together.xyz/v1/models".to_string(),
@@ -324,10 +322,7 @@ impl ModelFetcher {
                         arr.iter()
                             .filter_map(|item| {
                                 let name = item.get("name").and_then(|n| n.as_str())?;
-                                let id = name
-                                    .strip_prefix("models/")
-                                    .unwrap_or(name)
-                                    .to_string();
+                                let id = name.strip_prefix("models/").unwrap_or(name).to_string();
                                 Some(ProviderModel {
                                     id,
                                     name: item
@@ -415,16 +410,14 @@ pub fn bundled_default_models() -> HashMap<String, Vec<ProviderModel>> {
 
     map.insert(
         "openrouter".to_string(),
-        vec![
-            ProviderModel {
-                id: "openrouter/free-gpt-4o-mini".to_string(),
-                name: "Free GPT-4o Mini".to_string(),
-                provider: "openrouter".to_string(),
-                description: "Free model via OpenRouter (no API key required)".to_string(),
-                context_length: 128_000,
-                tool_capable: true,
-            },
-        ],
+        vec![ProviderModel {
+            id: "openrouter/free-gpt-4o-mini".to_string(),
+            name: "Free GPT-4o Mini".to_string(),
+            provider: "openrouter".to_string(),
+            description: "Free model via OpenRouter (no API key required)".to_string(),
+            context_length: 128_000,
+            tool_capable: true,
+        }],
     );
 
     map

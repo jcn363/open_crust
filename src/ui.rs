@@ -3,10 +3,10 @@ mod layout;
 mod popups;
 
 use ratatui::{
+    Frame,
     style::{Color, Style},
     text::Line,
     widgets::{Block, Tabs},
-    Frame,
 };
 
 use crate::app::{App, Mode};

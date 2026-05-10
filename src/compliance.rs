@@ -8,7 +8,7 @@ use std::path::Path;
 use chrono::Utc;
 use sha2::{Digest, Sha256};
 
-use crate::audit::{AuditExport, AuditEntry, AuditQuery, ExportFormat};
+use crate::audit::{AuditEntry, AuditExport, AuditQuery, ExportFormat};
 use crate::config::Config;
 
 /// Builds an evidence package: a timestamped directory with audit exports,

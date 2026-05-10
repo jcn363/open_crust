@@ -6,8 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use crate::app::{App, Mode};
 use super::ThemeContext;
+use crate::app::{App, Mode};
 
 pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
     let mut all_items: Vec<ListItem> = Vec::new();
@@ -89,8 +89,10 @@ pub fn draw_input_area(f: &mut Frame, app: &mut App, area: Rect, theme: &ThemeCo
     let input = Paragraph::new({
         let mut line = Line::from(app.input.clone());
         if let Some(ref ghost) = app.ghost_text {
-            line.spans
-                .push(Span::styled(ghost.clone(), Style::default().fg(Color::DarkGray)));
+            line.spans.push(Span::styled(
+                ghost.clone(),
+                Style::default().fg(Color::DarkGray),
+            ));
         }
         line
     })

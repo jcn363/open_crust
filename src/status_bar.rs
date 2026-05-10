@@ -1,9 +1,4 @@
-use ratatui::{
-    Frame,
-    layout::Rect,
-    style::Style,
-    widgets::Paragraph,
-};
+use ratatui::{Frame, layout::Rect, style::Style, widgets::Paragraph};
 
 use crate::app::App;
 use crate::ui::ThemeContext;
@@ -33,11 +28,7 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
 
         format!(
             " | 🤖 {} | Context: {}/{} ({}%) | Cost: ${:.4}",
-            app.config.model,
-            total_tokens,
-            context_budget,
-            context_percent,
-            s.total_cost
+            app.config.model, total_tokens, context_budget, context_percent, s.total_cost
         )
     } else {
         format!(" | 🤖 {} ", app.config.model)

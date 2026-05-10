@@ -25,7 +25,7 @@ pub async fn run_acp_loop(
                         .cloned()
                         .unwrap_or_default();
 
-                    let (progress_tx, mut _progress_rx) = mpsc::channel(32);
+                    let (progress_tx, _progress_rx) = mpsc::channel::<String>(32);
                     let (_approval_tx, mut approval_rx) = mpsc::channel(1);
 
                     // For ACP, we might need a non-interactive mode or auto-approval

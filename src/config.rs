@@ -23,9 +23,9 @@ pub enum ProviderType {
 /// Model tiers for cost-aware routing
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ModelTier {
-    Fast,      // Cheap, quick responses
-    Balanced,  // Good price/performance
-    Powerful,  // Expensive, capable models
+    Fast,     // Cheap, quick responses
+    Balanced, // Good price/performance
+    Powerful, // Expensive, capable models
 }
 
 /// Model alias for user-friendly model names
@@ -65,7 +65,7 @@ fn default_true() -> bool {
 impl Default for SubagentConfig {
     fn default() -> Self {
         Self {
-            default_model: Some("big-pickle".to_string()),
+            default_model: Some(DEFAULT_OPENROUTER_FREE_MODEL.to_string()),
             fallback_to_free: true,
             agent_overrides: HashMap::new(),
         }
@@ -267,8 +267,8 @@ fn default_audit_max_size() -> u64 {
 }
 
 /// Controls automatic background refresh of provider model lists
-    #[derive(Debug, Serialize, Deserialize, Clone)]
-    pub struct ModelAutoRefreshConfig {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ModelAutoRefreshConfig {
     /// Whether auto-refresh is enabled (default: true)
     #[serde(default = "default_model_auto_refresh_enabled")]
     pub enabled: bool,
@@ -399,7 +399,8 @@ impl Config {
                 }
             }
             ProviderType::OpenRouter => {
-                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty() {
+                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty()
+                {
                     // Skip warning for free models that do not require a key
                     let is_free = self.model.to_lowercase().contains("free");
                     if !is_free {
@@ -469,9 +470,7 @@ impl Config {
                 }
             }
             ProviderType::LocalAi => {
-                if self.localai_url.is_none()
-                    || self.localai_url.as_ref().unwrap().is_empty()
-                {
+                if self.localai_url.is_none() || self.localai_url.as_ref().unwrap().is_empty() {
                     eprintln!("Warning: LocalAi provider selected but localai_url is not set");
                 }
             }
@@ -557,9 +556,12 @@ impl Config {
     ///          2. Per-agent override in subagent_config.agent_overrides
     ///          3. Default subagent model in subagent_config.default_model
     ///          4. Fall back to main config model (self.model)
+    #[allow(dead_code)]
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
-        if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL") && !env_model.is_empty() {
+        if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL")
+            && !env_model.is_empty()
+        {
             return self.parse_model_string(&env_model);
         }
 
@@ -747,7 +749,11 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
     mcp.insert(
         "yolo".to_string(),
         McpConfig {
-            command: vec!["yolo".to_string(), "detect".to_string(), "predict".to_string()],
+            command: vec![
+                "yolo".to_string(),
+                "detect".to_string(),
+                "predict".to_string(),
+            ],
             environment: None,
             enabled: false, // Requires ultralytics installation: pip install ultralytics
         },

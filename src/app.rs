@@ -103,7 +103,8 @@ pub struct App {
     // Mission Control state (Ctrl+G)
     pub mission_control_ui: Option<crate::mission_control::MissionControlUI>,
     /// Shared task state from orchestrator for live DAG visualization
-    pub orchestrator_tasks: Option<std::sync::Arc<tokio::sync::RwLock<Vec<crate::orchestrator::task::Task>>>>,
+    pub orchestrator_tasks:
+        Option<std::sync::Arc<tokio::sync::RwLock<Vec<crate::orchestrator::task::Task>>>>,
 }
 
 impl App {

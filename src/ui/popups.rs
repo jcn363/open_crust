@@ -6,9 +6,9 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
 
-use crate::app::{App, ChangeStatus};
-use super::layout::centered_rect;
 use super::ThemeContext;
+use super::layout::centered_rect;
+use crate::app::{App, ChangeStatus};
 
 pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     if app.proposed_changes.is_empty() {
@@ -349,7 +349,8 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
         })
         .collect();
 
-    let list = List::new(menu_items).block(Block::default().borders(Borders::ALL).title(" Commands "));
+    let list =
+        List::new(menu_items).block(Block::default().borders(Borders::ALL).title(" Commands "));
     f.render_widget(list, chunks[1]);
 
     // Status

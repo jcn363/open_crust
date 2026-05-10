@@ -1,4 +1,5 @@
 use crate::config::{Config, PermissionAction, ProviderType};
+use crate::orchestrator::Orchestrator;
 use crate::rules;
 use crate::tool_executor::ToolExecutor;
 use reqwest::Client;
@@ -39,17 +40,6 @@ pub struct LlmClient {
 }
 
 impl LlmClient {
-    /// Create a new LlmClient configured for a subagent with resolved model
-    /// Uses config.resolve_subagent_model() to enforce free/default model policies
-    #[allow(dead_code)]
-    pub fn for_subagent(&self, agent_type: Option<&str>) -> Self {
-        let mut subagent_client = self.clone();
-        let (provider, model) = self.config.resolve_subagent_model(agent_type);
-        subagent_client.config.provider = provider;
-        subagent_client.config.model = model;
-        subagent_client
-    }
-
     pub fn new(
         config: Config,
         mcp_manager: Arc<Mutex<McpManager>>,
@@ -62,6 +52,8 @@ impl LlmClient {
         let usage_stats = Arc::new(Mutex::new(UsageStats::new()));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
 
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(Arc::new(config.clone()))));
+
         // Create ToolExecutor with all the managers
         let tool_executor = Arc::new(ToolExecutor::new(
             mcp_manager.clone(),
@@ -73,6 +65,7 @@ impl LlmClient {
             Arc::new(Mutex::new(Planner::new())),
             Arc::new(Mutex::new(RagManager::new(&config))),
             pinned_files.clone(),
+            orchestrator.clone(),
         ));
 
         Self {
@@ -202,36 +195,36 @@ impl LlmClient {
                         _ => args_str,
                     };
 
-                      // Check if tool requires approval
-                      let mut approved = self
-                          .permission_manager
-                          .is_allowed_without_prompt(name, input_summary);
-                      if !approved {
-                          let permission = self
-                              .permission_manager
-                              .check_permission(name, input_summary);
-                          if permission == PermissionAction::Ask {
-                              // Handle tools that need user approval
-                              if name == "write" {
-                                  let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                                  let proposed =
-                                      args.get("content").and_then(|v| v.as_str()).unwrap_or("");
-                                  let original = std::fs::read_to_string(path).unwrap_or_default();
-                                  let _ = progress_tx
-                                      .send(format!(
-                                          "[DIFF_REQUIRED]{}|{}|{}",
-                                          path, original, proposed
-                                      ))
-                                      .await;
-                              } else {
-                                  let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
-                              }
-                              approved = approval_rx.recv().await.unwrap_or(false);
-                          } else {
-                              // PermissionAction::Deny
-                              approved = false;
-                          }
-                      }
+                    // Check if tool requires approval
+                    let mut approved = self
+                        .permission_manager
+                        .is_allowed_without_prompt(name, input_summary);
+                    if !approved {
+                        let permission = self
+                            .permission_manager
+                            .check_permission(name, input_summary);
+                        if permission == PermissionAction::Ask {
+                            // Handle tools that need user approval
+                            if name == "write" {
+                                let path = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                                let proposed =
+                                    args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+                                let original = std::fs::read_to_string(path).unwrap_or_default();
+                                let _ = progress_tx
+                                    .send(format!(
+                                        "[DIFF_REQUIRED]{}|{}|{}",
+                                        path, original, proposed
+                                    ))
+                                    .await;
+                            } else {
+                                let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
+                            }
+                            approved = approval_rx.recv().await.unwrap_or(false);
+                        } else {
+                            // PermissionAction::Deny
+                            approved = false;
+                        }
+                    }
 
                     self.audit_logger.log_action(name, input_summary, approved);
 

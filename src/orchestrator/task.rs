@@ -58,12 +58,17 @@ impl Task {
 
     /// Check whether all dependencies are satisfied
     pub fn is_ready(&self, completed_ids: &HashSet<Uuid>) -> bool {
-        self.dependencies.iter().all(|dep| completed_ids.contains(dep))
+        self.dependencies
+            .iter()
+            .all(|dep| completed_ids.contains(dep))
     }
 
     /// Returns true if the task is in a terminal state
     pub fn is_terminal(&self) -> bool {
-        matches!(self.state, TaskState::Completed { .. } | TaskState::Failed { .. })
+        matches!(
+            self.state,
+            TaskState::Completed { .. } | TaskState::Failed { .. }
+        )
     }
 
     /// Returns a summary string for the task
@@ -138,13 +143,17 @@ mod tests {
         assert!(!pending.is_terminal());
 
         let done = Task {
-            state: TaskState::Completed { output: "ok".into() },
+            state: TaskState::Completed {
+                output: "ok".into(),
+            },
             ..Task::new("t", "a")
         };
         assert!(done.is_terminal());
 
         let failed = Task {
-            state: TaskState::Failed { error: "err".into() },
+            state: TaskState::Failed {
+                error: "err".into(),
+            },
             ..Task::new("t", "a")
         };
         assert!(failed.is_terminal());
@@ -159,7 +168,9 @@ mod tests {
     #[test]
     fn test_summary_completed() {
         let t = Task {
-            state: TaskState::Completed { output: "hello".into() },
+            state: TaskState::Completed {
+                output: "hello".into(),
+            },
             ..Task::new("inspect", "auditor")
         };
         assert!(t.summary().contains("completed"));

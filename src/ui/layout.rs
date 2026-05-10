@@ -116,4 +116,3 @@ mod tests {
         assert_eq!(main.width, 75);
     }
 }
-
