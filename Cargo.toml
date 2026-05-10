@@ -28,6 +28,10 @@ uuid = { version = "1.8", features = ["v4"] }
 sha2 = "0.10"
 hex = "0.4"
 
+[[bin]]
+name = "opencrust"
+path = "src/main.rs"
+
 [package.metadata.deb]
 name = "opencrust"
 maintainer = "OpenCrust Team <dev@opencrust.ai>"
