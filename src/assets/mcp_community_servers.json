@@ -1,0 +1,21 @@
+[{
+  "name": "context7",
+  "description": "Version‑accurate library docs (eliminates API hallucinations)",
+  "install_cmd": ["npx", "-y", "@modelcontextprotocol/server-context7"]
+},{
+  "name": "github",
+  "description": "Repository management, issues, PRs, CI/CD",
+  "install_cmd": ["npx", "-y", "@modelcontextprotocol/server-github"]
+},{
+  "name": "brave-search",
+  "description": "Privacy‑focused web search",
+  "install_cmd": ["npx", "-y", "@modelcontextprotocol/server-brave-search"]
+},{
+  "name": "postgres",
+  "description": "Natural language DB queries",
+  "install_cmd": ["npx", "-y", "@modelcontextprotocol/server-postgres"]
+},{
+  "name": "filesystem",
+  "description": "Enhanced file operations",
+  "install_cmd": ["npx", "-y", "@modelcontextprotocol/server-filesystem"]
+}]
