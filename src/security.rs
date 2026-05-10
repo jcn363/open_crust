@@ -93,9 +93,15 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
 /// This is a basic check - in production, consider using a sandbox or
 /// more sophisticated command validation.
 pub fn validate_command(command: &str) -> Result<(), SecurityError> {
+    // Reject commands containing null bytes
+    if command.contains('\0') {
+        return Err(SecurityError::UnsafeCommand("Null byte in command".to_string()));
+    }
+
     let dangerous_patterns = [
-        "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$(",
+        "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$($)",
     ];
+
 
     let lower_cmd = command.to_lowercase();
 

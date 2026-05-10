@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": "/home/user/Desktop/extras/micode",
+  "plugin": ["$HOME/Desktop/extras/micode"],
   "model": "openrouter/free",
   "tools": {
     "bash": true
@@ -9,7 +9,11 @@
   "share": "manual",
   "provider": {
     "openrouter": {
-      "models": ["free"]
+      "models": {
+        "Free/Models/Router": {
+          "_launch": true
+        }
+      }
     },
     "opencode": {
       "models": {
