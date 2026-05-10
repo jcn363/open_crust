@@ -148,14 +148,13 @@ Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via
 | `Tab`               | Cycle between Chat / Tasks / MCP views    |
 | `Ctrl+B`            | Toggle file tree sidebar                  |
 | `Ctrl+K`            | Open Command Palette                      |
-| `Ctrl+M`            | MCP Showcase browser                      |
+| `Ctrl+M`            | MCP Showcase browser (`m` in normal mode) |
+| `Ctrl+G`            | Mission Control (orchestrator DAG view)   |
 | `Ctrl+T`            | Open Background Agents tab                |
 | `Ctrl+Shift+K`      | Open Skill Browser                        |
 | `Alt+V`             | Toggle Vim Mode                           |
 | `p` / `P`           | Enter Plan Mode                            |
-| `k`                 | Command Palette (normal mode)             |
-| `m`                 | MCP Showcase (normal mode)                |
-| `s` / `S`           | Skill Browser / Server panel              |
+| `s` / `S`           | Server panel / Skill Browser              |
 | `a`                 | Approve proposed change                   |
 | `d`                 | Deny proposed change                      |
 | `Shift+A`           | Approve all proposed changes              |
@@ -211,10 +210,23 @@ open_crust/
 │   ├── jsonrpc.rs         # JSON-RPC protocol primitives
 │   ├── acp.rs             # Agent Communication Protocol (ACP) stdio interface
 │   │
+│   ├── models.rs          # Model list caching & fetcher
+│   ├── compliance.rs      # Compliance & evidence package generation
+│   │
 │   ├── orchestrator/      # Multi-agent orchestration
 │   │   ├── mod.rs         # Coordinator entry point
+│   │   ├── coordinator.rs # DAG resolution & parallel execution
 │   │   ├── task.rs        # Task representation and state
 │   │   └── agent_pool.rs  # Agent pool management
+│   │
+│   ├── mission_control/   # Orchestrator DAG visualization (TUI)
+│   │   ├── mod.rs
+│   │   └── tui.rs
+│   │
+│   ├── ui/                # TUI rendering (ratatui)
+│   │   ├── chat.rs        # Chat sidebar & message list
+│   │   ├── layout.rs      # Layout splitting
+│   │   └── popups.rs      # Review/servers/skills/command palette popups
 │   │
 │   └── desktop/           # Desktop integration
 │       ├── mod.rs
@@ -343,9 +355,9 @@ opencrust desktop file-picker [--directory]      # Native file picker
 ```bash
 opencrust session list                      # List saved sessions
 opencrust session show <id>                 # Show session details
-opencrust session save --name "tag"         # Save current session
+opencrust session save <id> --messages <json>  # Save session with messages
 opencrust session delete <id>               # Delete a session
-opencrust session fork <id>                 # Fork a session
+opencrust session fork <id> [--name <name>] # Fork a session
 ```
 
 ### MCP
@@ -353,7 +365,9 @@ opencrust session fork <id>                 # Fork a session
 ```bash
 opencrust mcp list                          # List available MCP servers
 opencrust mcp install <name>                # Install an MCP server
-opencrust mcp remove <name>                 # Remove an MCP server
+opencrust mcp showcase                      # Print server table
+opencrust mcp tools                         # List all MCP tools
+opencrust mcp test <server> <tool> [args]   # Test an MCP tool
 ```
 
 ### Skills
@@ -383,7 +397,10 @@ opencrust -f prompt.txt                     # Prompt from file
 opencrust -p "..." --project /path          # Override project directory
 opencrust -p "..." --provider ollama        # Override provider
 opencrust -p "..." --model llama3           # Override model
-opencrust --agent planner                   # Launch in subagent mode
+# Multi-agent mode (parallel queries)
+opencrust --agent ollama:llama3 --agent gemini:gemini-pro --multi-prompt "Analyze this code"
+opencrust acp                               # Start in ACP mode (JSON-RPC stdio)
+opencrust run <command>                     # Run a single command and exit
 ```
 
 ---

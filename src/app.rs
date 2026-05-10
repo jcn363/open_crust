@@ -13,12 +13,11 @@ pub enum Mode {
     MissionControl, // Ctrl+G Mission Control
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum PlanMode {
+    #[default]
     Disabled,  // Normal execution
     Planning,  // LLM is planning
-    Reviewing, // User reviewing diffs
 }
 
 #[derive(Clone, Debug, PartialEq)]

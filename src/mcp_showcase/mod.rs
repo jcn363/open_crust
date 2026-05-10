@@ -43,7 +43,9 @@ impl McpShowcase {
             });
         }
 
-        // Add community servers from mcpdirectory.app (placeholder for future API integration)
+        // Add community servers with registry metadata
+        // TODO: In the future, fetch from mcpdirectory.app API at:
+        // https://mcpdirectory.app/api/v1/servers
         let community_servers = [
             ("playwright", "Browser automation & E2E testing"),
             ("supabase", "RLS-aware database access"),

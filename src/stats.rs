@@ -21,11 +21,18 @@ impl UsageStats {
         self.input_tokens += input;
         self.output_tokens += output;
 
-        // Very rough cost calculation (placeholder prices per 1M tokens)
         let (in_price, out_price) = match model {
-            m if m.contains("gpt-4o") => (5.0, 15.0),
-            m if m.contains("claude-3-5-sonnet") => (3.0, 15.0),
-            _ => (1.0, 3.0), // Default cheap model
+            m if m.contains("gpt-4o") => (2.50, 10.0),
+            m if m.contains("gpt-4o-mini") => (0.15, 0.60),
+            m if m.contains("claude-3-5-sonnet") | m.contains("claude-sonnet-4") => (3.0, 15.0),
+            m if m.contains("claude-haiku") => (0.80, 4.0),
+            m if m.contains("claude-opus") => (15.0, 75.0),
+            m if m.contains("gemini") => (0.10, 0.40),
+            m if m.contains("mistral") | m.contains("mixtral") => (0.15, 0.60),
+            m if m.contains("deepseek") => (0.14, 0.28),
+            m if m.contains("command-r") => (0.15, 0.60),
+            m if m.contains("llama") | m.contains("llama3") | m.contains("qwen") => (0.50, 1.50),
+            _ => (1.0, 3.0),
         };
 
         self.total_cost += (input as f64 / 1_000_000.0) * in_price;

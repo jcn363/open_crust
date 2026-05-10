@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 //! Subagent lifecycle management for the orchestrator
 //!
 //! Manages spawning, timeout, retry, and cancellation of LLM subagents
@@ -24,6 +22,7 @@ pub struct AgentConfig {
     /// Maximum retry attempts on failure (0 = no retry)
     pub max_retries: u32,
     /// Optional model override applied to every agent
+    #[allow(dead_code)]
     pub model_override: Option<String>,
 }
 
@@ -41,6 +40,7 @@ impl Default for AgentConfig {
 /// Result produced by a finished agent
 #[derive(Debug, Clone)]
 pub struct AgentResult {
+    #[allow(dead_code)]
     pub task_id: uuid::Uuid,
     pub output: String,
     pub success: bool,
@@ -61,6 +61,7 @@ impl AgentPool {
         }
     }
 
+    #[allow(dead_code)]
     pub fn config(&self) -> &AgentConfig {
         &self.config
     }
@@ -133,6 +134,7 @@ impl AgentPool {
     }
 
     /// Cancel a running agent (aborts the tokio task)
+    #[allow(dead_code)]
     pub fn cancel(&mut self, task_id: &uuid::Uuid) -> bool {
         self.active_agents.remove(task_id).is_some_and(|h| {
             h.abort();
@@ -141,11 +143,13 @@ impl AgentPool {
     }
 
     /// Number of agents currently active
+    #[allow(dead_code)]
     pub fn active_count(&self) -> usize {
         self.active_agents.len()
     }
 
     /// Remove completed agent handles from tracking
+    #[allow(dead_code)]
     pub fn cleanup(&mut self, ids: &[uuid::Uuid]) {
         for id in ids {
             self.active_agents.remove(id);

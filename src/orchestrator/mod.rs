@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 //! Multi-Agent Orchestrator
 //!
 //! Top-level module providing the `Orchestrator` — the main entry point
@@ -33,7 +31,8 @@ use crate::orchestrator::coordinator::Coordinator;
 /// High-level orchestrator for multi-agent task execution
 pub struct Orchestrator {
     coordinator: Coordinator,
-    config: Arc<Config>,
+    #[allow(dead_code)]
+    pub(crate) config: Arc<Config>,
 }
 
 impl Orchestrator {
@@ -121,6 +120,7 @@ impl Orchestrator {
     }
 
     /// Cancel all running agents
+    #[allow(dead_code)]
     pub fn cancel_all(&mut self) {
         self.coordinator.cancel_all();
     }

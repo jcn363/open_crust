@@ -2,6 +2,8 @@
 name = "open_crust"
 version = "0.1.0"
 edition = "2024"
+description = "Production TUI platform for AI-powered coding with MCP/LSP integration, multi-agent orchestration, and semantic code search"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 ratatui = "0.30.0"
@@ -25,6 +27,16 @@ html2md = "0.2.15"
 uuid = { version = "1.8", features = ["v4"] }
 sha2 = "0.10"
 hex = "0.4"
+
+[package.metadata.deb]
+name = "opencrust"
+maintainer = "OpenCrust Team <dev@opencrust.ai>"
+copyright = "2026 OpenCrust Contributors"
+depends = "$auto"
+extended-description = """\
+OpenCrust is a production TUI platform for AI-powered coding tasks. \
+It provides terminal-native AI assistance with MCP/LSP integration, \
+multi-agent orchestration, semantic code search, and desktop notifications."""
 
 [dev-dependencies]
 tempfile = "3.20.0"

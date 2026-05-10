@@ -290,7 +290,9 @@ pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Re
                         return Ok(id);
                     }
                 }
-                Ok(0) // Return 0 as placeholder ID
+                // Compute a deterministic hash based on notification content
+                let id = simple_hash(&format!("{}{}", notification.title, notification.body));
+                Ok(id)
             } else {
                 let error = String::from_utf8_lossy(&output.stderr);
                 Err(format!("DBus notification failed: {}", error))
@@ -298,6 +300,15 @@ pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Re
         }
         Err(e) => Err(format!("Failed to send DBus notification: {}", e)),
     }
+}
+
+/// Simple hash for notification content (consistent across calls)
+fn simple_hash(s: &str) -> u32 {
+    let mut hash: u32 = 5381;
+    for b in s.bytes() {
+        hash = hash.wrapping_mul(33).wrapping_add(b as u32);
+    }
+    hash & 0x7FFFFFFF
 }
 
 /// Close a notification by ID

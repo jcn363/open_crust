@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 //! Task dependency resolution and parallel execution coordinator
 //!
 //! Builds a DAG from a list of tasks, resolves ready tasks in topological
@@ -42,6 +40,7 @@ impl Coordinator {
 
     /// Attach a shared state bridge for live TUI visualization.
     /// The coordinator will update this shared state on every task transition.
+    #[allow(dead_code)]
     pub fn with_shared_state(
         mut self,
         state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,
@@ -212,6 +211,7 @@ impl Coordinator {
     }
 
     /// Cancel all running agents
+    #[allow(dead_code)]
     pub fn cancel_all(&mut self) {
         // AgentPool cleanup handled via drop / individual cancellation
     }

@@ -301,6 +301,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         return run_multi_agent(&args.agents, &prompt, &config).await;
     }
 
+    // Start background model list refresh if enabled
+    if let Some(ref auto_refresh) = config.model_auto_refresh
+        && auto_refresh.enabled
+    {
+        let refresh_config = config.clone();
+        tokio::spawn(async move {
+            let fetcher = models::ModelFetcher::new();
+            let provider_str = match refresh_config.provider {
+                config::ProviderType::Ollama => "ollama",
+                config::ProviderType::OpenRouter => "openrouter",
+                config::ProviderType::OpenAI => "openai",
+                config::ProviderType::Gemini => "gemini",
+                config::ProviderType::Mistral => "mistral",
+                config::ProviderType::Anthropic => "anthropic",
+                config::ProviderType::Groq => "groq",
+                config::ProviderType::TogetherAi => "togetherai",
+                config::ProviderType::Replicate => "replicate",
+                config::ProviderType::DeepSeek => "deepseek",
+                config::ProviderType::LocalAi => "localai",
+            };
+            // Fetch model list on startup (non-blocking background task)
+            let models = fetcher.fetch(provider_str, None, None).await;
+            if models.is_empty() {
+                // Use bundled defaults as fallback
+                let defaults = models::bundled_default_models();
+                if defaults.contains_key(provider_str) {
+                    eprintln!("[Models] Using bundled default model list for {}", provider_str);
+                }
+            } else {
+                eprintln!("[Models] Refreshed {} model list ({} models)", provider_str, models.len());
+            }
+        });
+    }
+
     // Shared managers
     let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
     mcp_manager.lock().await.load_from_config(&config.mcp).await;

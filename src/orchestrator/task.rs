@@ -72,6 +72,7 @@ impl Task {
     }
 
     /// Returns a summary string for the task
+    #[allow(dead_code)]
     pub fn summary(&self) -> String {
         let state_str = match &self.state {
             TaskState::Pending => "pending".to_string(),
