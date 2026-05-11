@@ -23,7 +23,7 @@ impl McpServer {
         // Configure stdio for JSON-RPC communication
         command.stdin(std::process::Stdio::piped());
         command.stdout(std::process::Stdio::piped());
-        command.stderr(std::process::Stdio::piped());
+        command.stderr(std::process::Stdio::inherit());
 
         let process = command.spawn().map_err(|e| e.to_string())?;
 

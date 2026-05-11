@@ -218,8 +218,8 @@ pub fn to_csv(json_str: &str) -> Result<String, String> {
         return Ok(String::new());
     }
 
-    // Collect all unique keys
-    let mut keys = std::collections::HashSet::new();
+    // Collect all unique keys in insertion order
+    let mut keys = std::collections::BTreeSet::new();
     for item in arr {
         if let Some(obj) = item.as_object() {
             for key in obj.keys() {
@@ -229,23 +229,46 @@ pub fn to_csv(json_str: &str) -> Result<String, String> {
     }
 
     let headers: Vec<_> = keys.into_iter().collect();
+    let mut csv = String::new();
 
-    let mut csv = headers.join(",");
+    // Header row
+    for (i, header) in headers.iter().enumerate() {
+        if i > 0 {
+            csv.push(',');
+        }
+        csv.push_str(&escape_csv(header));
+    }
     csv.push('\n');
 
+    // Data rows
     for item in arr {
         if let Some(obj) = item.as_object() {
-            for header in &headers {
-                if let Some(val) = obj.get(header) {
-                    csv.push_str(&val.to_string());
+            for (i, header) in headers.iter().enumerate() {
+                if i > 0 {
+                    csv.push(',');
                 }
-                csv.push(',');
+                let val = match obj.get(header) {
+                    Some(v) => match v {
+                        Value::String(s) => escape_csv(s),
+                        other => other.to_string(),
+                    },
+                    None => String::new(),
+                };
+                csv.push_str(&val);
             }
             csv.push('\n');
         }
     }
 
     Ok(csv)
+}
+
+fn escape_csv(s: &str) -> String {
+    if s.contains(',') || s.contains('"') || s.contains('\n') {
+        format!("\"{}\"", s.replace('"', "\"\""))
+    } else {
+        s.to_string()
+    }
 }
 
 #[cfg(test)]

@@ -323,10 +323,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 // Use bundled defaults as fallback
                 let defaults = models::bundled_default_models();
                 if defaults.contains_key(provider_str) {
-                    eprintln!("[Models] Using bundled default model list for {}", provider_str);
+                    eprintln!(
+                        "[Models] Using bundled default model list for {}",
+                        provider_str
+                    );
                 }
             } else {
-                eprintln!("[Models] Refreshed {} model list ({} models)", provider_str, models.len());
+                eprintln!(
+                    "[Models] Refreshed {} model list ({} models)",
+                    provider_str,
+                    models.len()
+                );
             }
         });
     }
@@ -1035,14 +1042,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             SkillsCommands::List => {
                 println!("Skills (use 'opencrust skills activate/deactivate <name>' to toggle):");
                 println!();
-                for (name, description, active) in
-                    skills.list_skills_with_stats()
-                {
+                for (name, description, active) in skills.list_skills_with_stats() {
                     let status = if active { "ACTIVE" } else { "inactive" };
-                    println!(
-                        "[{}] {} - {}",
-                        status, name, description
-                    );
+                    println!("[{}] {} - {}", status, name, description);
                 }
             }
             SkillsCommands::Activate { name } => {
@@ -1187,8 +1189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let skills = skill_manager.lock().await;
         let skill_list = skills.list_skills_with_stats();
         for (name, description, active) in skill_list {
-            app.skill_browser_items
-                .push((name, description, active));
+            app.skill_browser_items.push((name, description, active));
         }
     }
 
@@ -1217,7 +1218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if response.starts_with("[DIFF_REQUIRED]") {
                 let parts: Vec<&str> = response
                     .strip_prefix("[DIFF_REQUIRED]")
-                    .unwrap()
+                    .expect("gated by starts_with")
                     .splitn(3, '|')
                     .collect();
                 if parts.len() == 3 {
@@ -1246,7 +1247,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if notification.starts_with("[TASK_COMPLETE]") {
                 let parts: Vec<&str> = notification
                     .strip_prefix("[TASK_COMPLETE]")
-                    .unwrap()
+                    .expect("gated by starts_with")
                     .splitn(2, "::")
                     .collect();
                 if parts.len() == 2 {
@@ -1266,7 +1267,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if notification.starts_with("[TASK_FAILED]") {
                 let parts: Vec<&str> = notification
                     .strip_prefix("[TASK_FAILED]")
-                    .unwrap()
+                    .expect("gated by starts_with")
                     .splitn(2, "::")
                     .collect();
                 if parts.len() == 2 {
@@ -1822,8 +1823,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     disable_raw_mode()?;
     io::stdout().execute(LeaveAlternateScreen)?;
 
-
-
     Ok(())
 }
 
@@ -1848,7 +1847,9 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
                 "down" => target_code = Some(KeyCode::Down),
                 "left" => target_code = Some(KeyCode::Left),
                 "right" => target_code = Some(KeyCode::Right),
-                c if c.len() == 1 => target_code = Some(KeyCode::Char(c.chars().next().unwrap())),
+                c if c.len() == 1 => {
+                    target_code = Some(KeyCode::Char(c.chars().next().expect("len==1")))
+                }
                 _ => {}
             }
         }

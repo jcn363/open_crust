@@ -40,7 +40,7 @@ impl Coordinator {
 
     /// Attach a shared state bridge for live TUI visualization.
     /// The coordinator will update this shared state on every task transition.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "TUI integration API")]
     pub fn with_shared_state(
         mut self,
         state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,
@@ -85,15 +85,24 @@ impl Coordinator {
 
         // Spawn all initially ready tasks
         for i in 0..total {
-            if tasks[i].is_ready(&completed_ids)
-                && !tasks[i].is_terminal()
-                && let Ok(rx) = self.pool.spawn_agent(&tasks[i], llm_client.clone())
-            {
-                tasks[i].state = TaskState::Running {
-                    agent_id: tasks[i].agent_type.clone(),
-                };
-                self.sync_shared_state(tasks);
-                running.insert(tasks[i].id, rx);
+            if tasks[i].is_ready(&completed_ids) && !tasks[i].is_terminal() {
+                match self.pool.spawn_agent(&tasks[i], llm_client.clone()) {
+                    Ok(rx) => {
+                        tasks[i].state = TaskState::Running {
+                            agent_id: tasks[i].agent_type.clone(),
+                        };
+                        self.sync_shared_state(tasks);
+                        running.insert(tasks[i].id, rx);
+                    }
+                    Err(e) => {
+                        tasks[i].state = TaskState::Failed {
+                            error: format!("failed to spawn: {}", e),
+                        };
+                        self.sync_shared_state(tasks);
+                        all_failed.push(tasks[i].clone());
+                        completed_ids.insert(tasks[i].id);
+                    }
+                }
             }
         }
 
@@ -183,14 +192,22 @@ impl Coordinator {
 
                 // Spawn newly-ready tasks
                 for task in tasks.iter_mut() {
-                    if task.is_ready(&completed_ids)
-                        && !task.is_terminal()
-                        && let Ok(rx) = self.pool.spawn_agent(task, llm_client.clone())
-                    {
-                        task.state = TaskState::Running {
-                            agent_id: task.agent_type.clone(),
-                        };
-                        receivers.push((task.id, rx));
+                    if task.is_ready(&completed_ids) && !task.is_terminal() {
+                        match self.pool.spawn_agent(task, llm_client.clone()) {
+                            Ok(rx) => {
+                                task.state = TaskState::Running {
+                                    agent_id: task.agent_type.clone(),
+                                };
+                                receivers.push((task.id, rx));
+                            }
+                            Err(e) => {
+                                task.state = TaskState::Failed {
+                                    error: format!("failed to spawn: {}", e),
+                                };
+                                all_failed.push(task.clone());
+                                completed_ids.insert(task.id);
+                            }
+                        }
                     }
                 }
             }

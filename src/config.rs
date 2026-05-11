@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::path::PathBuf;
 
 /// Default OpenRouter free model (no API key required)
 pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free-gpt-4o-mini";
@@ -21,8 +22,9 @@ pub enum ProviderType {
 }
 
 /// DAN (Do Anything Now) response modes for uncensored operation
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ResponseMode {
+    #[default]
     /// Default standard responses
     Normal,
     /// 100% uncensored via local Ollama
@@ -35,12 +37,6 @@ pub enum ResponseMode {
     Genius,
     /// Wild creativity
     Chaos,
-}
-
-impl Default for ResponseMode {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 impl ResponseMode {
@@ -144,7 +140,7 @@ impl Default for SubagentConfig {
 }
 
 impl ProviderType {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "string serialization API")]
     pub fn as_str(&self) -> &str {
         match self {
             ProviderType::Ollama => "ollama",
@@ -431,19 +427,26 @@ impl Default for Config {
 
 impl Config {
     pub fn load() -> Self {
-        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
+        let config_dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".config/open_crust");
         let config_path = config_dir.join("config.json");
 
         if config_path.exists() {
-            let content = fs::read_to_string(config_path).unwrap_or_default();
-            match serde_json::from_str(&content) {
-                Ok(config) => {
-                    let config: Config = config;
-                    config.validate();
-                    config
-                }
-                Err(_) => {
-                    eprintln!("Warning: Failed to parse config, using defaults");
+            match fs::read_to_string(&config_path) {
+                Ok(content) => match serde_json::from_str(&content) {
+                    Ok(config) => {
+                        let config: Config = config;
+                        config.validate();
+                        config
+                    }
+                    Err(e) => {
+                        eprintln!("Warning: Failed to parse config ({}), using defaults", e);
+                        Self::default()
+                    }
+                },
+                Err(e) => {
+                    eprintln!("Warning: Failed to read config ({}), using defaults", e);
                     Self::default()
                 }
             }
@@ -453,11 +456,23 @@ impl Config {
     }
 
     pub fn save(&self) {
-        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
-        let _ = fs::create_dir_all(&config_dir);
+        let config_dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".config/open_crust");
+        if let Err(e) = fs::create_dir_all(&config_dir) {
+            eprintln!("Warning: Failed to create config dir: {}", e);
+        }
         let config_path = config_dir.join("config.json");
-        let content = serde_json::to_string_pretty(self).unwrap_or_default();
-        let _ = fs::write(config_path, content);
+        let content = match serde_json::to_string_pretty(self) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Warning: Failed to serialize config: {}", e);
+                return;
+            }
+        };
+        if let Err(e) = fs::write(&config_path, &content) {
+            eprintln!("Warning: Failed to write config: {}", e);
+        }
     }
 
     /// Validate configuration and print warnings for issues
@@ -465,13 +480,12 @@ impl Config {
         // Check provider-specific requirements
         match self.provider {
             ProviderType::Ollama => {
-                if self.ollama_url.is_none() || self.ollama_url.as_ref().unwrap().is_empty() {
+                if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: Ollama provider selected but ollama_url is not set");
                 }
             }
             ProviderType::OpenRouter => {
-                if self.openrouter_key.is_none() || self.openrouter_key.as_ref().unwrap().is_empty()
-                {
+                if self.openrouter_key.as_ref().is_none_or(|v| v.is_empty()) {
                     // Skip warning for free models that do not require a key
                     let is_free = self.model.to_lowercase().contains("free");
                     if !is_free {
@@ -482,66 +496,55 @@ impl Config {
                 }
             }
             ProviderType::OpenAI => {
-                if self.openai_key.is_none() || self.openai_key.as_ref().unwrap().is_empty() {
+                if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: OpenAI provider selected but openai_key is not set");
                 }
             }
             ProviderType::Gemini => {
-                if self.gemini_api_key.is_none() || self.gemini_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: Gemini provider selected but gemini_api_key is not set");
                 }
             }
             ProviderType::Mistral => {
-                if self.mistral_api_key.is_none()
-                    || self.mistral_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: Mistral provider selected but mistral_api_key is not set");
                 }
             }
             ProviderType::Anthropic => {
-                if self.anthropic_api_key.is_none()
-                    || self.anthropic_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!(
                         "Warning: Anthropic provider selected but anthropic_api_key is not set"
                     );
                 }
             }
             ProviderType::Groq => {
-                if self.groq_api_key.is_none() || self.groq_api_key.as_ref().unwrap().is_empty() {
+                if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: Groq provider selected but groq_api_key is not set");
                 }
             }
             ProviderType::TogetherAi => {
-                if self.together_api_key.is_none()
-                    || self.together_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.together_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!(
                         "Warning: TogetherAi provider selected but together_api_key is not set"
                     );
                 }
             }
             ProviderType::Replicate => {
-                if self.replicate_api_key.is_none()
-                    || self.replicate_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.replicate_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!(
                         "Warning: Replicate provider selected but replicate_api_key is not set"
                     );
                 }
             }
             ProviderType::DeepSeek => {
-                if self.deepseek_api_key.is_none()
-                    || self.deepseek_api_key.as_ref().unwrap().is_empty()
-                {
+                if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!(
                         "Warning: DeepSeek provider selected but deepseek_api_key is not set"
                     );
                 }
             }
             ProviderType::LocalAi => {
-                if self.localai_url.is_none() || self.localai_url.as_ref().unwrap().is_empty() {
+                if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) {
                     eprintln!("Warning: LocalAi provider selected but localai_url is not set");
                 }
             }
@@ -627,7 +630,7 @@ impl Config {
     ///          2. Per-agent override in subagent_config.agent_overrides
     ///          3. Default subagent model in subagent_config.default_model
     ///          4. Fall back to main config model (self.model)
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "subagent model resolution API")]
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
         if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL")
@@ -839,19 +842,23 @@ mod tests {
 
     #[test]
     fn free_model_no_key_no_warning() {
-        let mut cfg = Config::default();
-        cfg.provider = ProviderType::OpenRouter;
-        cfg.model = DEFAULT_OPENROUTER_FREE_MODEL.to_string();
-        cfg.openrouter_key = None;
+        let cfg = Config {
+            provider: ProviderType::OpenRouter,
+            model: DEFAULT_OPENROUTER_FREE_MODEL.to_string(),
+            openrouter_key: None,
+            ..Default::default()
+        };
         cfg.validate();
     }
 
     #[test]
     fn paid_model_no_key_warns() {
-        let mut cfg = Config::default();
-        cfg.provider = ProviderType::OpenRouter;
-        cfg.model = "openrouter/anthropic/claude-3".to_string();
-        cfg.openrouter_key = None;
+        let cfg = Config {
+            provider: ProviderType::OpenRouter,
+            model: "openrouter/anthropic/claude-3".to_string(),
+            openrouter_key: None,
+            ..Default::default()
+        };
         cfg.validate();
     }
 }

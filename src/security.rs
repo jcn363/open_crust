@@ -79,11 +79,19 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
             // Validate the parent directory
             if let Some(parent) = path.parent() {
                 if parent.to_string_lossy().is_empty() || parent == Path::new(".") {
-                    return Ok(path.to_path_buf());
+                    match std::fs::canonicalize(".") {
+                        Ok(canon_cwd) => return Ok(canon_cwd.join(path)),
+                        Err(_) => return Ok(path.to_path_buf()),
+                    }
                 }
                 validate_path(parent)?;
+                match std::fs::canonicalize(parent) {
+                    Ok(canon_parent) => Ok(canon_parent.join(path.file_name().unwrap_or_default())),
+                    Err(_) => Ok(path.to_path_buf()),
+                }
+            } else {
+                Ok(path.to_path_buf())
             }
-            Ok(path.to_path_buf())
         }
     }
 }

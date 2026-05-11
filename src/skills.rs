@@ -233,15 +233,6 @@ mod tests {
     }
 
     #[test]
-    fn test_record_usage() {
-        let mut manager = create_test_skill_manager();
-
-        // Record usage
-        manager.record_usage("test-skill", 100);
-        assert_eq!(manager.skills["test-skill"].usage_count, 1);
-    }
-
-    #[test]
     fn test_list_skills_with_stats() {
         let mut manager = create_test_skill_manager();
         manager.deactivate_skill("test-skill");

@@ -1,9 +1,8 @@
+#![allow(dead_code)]
 //! Linux Mint Cinnamon system notifications
 //!
 //! Provides system notification integration for Linux Mint Cinnamon.
 //! Uses notify-send as primary method, with DBus fallback for rich notifications.
-
-#![allow(dead_code)]
 
 use std::process::Command;
 use std::time::Duration;

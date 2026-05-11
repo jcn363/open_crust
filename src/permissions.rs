@@ -16,20 +16,26 @@ impl PermissionManager {
             match rule {
                 PermissionRule::Action(action) => return action.clone(),
                 PermissionRule::Map(map) => {
-                    // Evaluate patterns, last one wins
-                    let mut result = PermissionAction::Ask; // Default for map if no match
-                    for (pattern_str, action) in map {
-                        if pattern_str == "*" {
-                            result = action.clone();
-                            continue;
-                        }
-                        if let Ok(pattern) = Pattern::new(pattern_str)
-                            && pattern.matches(input)
-                        {
-                            result = action.clone();
-                        }
+                    // Collect matching patterns first, then take last key in insertion order
+                    let mut keys: Vec<&String> = map
+                        .keys()
+                        .filter(|k| {
+                            if *k == "*" {
+                                return true;
+                            }
+                            Pattern::new(k).map(|p| p.matches(input)).unwrap_or(false)
+                        })
+                        .collect();
+                    // Sort for deterministic evaluation (glob patterns with * last)
+                    keys.sort_by(|a, b| {
+                        let a_star = a.contains('*');
+                        let b_star = b.contains('*');
+                        a_star.cmp(&b_star)
+                    });
+                    if let Some(last_key) = keys.last() {
+                        return map.get(*last_key).cloned().unwrap_or(PermissionAction::Ask);
                     }
-                    return result;
+                    return PermissionAction::Ask;
                 }
             }
         }

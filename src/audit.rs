@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use chrono::{Local, NaiveDate, Utc};
 use std::fs;
 use std::fs::OpenOptions;
@@ -37,16 +35,19 @@ impl AuditLogger {
         }
     }
 
+    #[expect(dead_code, reason = "builder API completeness")]
     pub fn with_session_id(mut self, session_id: String) -> Self {
         self.session_id = session_id;
         self
     }
 
+    #[expect(dead_code, reason = "builder API completeness")]
     pub fn with_agent_type(mut self, agent_type: Option<String>) -> Self {
         self.agent_type = agent_type;
         self
     }
 
+    #[expect(dead_code, reason = "builder API completeness")]
     pub fn with_compliance_mode(mut self, enabled: bool) -> Self {
         self.compliance_mode = enabled;
         self
@@ -67,17 +68,25 @@ impl AuditLogger {
         let status = if approved { "APPROVED" } else { "DENIED" };
         let session = &self.session_id;
         let agent = self.agent_type.as_deref().unwrap_or("unknown");
+        let safe_input = input.replace(['\n', '\r'], " ").replace(['=', ' '], "_");
         let log_entry = format!(
             "[{}] session={} agent={} tool={} input={} duration={} status={}\n",
-            timestamp, session, agent, tool_name, input, duration_ms, status,
+            timestamp, session, agent, tool_name, safe_input, duration_ms, status,
         );
 
-        if let Ok(mut file) = OpenOptions::new()
+        match OpenOptions::new()
             .create(true)
             .append(true)
             .open(&self.log_path)
         {
-            let _ = file.write_all(log_entry.as_bytes());
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(log_entry.as_bytes()) {
+                    eprintln!("Warning: Failed to write audit log: {}", e);
+                }
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to open audit log: {}", e);
+            }
         }
 
         self.check_rotation();
@@ -104,6 +113,7 @@ impl AuditLogger {
         }
     }
 
+    #[expect(dead_code, reason = "log maintenance utility")]
     pub fn cleanup_old_logs(&self, retention_days: u64) {
         // In compliance mode, logs must never be deleted (immutable audit trail)
         if self.compliance_mode {
@@ -163,6 +173,7 @@ impl AuditQuery {
         }
     }
 
+    #[expect(dead_code, reason = "query builder API completeness")]
     pub fn with_dates(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Self {
         Self {
             from_date: from,
@@ -172,6 +183,7 @@ impl AuditQuery {
         }
     }
 
+    #[expect(dead_code, reason = "query builder API completeness")]
     pub fn with_action(pattern: Option<String>) -> Self {
         Self {
             from_date: None,
@@ -181,6 +193,7 @@ impl AuditQuery {
         }
     }
 
+    #[expect(dead_code, reason = "query builder API completeness")]
     pub fn with_status(status: Option<bool>) -> Self {
         Self {
             from_date: None,

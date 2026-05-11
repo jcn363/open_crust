@@ -1,6 +1,7 @@
 use ::html2md;
 use reqwest::Client;
 use std::error::Error;
+use std::time::Duration;
 
 pub struct WebManager {
     client: Client,
@@ -9,7 +10,10 @@ pub struct WebManager {
 impl WebManager {
     pub fn new() -> Self {
         Self {
-            client: Client::new(),
+            client: Client::builder()
+                .timeout(Duration::from_secs(30))
+                .build()
+                .unwrap_or_default(),
         }
     }
 
@@ -65,15 +69,31 @@ impl WebManager {
         Ok(output)
     }
 
-    pub async fn fetch_url(&self, url: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+    pub async fn fetch_url(&self, url_str: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+        let parsed = url::Url::parse(url_str).map_err(|_| format!("Invalid URL: {}", url_str))?;
+        let scheme = parsed.scheme();
+        if scheme != "http" && scheme != "https" {
+            return Err(format!("Blocked URL scheme: {}", scheme).into());
+        }
+        if let Some(host) = parsed.host_str() {
+            if host == "localhost" || host == "127.0.0.1" || host == "0.0.0.0" || host == "[::1]" {
+                return Err(format!("Blocked local host: {}", host).into());
+            }
+            if host.ends_with(".local") || host.ends_with(".internal") {
+                return Err(format!("Blocked private host: {}", host).into());
+            }
+        }
         let res = self
             .client
-            .get(url)
+            .get(url_str)
             .header("User-Agent", "OpenCrust/0.1.0")
             .send()
             .await?;
 
         let html = res.text().await?;
+        if html.len() > 10_000_000 {
+            return Err("Response too large (>10MB)".into());
+        }
         Ok(self.html_to_md(&html))
     }
 

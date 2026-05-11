@@ -77,14 +77,18 @@ impl CacheManager {
             fetched_at: now,
         };
         if let Ok(content) = serde_json::to_string_pretty(&entry) {
-            let _ = std::fs::create_dir_all(&self.cache_dir);
+            if let Err(e) = std::fs::create_dir_all(&self.cache_dir) {
+                eprintln!("Warning: Failed to create model cache dir: {}", e);
+            }
             let path = self.cache_dir.join(format!("{}.json", provider));
-            let _ = std::fs::write(path, content);
+            if let Err(e) = std::fs::write(&path, &content) {
+                eprintln!("Warning: Failed to write model cache: {}", e);
+            }
         }
     }
 
     /// Remove deprecated models from cache that are no longer in the fresh list
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "cache synchronization API")]
     pub fn sync(&self, provider: &str, fresh_models: &[ProviderModel]) -> Vec<ProviderModel> {
         let path = self.cache_dir.join(format!("{}.json", provider));
         if !path.exists() {
@@ -106,7 +110,7 @@ impl CacheManager {
     }
 
     /// Get the last update timestamp for a provider
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "cache introspection API")]
     pub fn last_updated(&self, provider: &str) -> Option<u64> {
         let path = self.cache_dir.join(format!("{}.json", provider));
         let content = std::fs::read_to_string(&path).ok()?;
@@ -139,9 +143,9 @@ impl ModelFetcher {
     /// Returns the list of models, or a cached/stale list on failure.
     ///
     /// Supported providers:
-    /// - openai: https://api.openai.com/v1/models
-    /// - anthropic: https://api.anthropic.com/v1/models (API key required)
-    /// - openrouter: https://openrouter.ai/api/v1/models
+    /// - openai: <https://api.openai.com/v1/models>
+    /// - anthropic: <https://api.anthropic.com/v1/models> (API key required)
+    /// - openrouter: <https://openrouter.ai/api/v1/models>
     /// - ollama: http://localhost:11434/api/tags
     ///
     /// For providers that require an API key, pass it via `api_key`.
@@ -184,7 +188,7 @@ impl ModelFetcher {
     }
 
     /// Refresh models in the background and return updated list.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "model refresh API")]
     pub async fn refresh(
         &self,
         provider: &str,

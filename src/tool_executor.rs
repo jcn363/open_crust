@@ -4,6 +4,7 @@
 //! It provides a struct-based abstraction for tool execution and integrates
 //! with the security module for safe operations.
 
+use crate::config::Config;
 use crate::custom_tools::CustomToolManager;
 use crate::lsp::LspManager;
 use crate::mcp::McpManager;
@@ -27,6 +28,7 @@ pub type ToolResult = Result<String, Box<dyn Error + Send + Sync>>;
 
 /// Main tool executor that coordinates all tool types
 pub struct ToolExecutor {
+    pub config: Config,
     pub mcp_manager: Arc<Mutex<McpManager>>,
     pub lsp_manager: Arc<Mutex<LspManager>>,
     pub skill_manager: Arc<Mutex<SkillManager>>,
@@ -42,6 +44,7 @@ pub struct ToolExecutor {
 impl ToolExecutor {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        config: Config,
         mcp_manager: Arc<Mutex<McpManager>>,
         lsp_manager: Arc<Mutex<LspManager>>,
         skill_manager: Arc<Mutex<SkillManager>>,
@@ -54,6 +57,7 @@ impl ToolExecutor {
         orchestrator: Arc<Mutex<Orchestrator>>,
     ) -> Self {
         Self {
+            config,
             mcp_manager,
             lsp_manager,
             skill_manager,
@@ -276,9 +280,8 @@ impl ToolExecutor {
         let mut orchestrator = self.orchestrator.lock().await;
         let llm_client = {
             // Create a minimal LlmClient for the orchestrator to use
-            let config = crate::config::Config::default();
             Arc::new(crate::llm::LlmClient::new(
-                config,
+                self.config.clone(),
                 self.mcp_manager.clone(),
                 self.lsp_manager.clone(),
                 self.skill_manager.clone(),
@@ -425,10 +428,17 @@ impl ToolExecutor {
         let mut count = 0;
         for entry in WalkDir::new(".").into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
-            if let Some(ext) = path.extension()
-                && !include.contains(&ext.to_string_lossy().to_string())
-            {
-                continue;
+            if include != "*" {
+                let ext = path
+                    .extension()
+                    .map(|e| e.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                if !include.split(',').any(|pat| {
+                    let pat = pat.trim().trim_start_matches("*.");
+                    ext == pat || pat == "*"
+                }) {
+                    continue;
+                }
             }
 
             if let Ok(content) = fs::read_to_string(path)
@@ -482,15 +492,10 @@ pub async fn get_all_tool_schemas(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::orchestrator::Orchestrator;
     use serde_json::json;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
 
     #[tokio::test]
-    async fn test_pin_unpin_functionality() {
-        // Create mock managers
+    async fn test_pin_unpin() {
         let mcp_manager = Arc::new(Mutex::new(McpManager::new()));
         let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
         let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
@@ -502,8 +507,8 @@ mod tests {
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
         let orchestrator = Arc::new(Mutex::new(Orchestrator::new(Arc::new(Config::default()))));
 
-        // Create tool executor
         let tool_executor = ToolExecutor::new(
+            Config::default(),
             mcp_manager,
             lsp_manager,
             skill_manager,
@@ -516,30 +521,24 @@ mod tests {
             orchestrator,
         );
 
-        // Test pinning a file
         let pin_args = json!({ "path": "/test/file.rs" });
         let result = tool_executor.execute_pin(&pin_args).await.unwrap();
         assert_eq!(result, "Successfully pinned: /test/file.rs");
 
-        // Test pinning the same file again (should show already pinned)
         let result = tool_executor.execute_pin(&pin_args).await.unwrap();
         assert_eq!(result, "Already pinned: /test/file.rs");
 
-        // Test unpinning the file
         let unpin_args = json!({ "path": "/test/file.rs" });
         let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
         assert_eq!(result, "Successfully unpinned: /test/file.rs");
 
-        // Test unpinning a file that wasn't pinned
         let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
         assert_eq!(result, "Not pinned: /test/file.rs");
 
-        // Test pinning with empty path
         let empty_args = json!({ "path": "" });
         let result = tool_executor.execute_pin(&empty_args).await.unwrap();
         assert_eq!(result, "Error: No path provided for pinning");
 
-        // Test unpinning with empty path
         let result = tool_executor.execute_unpin(&empty_args).await.unwrap();
         assert_eq!(result, "Error: No path provided for unpinning");
     }

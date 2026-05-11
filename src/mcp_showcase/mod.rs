@@ -13,13 +13,13 @@ use tokio::process::Command as TokioCommand;
 use tokio::sync::Mutex;
 
 /// MCP Showcase main struct
-#[allow(dead_code)]
+#[expect(dead_code, reason = "CLI interface, not used when TUI is active")]
 pub struct McpShowcase {
     config: Config,
     mcp_manager: Arc<Mutex<McpManager>>,
 }
 
-#[allow(dead_code)]
+#[expect(dead_code, reason = "CLI interface, not used when TUI is active")]
 impl McpShowcase {
     /// Create a new MCP Showcase instance
     pub fn new(config: Config, mcp_manager: Arc<Mutex<McpManager>>) -> Self {
@@ -116,9 +116,12 @@ impl McpShowcase {
         }
 
         // Mark as installed and enabled, persist config
-        if let Some(cfg) = self.config.mcp.get_mut(server_name) {
-            cfg.enabled = true;
-        }
+        let mcp_config = crate::config::McpConfig {
+            command: cmd_str.split_whitespace().map(|s| s.to_string()).collect(),
+            environment: None,
+            enabled: true,
+        };
+        self.config.mcp.insert(server_name.to_string(), mcp_config);
         self.config.save();
         Ok(())
     }

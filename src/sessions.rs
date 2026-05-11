@@ -25,8 +25,10 @@ impl SessionManager {
             .unwrap_or_else(|| PathBuf::from("."))
             .join("open_crust/sessions");
 
-        if !cache_dir.exists() {
-            fs::create_dir_all(&cache_dir).expect("Failed to create cache dir");
+        if !cache_dir.exists()
+            && let Err(e) = fs::create_dir_all(&cache_dir)
+        {
+            eprintln!("Warning: Failed to create session cache dir: {}", e);
         }
 
         Self { cache_dir }

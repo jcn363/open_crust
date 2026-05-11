@@ -2,21 +2,31 @@ use std::path::Path;
 use std::process::Command;
 
 pub fn format_file(path: &Path) {
+    use std::process::Output;
+
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    match extension {
-        "rs" => {
-            let _ = Command::new("rustfmt")
-                .arg(path)
-                .spawn()
-                .and_then(|mut child| child.wait());
+    let result = match extension {
+        "rs" => Command::new("rustfmt").arg(path).output(),
+        "js" | "ts" | "json" | "md" => Command::new("prettier").arg("--write").arg(path).output(),
+        _ => return,
+    };
+
+    match result {
+        Ok(Output { status, stderr, .. }) if !status.success() => {
+            let msg = String::from_utf8_lossy(&stderr);
+            eprintln!(
+                "Warning: formatter failed for {}: {}",
+                path.display(),
+                msg.trim()
+            );
         }
-        "js" | "ts" | "json" | "md" => {
-            let _ = Command::new("prettier")
-                .arg("--write")
-                .arg(path)
-                .spawn()
-                .and_then(|mut child| child.wait());
+        Err(e) => {
+            eprintln!(
+                "Warning: could not run formatter for {}: {}",
+                path.display(),
+                e
+            );
         }
         _ => {}
     }

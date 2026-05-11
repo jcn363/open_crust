@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Write;
@@ -57,7 +55,10 @@ impl EvidencePackage {
             let path = entry.path();
             let contents = fs::read(&path)?;
             let hash = Sha256::digest(&contents);
-            let filename = path.file_name().unwrap().to_string_lossy().to_string();
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
             writeln!(manifest, "{}  SHA256:{}", filename, hex::encode(hash))?;
             hashes.push((filename, hex::encode(hash)));
         }

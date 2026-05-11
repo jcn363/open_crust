@@ -16,8 +16,8 @@ pub enum Mode {
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum PlanMode {
     #[default]
-    Disabled,  // Normal execution
-    Planning,  // LLM is planning
+    Disabled, // Normal execution
+    Planning, // LLM is planning
 }
 
 #[derive(Clone, Debug, PartialEq)]

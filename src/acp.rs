@@ -26,10 +26,12 @@ pub async fn run_acp_loop(
                         .unwrap_or_default();
 
                     let (progress_tx, _progress_rx) = mpsc::channel::<String>(32);
-                    let (_approval_tx, mut approval_rx) = mpsc::channel(1);
 
-                    // For ACP, we might need a non-interactive mode or auto-approval
-                    // But for now, let's just run it.
+                    // ACP: auto-approve all tool calls for non-interactive mode
+                    let (auto_tx, mut approval_rx) = mpsc::channel::<bool>(1);
+                    // Seed with one approval and keep sender alive for more
+                    let _ = auto_tx.try_send(true);
+                    let _auto_tx_keep = auto_tx.clone();
 
                     let client = llm_client.clone();
                     let response = client

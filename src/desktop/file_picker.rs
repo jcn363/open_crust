@@ -1,9 +1,8 @@
+#![allow(dead_code)]
 //! Linux Mint Cinnamon native file picker
 //!
 //! Provides native file/folder picker dialogs for Linux Mint Cinnamon.
 //! Uses Nemo's DBus interface, with fallbacks to zenity or kde-file-dialog.
-
-#![allow(dead_code)]
 
 use std::path::PathBuf;
 use std::process::Command;

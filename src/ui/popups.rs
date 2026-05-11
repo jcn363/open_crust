@@ -317,13 +317,13 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
     // Items
     let items = [
-            (
-                "Switch Provider",
-                format!("Current: {:?}", app.config.provider),
-            ),
-            ("Switch Model", format!("Current: {}", app.config.model)),
-            ("Clear Context", "Clear conversation history".to_string()),
-            ("MCP Browser", "Manage MCP servers".to_string()),
+        (
+            "Switch Provider",
+            format!("Current: {:?}", app.config.provider),
+        ),
+        ("Switch Model", format!("Current: {}", app.config.model)),
+        ("Clear Context", "Clear conversation history".to_string()),
+        ("MCP Browser", "Manage MCP servers".to_string()),
     ];
 
     let menu_items: Vec<ListItem> = items
@@ -432,9 +432,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     f.render_widget(list, content_chunks[0]);
 
     // Right panel: Selected skill details
-    if let Some((name, desc, active)) =
-        app.skill_browser_items.get(app.skill_browser_selected)
-    {
+    if let Some((name, desc, active)) = app.skill_browser_items.get(app.skill_browser_selected) {
         let status_text = if *active { "ACTIVE" } else { "INACTIVE" };
         let status_color = if *active { Color::Green } else { Color::Red };
 
@@ -463,7 +461,6 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 ),
             ]),
             Line::from(""),
-
             Line::from(""),
             Line::from(vec![
                 Span::styled("Note: ", Style::default().fg(Color::Yellow)),

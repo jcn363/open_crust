@@ -75,23 +75,18 @@ pub fn redo() -> Result<String, String> {
     let next_entry = reflog[head_pos..].find("HEAD@{1}").map(|i| head_pos + i);
 
     match next_entry {
-        Some(pos) => {
-            // Extract the reflog entry line
-            let line_end = reflog[pos..]
-                .find('\n')
-                .map(|i| pos + i)
-                .unwrap_or(reflog.len());
-            let entry = &reflog[pos..line_end].trim();
-            // Reset to that entry
+        Some(_pos) => {
+            // Use HEAD@{1} as the refspec (not the full line text)
+            let refspec = "HEAD@{1}";
             let reset_output = Command::new("git")
                 .arg("reset")
                 .arg("--hard")
-                .arg(entry)
+                .arg(refspec)
                 .output()
                 .map_err(|e| format!("Failed to execute git reset: {}", e))?;
 
             if reset_output.status.success() {
-                Ok(format!("Redone to: {}", entry))
+                Ok(format!("Redone to: {}", refspec))
             } else {
                 Err(format!(
                     "Failed to redo: {}",

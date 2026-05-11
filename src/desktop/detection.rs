@@ -1,9 +1,8 @@
+#![allow(dead_code)]
 //! Linux Mint Cinnamon desktop environment detection
 //!
 //! Detects if running on Linux Mint Cinnamon and extracts desktop-specific
 //! configuration like theme colors, icon paths, and system settings.
-
-#![allow(dead_code)]
 
 use std::env;
 use std::fs;

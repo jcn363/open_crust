@@ -3,7 +3,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// A stored embedding with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +34,16 @@ impl VectorStore {
         let path = config_dir.join("vectors.json");
         if path.exists() {
             match fs::read_to_string(&path) {
-                Ok(content) => serde_json::from_str(&content).unwrap_or_default(),
+                Ok(content) => match serde_json::from_str(&content) {
+                    Ok(store) => store,
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: Failed to parse vector store ({}), starting fresh",
+                            e
+                        );
+                        Self::new()
+                    }
+                },
                 Err(_) => Self::new(),
             }
         } else {
@@ -46,8 +55,12 @@ impl VectorStore {
     pub fn save(&self, config_dir: &Path) {
         let path = config_dir.join("vectors.json");
         if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = fs::create_dir_all(config_dir);
-            let _ = fs::write(path, content);
+            if let Err(e) = fs::create_dir_all(config_dir) {
+                eprintln!("Warning: Failed to create vector store dir: {}", e);
+            }
+            if let Err(e) = fs::write(&path, &content) {
+                eprintln!("Warning: Failed to write vector store: {}", e);
+            }
         }
     }
 
@@ -187,7 +200,9 @@ pub struct RagManager {
 
 impl RagManager {
     pub fn new(config: &Config) -> Self {
-        let config_dir = dirs::home_dir().unwrap().join(".config/open_crust");
+        let config_dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".config/open_crust");
 
         let ollama_url = config
             .ollama_url
@@ -303,14 +318,14 @@ impl RagManager {
     }
 
     /// Clear all indexed data
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "public API for CodeIndexer")]
     pub fn clear_index(&mut self) {
         self.vector_store.clear();
         self.vector_store.save(&self.config_dir);
     }
 
     /// Get index statistics
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "public API for CodeIndexer")]
     pub fn stats(&self) -> (usize, usize) {
         self.vector_store.stats()
     }
@@ -444,7 +459,7 @@ mod tests {
     async fn test_generate_embedding() {
         // This test requires Ollama running with nomic-embed-text model
         if std::process::Command::new("ollama")
-            .args(&["list"])
+            .args(["list"])
             .output()
             .map(|o| String::from_utf8_lossy(&o.stdout).contains("nomic-embed-text"))
             .unwrap_or(false)

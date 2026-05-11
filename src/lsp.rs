@@ -81,7 +81,7 @@ impl LspManager {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "public API for LSP server management")]
     pub async fn add_server(&mut self, name: String, config: LspConfig) -> Result<(), String> {
         let server = LspServer::spawn(&name, &config).await?;
         self.servers.insert(name.clone(), server);
@@ -89,7 +89,7 @@ impl LspManager {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "public API for path-based server lookup")]
     fn find_server_for_path(&self, path: &str) -> Result<&LspServer, String> {
         let path_ext = std::path::Path::new(path)
             .extension()
@@ -126,7 +126,10 @@ impl LspManager {
         }
 
         match server_name {
-            Some(name) => Ok(self.servers.get_mut(&name).unwrap()),
+            Some(name) => Ok(self
+                .servers
+                .get_mut(&name)
+                .expect("just checked contains_key")),
             None => Err("No LSP server available for this file type".to_string()),
         }
     }
@@ -190,10 +193,8 @@ impl LspManager {
         character: u32,
     ) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!(
-            "file://{}",
-            env::current_dir().unwrap().join(path).display()
-        );
+        let cwd = env::current_dir().unwrap_or_default();
+        let uri = format!("file://{}", cwd.join(path).display());
 
         let params = json!({
             "textDocument": { "uri": uri },
@@ -206,12 +207,9 @@ impl LspManager {
 
     pub async fn diagnostics(&mut self, path: &str) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!(
-            "file://{}",
-            env::current_dir().unwrap().join(path).display()
-        );
+        let cwd = env::current_dir().unwrap_or_default();
+        let uri = format!("file://{}", cwd.join(path).display());
 
-        // Request diagnostics via textDocument/diagnostic (LSP 3.17+)
         let params = json!({
             "textDocument": { "uri": uri }
         });
@@ -222,10 +220,8 @@ impl LspManager {
 
     pub async fn formatting(&mut self, path: &str) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!(
-            "file://{}",
-            env::current_dir().unwrap().join(path).display()
-        );
+        let cwd = env::current_dir().unwrap_or_default();
+        let uri = format!("file://{}", cwd.join(path).display());
 
         let params = json!({
             "textDocument": { "uri": uri },
@@ -247,10 +243,8 @@ impl LspManager {
         character: u32,
     ) -> Result<String, String> {
         let server = self.find_server_for_path_mut(path)?;
-        let uri = format!(
-            "file://{}",
-            env::current_dir().unwrap().join(path).display()
-        );
+        let cwd = env::current_dir().unwrap_or_default();
+        let uri = format!("file://{}", cwd.join(path).display());
 
         let params = json!({
             "textDocument": { "uri": uri },
