@@ -1,3 +1,5 @@
+<video src="./crust.mp4" autoplay loop muted playsinline style="max-width: 100%; border-radius: 8px;"></video>
+
 # OpenCrust
 
 **The fastest, most secure AI coding agent** — built in Rust for terminal-native development.
