@@ -81,7 +81,7 @@ pub struct App {
     pub mcp_browser_selected: usize,
     pub mcp_browser_scroll: usize,
     // Skill Browser state (Ctrl+Shift+K)
-    pub skill_browser_items: Vec<(String, String, bool, u64, u64)>, // (name, description, active, usage_count, avg_latency_ms)
+    pub skill_browser_items: Vec<(String, String, bool)>, // (name, description, active)
     pub skill_browser_selected: usize,
     pub skill_browser_scroll: usize,
     // Plan review index (for diff viewer)

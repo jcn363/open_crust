@@ -101,6 +101,9 @@ cargo clippy -- -D warnings
 
 # Build release (takes longer but catches more issues)
 cargo build --release
+
+# Build .deb package (requires cargo-deb)
+cargo deb
 ```
 
 If any of these fail, your PR will be rejected. Fix them locally first.

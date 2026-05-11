@@ -61,8 +61,20 @@ jobs:
       - name: Build release binary
         run: cargo build --release
       
-      - name: Upload artifact
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+      
+      - name: Build .deb package
+        run: cargo deb --output target/opencrust_0.1.0_amd64.deb
+      
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: open_crust-linux-x86_64
           path: target/release/open_crust
+      
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencrust_0.1.0_amd64.deb
+          path: target/opencrust_0.1.0_amd64.deb

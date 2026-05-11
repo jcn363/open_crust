@@ -14,17 +14,7 @@ pub struct SkillMetadata {
 pub struct Skill {
     pub metadata: SkillMetadata,
     pub content: String,
-    pub usage_count: u64,
-    pub total_latency_ms: u64,
     pub active: bool,
-}
-
-impl Skill {
-    pub fn avg_latency_ms(&self) -> u64 {
-        self.total_latency_ms
-            .checked_div(self.usage_count)
-            .unwrap_or(0)
-    }
 }
 
 pub struct SkillManager {
@@ -102,8 +92,6 @@ impl SkillManager {
                             Skill {
                                 metadata,
                                 content: body.to_string(),
-                                usage_count: 0,
-                                total_latency_ms: 0,
                                 active: true,
                             },
                         );
@@ -173,16 +161,8 @@ impl SkillManager {
         }
     }
 
-    /// Record skill usage for statistics
-    #[allow(dead_code)]
-    pub fn record_usage(&mut self, name: &str, latency_ms: u64) {
-        if let Some(skill) = self.skills.get_mut(name) {
-            skill.usage_count += 1;
-            skill.total_latency_ms += latency_ms;
-        }
-    }
-
     /// Get a specific skill by name
+    #[allow(dead_code)]
     pub fn get_skill(&self, name: &str) -> Option<&Skill> {
         self.skills.get(name)
     }
@@ -194,7 +174,7 @@ impl SkillManager {
     }
 
     /// List all skills with their statistics (for the browser UI)
-    pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool, u64, u64)> {
+    pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool)> {
         self.skills
             .values()
             .map(|s| {
@@ -202,8 +182,6 @@ impl SkillManager {
                     s.metadata.name.clone(),
                     s.metadata.description.clone(),
                     s.active,
-                    s.usage_count,
-                    s.avg_latency_ms(),
                 )
             })
             .collect()
@@ -223,8 +201,6 @@ mod tests {
                 description: "A test skill".to_string(),
             },
             content: "Test instructions".to_string(),
-            usage_count: 0,
-            total_latency_ms: 0,
             active: true,
         };
         manager.skills.insert("test-skill".to_string(), skill);
@@ -263,31 +239,19 @@ mod tests {
         // Record usage
         manager.record_usage("test-skill", 100);
         assert_eq!(manager.skills["test-skill"].usage_count, 1);
-        assert_eq!(manager.skills["test-skill"].total_latency_ms, 100);
-
-        // Record more usage
-        manager.record_usage("test-skill", 200);
-        assert_eq!(manager.skills["test-skill"].usage_count, 2);
-        assert_eq!(manager.skills["test-skill"].total_latency_ms, 300);
-
-        // Test avg_latency_ms
-        assert_eq!(manager.skills["test-skill"].avg_latency_ms(), 150);
     }
 
     #[test]
     fn test_list_skills_with_stats() {
         let mut manager = create_test_skill_manager();
         manager.deactivate_skill("test-skill");
-        manager.record_usage("test-skill", 50);
 
         let stats = manager.list_skills_with_stats();
         assert_eq!(stats.len(), 1);
-        let (name, desc, active, usage, avg_latency) = &stats[0];
+        let (name, desc, active) = &stats[0];
         assert_eq!(name, "test-skill");
         assert_eq!(desc, "A test skill");
         assert!(!active);
-        assert_eq!(*usage, 1);
-        assert_eq!(*avg_latency, 50);
     }
 
     #[test]

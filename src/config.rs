@@ -20,6 +20,77 @@ pub enum ProviderType {
     LocalAi,
 }
 
+/// DAN (Do Anything Now) response modes for uncensored operation
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub enum ResponseMode {
+    /// Default standard responses
+    Normal,
+    /// 100% uncensored via local Ollama
+    Heretic,
+    /// Brutal honesty
+    Savage,
+    /// Raw opinions
+    Based,
+    /// Expert analysis
+    Genius,
+    /// Wild creativity
+    Chaos,
+}
+
+impl Default for ResponseMode {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
+impl ResponseMode {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Normal => "normal",
+            Self::Heretic => "heretic",
+            Self::Savage => "savage",
+            Self::Based => "based",
+            Self::Genius => "genius",
+            Self::Chaos => "chaos",
+        }
+    }
+}
+
+/// DAN configuration for uncensored AI operation
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DanConfig {
+    /// Enable DAN (Do Anything Now) mode
+    #[serde(default)]
+    pub enabled: bool,
+    /// Current response mode
+    #[serde(default)]
+    pub mode: ResponseMode,
+    /// Use local Ollama for uncensored responses
+    #[serde(default = "default_dan_local_heretic")]
+    pub local_heretic: bool,
+    /// Private-only mode: zero data retention
+    #[serde(default = "default_dan_private")]
+    pub private_mode: bool,
+}
+
+fn default_dan_local_heretic() -> bool {
+    true
+}
+fn default_dan_private() -> bool {
+    true
+}
+
+impl Default for DanConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            mode: ResponseMode::Normal,
+            local_heretic: true,
+            private_mode: true,
+        }
+    }
+}
+
 /// Model tiers for cost-aware routing
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ModelTier {
@@ -256,6 +327,9 @@ pub struct Config {
     pub audit_retention_days: u64,
     #[serde(default = "default_audit_max_size")]
     pub audit_max_size_bytes: u64,
+    // --- DAN (Do Anything Now) uncensored configuration ---
+    #[serde(default)]
+    pub dan_config: DanConfig,
 }
 
 fn default_audit_retention() -> u64 {
@@ -319,11 +393,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             provider: ProviderType::Ollama,
-            // Use provider‑specific default model
-            model: match ProviderType::Ollama {
-                ProviderType::OpenRouter => DEFAULT_OPENROUTER_FREE_MODEL.to_string(),
-                _ => "llama3".to_string(),
-            },
+            model: "openrouter/free-gpt-4o-mini".to_string(),
             ollama_url: Some("http://localhost:11434".to_string()),
             openrouter_key: None,
             mcp: default_mcp_servers(),
@@ -354,6 +424,7 @@ impl Default for Config {
             compliance_log_path: None,
             audit_retention_days: default_audit_retention(),
             audit_max_size_bytes: default_audit_max_size(),
+            dan_config: DanConfig::default(),
         }
     }
 }

@@ -317,14 +317,13 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
     // Items
     let items = [
-        (
-            "Switch Provider",
-            format!("Current: {:?}", app.config.provider),
-        ),
-        ("Switch Model", format!("Current: {}", app.config.model)),
-        ("Show Stats", "View usage statistics".to_string()),
-        ("Clear Context", "Clear conversation history".to_string()),
-        ("MCP Browser", "Manage MCP servers".to_string()),
+            (
+                "Switch Provider",
+                format!("Current: {:?}", app.config.provider),
+            ),
+            ("Switch Model", format!("Current: {}", app.config.model)),
+            ("Clear Context", "Clear conversation history".to_string()),
+            ("MCP Browser", "Manage MCP servers".to_string()),
     ];
 
     let menu_items: Vec<ListItem> = items
@@ -401,7 +400,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .skill_browser_items
         .iter()
         .enumerate()
-        .map(|(i, (name, _desc, active, _usage, _latency))| {
+        .map(|(i, (name, _desc, active))| {
             let prefix = if i == app.skill_browser_selected {
                 "> "
             } else {
@@ -433,7 +432,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     f.render_widget(list, content_chunks[0]);
 
     // Right panel: Selected skill details
-    if let Some((name, desc, active, usage_count, avg_latency_ms)) =
+    if let Some((name, desc, active)) =
         app.skill_browser_items.get(app.skill_browser_selected)
     {
         let status_text = if *active { "ACTIVE" } else { "INACTIVE" };
@@ -464,22 +463,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 ),
             ]),
             Line::from(""),
-            Line::from(vec![
-                Span::styled("Usage Count: ", Style::default().fg(Color::Yellow)),
-                Span::styled(usage_count.to_string(), Style::default().fg(theme.fg)),
-            ]),
-            Line::from(""),
-            Line::from(vec![
-                Span::styled("Avg Latency: ", Style::default().fg(Color::Yellow)),
-                Span::styled(
-                    if *avg_latency_ms > 0 {
-                        format!("{}ms", avg_latency_ms)
-                    } else {
-                        "N/A".to_string()
-                    },
-                    Style::default().fg(theme.fg),
-                ),
-            ]),
+
             Line::from(""),
             Line::from(vec![
                 Span::styled("Note: ", Style::default().fg(Color::Yellow)),

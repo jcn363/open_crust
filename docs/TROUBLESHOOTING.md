@@ -6,6 +6,29 @@ Common issues and solutions. If your problem isn't listed, file an Issue on GitH
 
 ## Installation Issues
 
+### .deb package install fails with dependency errors
+
+**Symptoms:** `sudo dpkg -i opencrust_*.deb` fails with missing dependency messages
+
+**Root Causes:**
+- Missing runtime libraries
+- System package cache outdated
+
+**Solution:**
+1. Fix dependencies: `sudo apt-get install -f`
+2. Or install with apt which handles deps automatically: `sudo apt-get install ./opencrust_*.deb`
+
+### cargo deb command not found
+
+**Symptoms:** `cargo deb` fails with "no such command"
+
+**Root Causes:**
+- cargo-deb not installed
+
+**Solution:**
+1. Install cargo-deb: `cargo install cargo-deb`
+2. Build the package: `cargo deb`
+
 ### Build fails: "error: linker 'cc' not found"
 
 **Symptoms:** Build fails during compilation with linker error

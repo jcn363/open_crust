@@ -28,9 +28,7 @@ mod rules;
 mod security;
 mod sessions;
 mod skills;
-mod stats;
 mod status_bar;
-mod telemetry;
 mod tool_executor;
 mod tools;
 mod ui;
@@ -257,8 +255,6 @@ enum SkillsCommands {
     Activate { name: String },
     /// Deactivate a skill
     Deactivate { name: String },
-    /// Show skill statistics
-    Stats { name: Option<String> },
 }
 
 #[tokio::main]
@@ -1039,13 +1035,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             SkillsCommands::List => {
                 println!("Skills (use 'opencrust skills activate/deactivate <name>' to toggle):");
                 println!();
-                for (name, description, active, usage_count, avg_latency) in
+                for (name, description, active) in
                     skills.list_skills_with_stats()
                 {
                     let status = if active { "ACTIVE" } else { "inactive" };
                     println!(
-                        "[{}] {} - {} (usage: {}, avg latency: {}ms)",
-                        status, name, description, usage_count, avg_latency
+                        "[{}] {} - {}",
+                        status, name, description
                     );
                 }
             }
@@ -1061,39 +1057,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     println!("Skill '{}' deactivated.", name);
                 } else {
                     eprintln!("Skill '{}' not found.", name);
-                }
-            }
-            SkillsCommands::Stats { name } => {
-                if let Some(skill_name) = name {
-                    match skills.get_skill(skill_name) {
-                        Some(skill) => {
-                            println!("Skill: {}", skill.metadata.name);
-                            println!("Description: {}", skill.metadata.description);
-                            println!(
-                                "Status: {}",
-                                if skill.active { "ACTIVE" } else { "inactive" }
-                            );
-                            println!("Usage count: {}", skill.usage_count);
-                            println!("Total latency: {}ms", skill.total_latency_ms);
-                            println!("Average latency: {}ms", skill.avg_latency_ms());
-                        }
-                        None => eprintln!("Skill '{}' not found.", skill_name),
-                    }
-                } else {
-                    // Show stats for all skills
-                    println!("Skill Statistics:");
-                    println!();
-                    for (name, _, active, usage_count, avg_latency) in
-                        skills.list_skills_with_stats()
-                    {
-                        println!(
-                            "{}: usage={}, avg_latency={}ms, status={}",
-                            name,
-                            usage_count,
-                            avg_latency,
-                            if active { "active" } else { "inactive" }
-                        );
-                    }
                 }
             }
         }
@@ -1223,9 +1186,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         let skills = skill_manager.lock().await;
         let skill_list = skills.list_skills_with_stats();
-        for (name, description, active, usage_count, avg_latency) in skill_list {
+        for (name, description, active) in skill_list {
             app.skill_browser_items
-                .push((name, description, active, usage_count, avg_latency));
+                .push((name, description, active));
         }
     }
 
@@ -1699,7 +1662,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         }
                         KeyCode::Enter => {
                             // Toggle skill active state
-                            if let Some((name, _, active, _, _)) =
+                            if let Some((name, _, active)) =
                                 app.skill_browser_items.get_mut(app.skill_browser_selected)
                             {
                                 let new_active = !*active;
@@ -1779,16 +1742,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     app.mode = Mode::Normal;
                                 }
                                 2 => {
-                                    // Show Stats
-                                    // Show usage stats
-                                    let stats = app.llm_client.usage_stats.blocking_lock();
-                                    app.tabs[0].messages.push(format!(
-                                        "Tokens: {} in, {} out | Cost: ${:.4}",
-                                        stats.input_tokens, stats.output_tokens, stats.total_cost
-                                    ));
-                                    app.mode = Mode::Normal;
-                                }
-                                3 => {
                                     // Clear Context
                                     app.tabs[0].messages.clear();
                                     app.tabs[0].messages.push(String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit."));
@@ -1869,8 +1822,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     disable_raw_mode()?;
     io::stdout().execute(LeaveAlternateScreen)?;
 
-    let telemetry = telemetry::TelemetryExporter::new(app.llm_client.usage_stats.clone());
-    telemetry.export().await;
+
 
     Ok(())
 }
@@ -1938,13 +1890,13 @@ fn parse_agent_spec(
             _ => return Err(format!("Unknown provider: {}", spec).into()),
         };
         let model = match provider {
-            config::ProviderType::Ollama => "llama3".to_string(),
-            config::ProviderType::OpenRouter => "openai/gpt-4".to_string(),
-            config::ProviderType::OpenAI => "gpt-4".to_string(),
-            config::ProviderType::Gemini => "gemini-pro".to_string(),
-            config::ProviderType::Mistral => "mistral-large".to_string(),
-            config::ProviderType::Anthropic => "claude-3-opus".to_string(),
-            _ => "default-model".to_string(),
+            config::ProviderType::Ollama => "deepseek-r1".to_string(),
+            config::ProviderType::OpenRouter => "openrouter/free-gpt-4o-mini".to_string(),
+            config::ProviderType::OpenAI => "gpt-4o-mini".to_string(),
+            config::ProviderType::Gemini => "gemini-2.0-flash".to_string(),
+            config::ProviderType::Mistral => "mistral-small".to_string(),
+            config::ProviderType::Anthropic => "claude-sonnet-4-20250514".to_string(),
+            _ => "deepseek-r1".to_string(),
         };
         Ok((provider, model))
     }

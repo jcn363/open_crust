@@ -72,6 +72,16 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 
 ## 📦 Installation
 
+### Debian/Ubuntu (`.deb`)
+
+```bash
+# Download the latest .deb from releases
+wget https://github.com/opencrust/open_crust/releases/latest/download/opencrust_0.1.0_amd64.deb
+sudo dpkg -i opencrust_0.1.0_amd64.deb
+```
+
+Or build from source:
+
 ```bash
 git clone https://github.com/opencrust/open_crust.git
 cd open_crust

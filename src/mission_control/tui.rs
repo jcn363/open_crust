@@ -24,18 +24,15 @@ pub enum MissionControlAction {
     ExitMode,
 }
 
-/// Dashboard statistics snapshot
-#[derive(Debug, Clone, Default)]
-pub struct DashboardStats {
-    pub total: usize,
-    pub pending: usize,
-    pub running: usize,
-    pub completed: usize,
-    pub failed: usize,
-    pub input_tokens: u64,
-    pub output_tokens: u64,
-    pub total_cost: f64,
-}
+    /// Dashboard statistics snapshot
+    #[derive(Debug, Clone, Default)]
+    pub struct DashboardStats {
+        pub total: usize,
+        pub pending: usize,
+        pub running: usize,
+        pub completed: usize,
+        pub failed: usize,
+    }
 
 /// Node position in the rendered DAG layout
 #[derive(Debug, Clone, Default)]
@@ -245,16 +242,12 @@ impl MissionControlUI {
             }
         }
 
-        // Token/cost stats not wired from coordinator yet — set to 0 for now
         self.stats = DashboardStats {
             total,
             pending,
             running,
             completed,
             failed,
-            input_tokens: 0,
-            output_tokens: 0,
-            total_cost: 0.0,
         };
     }
 
@@ -688,8 +681,7 @@ impl MissionControlUI {
         let dash_text = format!(
             " Total: {}  Pending: {}  Running: {}\n\
              Completed: {}  Failed: {}\n\
-             Progress: [{:<20}] {:.0}%\n\
-             Tokens: In={}  Out={}  Cost=${:.4}",
+             Progress: [{:<20}] {:.0}%",
             s.total,
             s.pending,
             s.running,
@@ -697,9 +689,7 @@ impl MissionControlUI {
             s.failed,
             "█".repeat((total_bar * 20.0) as usize),
             total_bar * 100.0,
-            s.input_tokens,
-            s.output_tokens,
-            s.total_cost,
+
         );
 
         let dash = Paragraph::new(dash_text)

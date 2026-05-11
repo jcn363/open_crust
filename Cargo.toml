@@ -42,5 +42,40 @@ OpenCrust is a production TUI platform for AI-powered coding tasks. \
 It provides terminal-native AI assistance with MCP/LSP integration, \
 multi-agent orchestration, semantic code search, and desktop notifications."""
 
+[[package.metadata.deb.assets]]
+source = "packaging/debian/opencrust.desktop"
+dest = "usr/share/applications/opencrust.desktop"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/16x16/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/16x16/apps/opencrust.png"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/32x32/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/32x32/apps/opencrust.png"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/48x48/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/48x48/apps/opencrust.png"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/64x64/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/64x64/apps/opencrust.png"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/128x128/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/128x128/apps/opencrust.png"
+mode = "644"
+
+[[package.metadata.deb.assets]]
+source = "assets/icon/hicolor/256x256/apps/opencrust.png"
+dest = "usr/share/icons/hicolor/256x256/apps/opencrust.png"
+mode = "644"
+
 [dev-dependencies]
 tempfile = "3.20.0"
