@@ -86,6 +86,7 @@ impl VectorStore {
     }
 
     /// Clear all embeddings
+    /// Used by public API callers and RagManager; marked dead_code due to feature configurations
     #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.embeddings.clear();
