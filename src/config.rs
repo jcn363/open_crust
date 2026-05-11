@@ -463,7 +463,7 @@ impl Config {
             eprintln!("Warning: Failed to create config dir: {}", e);
         }
         let config_path = config_dir.join("config.json");
-        let content = match serde_json::to_string_pretty(self) {
+        let content = match serde_json::to_string(self) {
             Ok(c) => c,
             Err(e) => {
                 eprintln!("Warning: Failed to serialize config: {}", e);

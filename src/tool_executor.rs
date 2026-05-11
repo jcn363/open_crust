@@ -17,6 +17,7 @@ use crate::skills::SkillManager;
 use crate::tools;
 use crate::web::WebManager;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::process::Command;
@@ -39,6 +40,8 @@ pub struct ToolExecutor {
     pub rag_manager: Arc<Mutex<RagManager>>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
     pub orchestrator: Arc<Mutex<Orchestrator>>,
+    /// Cache for frequently accessed files to reduce disk I/O
+    file_cache: Mutex<HashMap<String, (String, std::time::Instant)>>,
 }
 
 impl ToolExecutor {
@@ -68,6 +71,7 @@ impl ToolExecutor {
             rag_manager,
             pinned_files,
             orchestrator,
+            file_cache: Mutex::new(HashMap::new()),
         }
     }
 
@@ -158,11 +162,31 @@ impl ToolExecutor {
         // Validate path
         let validated_path =
             validate_path(path).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
+        let validated_path_str = validated_path.to_string_lossy().into_owned();
 
-        match fs::read_to_string(&validated_path) {
-            Ok(content) => Ok(content),
-            Err(e) => Err(Box::new(e) as Box<dyn Error + Send + Sync>),
+            // Check cache first (cache for 1 second to balance performance and freshness)
+            {
+                let cache = self.file_cache.lock().await;
+                if let Some((content, timestamp)) = cache.get(&validated_path_str)
+                    && timestamp.elapsed() < std::time::Duration::from_secs(1) {
+                    return Ok(content.clone());
+                }
+            }
+
+
+        // Read from disk
+        let content = match fs::read_to_string(&validated_path) {
+            Ok(content) => content,
+            Err(e) => return Err(Box::new(e) as Box<dyn Error + Send + Sync>),
+        };
+
+        // Update cache
+        {
+            let mut cache = self.file_cache.lock().await;
+            cache.insert(validated_path_str.clone(), (content.clone(), std::time::Instant::now()));
         }
+
+        Ok(content)
     }
 
     async fn execute_write(&self, args: &Value) -> ToolResult {

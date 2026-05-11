@@ -1174,7 +1174,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
-
+    
     let mut app = App::new(
         llm_client.config.clone(),
         prompt_tx,
@@ -1183,6 +1183,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         llm_client.clone(),
     );
     app.refresh_sidebar();
+    
+    // Frame rate limiting for smoother UI
+    let mut last_frame = std::time::Instant::now();
+    let target_frame_duration = std::time::Duration::from_millis(16); // ~60 FPS
 
     // Populate skill browser items from skill manager
     {
@@ -1287,6 +1291,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
 
+        // Frame rate limiting for smoother UI
+        let now = std::time::Instant::now();
+        let elapsed = now.duration_since(last_frame);
+        if elapsed < target_frame_duration {
+            // Sleep to maintain target frame rate
+            std::thread::sleep(target_frame_duration - elapsed);
+        }
+        last_frame = std::time::Instant::now();
         terminal.draw(|f| ui::draw(f, &mut app))?;
 
         if let Some(Event::Key(key)) = events::next_event().await? {
