@@ -1,6 +1,6 @@
 [package]
 name = "open_crust"
-version = "0.1.0"
+version = "0.1.3"
 edition = "2024"
 description = "Production TUI platform for AI-powered coding with MCP/LSP integration, multi-agent orchestration, and semantic code search"
 license = "MIT OR Apache-2.0"
