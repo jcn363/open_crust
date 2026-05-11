@@ -40,6 +40,7 @@ pub enum ResponseMode {
 }
 
 impl ResponseMode {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Normal => "normal",
@@ -140,7 +141,7 @@ impl Default for SubagentConfig {
 }
 
 impl ProviderType {
-    #[expect(dead_code, reason = "string serialization API")]
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         match self {
             ProviderType::Ollama => "ollama",
@@ -437,7 +438,7 @@ impl Config {
                 Ok(content) => match serde_json::from_str(&content) {
                     Ok(config) => {
                         let config: Config = config;
-                        config.validate();
+                        let _ = config.validate();
                         config
                     }
                     Err(e) => {
@@ -475,112 +476,109 @@ impl Config {
         }
     }
 
-    /// Validate configuration and print warnings for issues
-    pub fn validate(&self) {
+/// Validate configuration and return warnings/errors
+    pub fn validate(&self) -> Result<(), Vec<String>> {
+        let mut warnings = Vec::new();
+
         // Check provider-specific requirements
         match self.provider {
             ProviderType::Ollama => {
                 if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: Ollama provider selected but ollama_url is not set");
+                    warnings.push("Ollama provider selected but ollama_url is not set".to_string());
                 }
             }
             ProviderType::OpenRouter => {
                 if self.openrouter_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    // Skip warning for free models that do not require a key
                     let is_free = self.model.to_lowercase().contains("free");
                     if !is_free {
-                        eprintln!(
-                            "Warning: OpenRouter provider selected but openrouter_key is not set"
-                        );
+                        warnings.push("OpenRouter provider selected but openrouter_key is not set".to_string());
                     }
                 }
             }
             ProviderType::OpenAI => {
                 if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: OpenAI provider selected but openai_key is not set");
+                    warnings.push("OpenAI provider selected but openai_key is not set".to_string());
                 }
             }
             ProviderType::Gemini => {
                 if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: Gemini provider selected but gemini_api_key is not set");
+                    warnings.push("Gemini provider selected but gemini_api_key is not set".to_string());
                 }
             }
             ProviderType::Mistral => {
                 if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: Mistral provider selected but mistral_api_key is not set");
+                    warnings.push("Mistral provider selected but mistral_api_key is not set".to_string());
                 }
             }
             ProviderType::Anthropic => {
                 if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!(
-                        "Warning: Anthropic provider selected but anthropic_api_key is not set"
-                    );
+                    warnings.push("Anthropic provider selected but anthropic_api_key is not set".to_string());
                 }
             }
             ProviderType::Groq => {
                 if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: Groq provider selected but groq_api_key is not set");
+                    warnings.push("Groq provider selected but groq_api_key is not set".to_string());
                 }
             }
             ProviderType::TogetherAi => {
                 if self.together_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!(
-                        "Warning: TogetherAi provider selected but together_api_key is not set"
-                    );
+                    warnings.push("TogetherAi provider selected but together_api_key is not set".to_string());
                 }
             }
             ProviderType::Replicate => {
                 if self.replicate_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!(
-                        "Warning: Replicate provider selected but replicate_api_key is not set"
-                    );
+                    warnings.push("Replicate provider selected but replicate_api_key is not set".to_string());
                 }
             }
             ProviderType::DeepSeek => {
                 if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!(
-                        "Warning: DeepSeek provider selected but deepseek_api_key is not set"
-                    );
+                    warnings.push("DeepSeek provider selected but deepseek_api_key is not set".to_string());
                 }
             }
             ProviderType::LocalAi => {
                 if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    eprintln!("Warning: LocalAi provider selected but localai_url is not set");
+                    warnings.push("LocalAi provider selected but localai_url is not set".to_string());
                 }
             }
         }
 
         // Check model is not empty
         if self.model.is_empty() {
-            eprintln!("Warning: model is not specified");
+            warnings.push("model is not specified".to_string());
         }
 
         // Validate MCP configurations
         for (name, mcp) in &self.mcp {
             if mcp.command.is_empty() {
-                eprintln!("Warning: MCP server '{}' has empty command", name);
+                warnings.push(format!("MCP server '{}' has empty command", name));
             }
         }
 
         // Validate LSP configurations
         for (name, lsp) in &self.lsp {
             if lsp.command.is_empty() {
-                eprintln!("Warning: LSP server '{}' has empty command", name);
+                warnings.push(format!("LSP server '{}' has empty command", name));
             }
             if lsp.extensions.is_empty() {
-                eprintln!(
-                    "Warning: LSP server '{}' has no file extensions specified",
-                    name
-                );
+                warnings.push(format!("LSP server '{}' has no file extensions specified", name));
             }
         }
 
         // Validate theme colors (basic check for hex format)
         if let Some(theme) = &self.theme {
-            validate_hex_color(&theme.background, "theme.background");
-            validate_hex_color(&theme.foreground, "theme.foreground");
-            validate_hex_color(&theme.accent, "theme.accent");
-            validate_hex_color(&theme.border, "theme.border");
+            validate_hex_color(&theme.background, "theme.background", &mut warnings);
+            validate_hex_color(&theme.foreground, "theme.foreground", &mut warnings);
+            validate_hex_color(&theme.accent, "theme.accent", &mut warnings);
+            validate_hex_color(&theme.border, "theme.border", &mut warnings);
+        }
+
+        if warnings.is_empty() {
+            Ok(())
+        } else {
+            for w in &warnings {
+                eprintln!("Warning: {}", w);
+            }
+            Err(warnings)
         }
     }
 
@@ -630,7 +628,7 @@ impl Config {
     ///          2. Per-agent override in subagent_config.agent_overrides
     ///          3. Default subagent model in subagent_config.default_model
     ///          4. Fall back to main config model (self.model)
-    #[expect(dead_code, reason = "subagent model resolution API")]
+    #[allow(dead_code)]
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
         if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL")
@@ -691,12 +689,9 @@ impl Config {
 }
 
 /// Basic validation for hex color strings
-fn validate_hex_color(color: &str, field_name: &str) {
+fn validate_hex_color(color: &str, field_name: &str, warnings: &mut Vec<String>) {
     if !color.starts_with('#') || (color.len() != 7 && color.len() != 4) {
-        eprintln!(
-            "Warning: {} should be a hex color (e.g., #1e1e1e), got: {}",
-            field_name, color
-        );
+        warnings.push(format!("{} should be a hex color (e.g., #1e1e1e), got: {}", field_name, color));
     }
 }
 
@@ -848,7 +843,8 @@ mod tests {
             openrouter_key: None,
             ..Default::default()
         };
-        cfg.validate();
+        // Free models should not produce warnings about missing keys
+        let _ = cfg.validate();
     }
 
     #[test]
@@ -859,6 +855,8 @@ mod tests {
             openrouter_key: None,
             ..Default::default()
         };
-        cfg.validate();
+        // Paid model without key should produce warnings
+        let result = cfg.validate();
+        assert!(result.is_err());
     }
 }

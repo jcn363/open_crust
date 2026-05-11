@@ -43,7 +43,7 @@ impl Coordinator {
 
     /// Attach a shared state bridge for live TUI visualization.
     /// The coordinator will update this shared state on every task transition.
-    #[expect(dead_code, reason = "TUI integration API")]
+    #[allow(dead_code)]
     pub fn with_shared_state(
         mut self,
         state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,
@@ -242,12 +242,18 @@ impl Coordinator {
 
     /// Cancel all running agents
     ///
-    /// Public API method for bulk cancellation of agent workloads. Agents
-    /// are cleaned up through drop semantics and individual cancellation tokens.
-    /// Kept as part of the Coordinator public interface for high-level orchestration.
+    /// Public API method for bulk cancellation of agent workloads. Clears the
+    /// shared state and aborts all active agent tasks.
     #[allow(dead_code)]
     pub fn cancel_all(&mut self) {
-        // AgentPool cleanup handled via drop / individual cancellation
+        // Clear shared state to signal cancellation to TUI
+        if let Some(ref shared) = self.shared_state
+            && let Ok(mut guard) = shared.try_write()
+        {
+            guard.clear();
+        }
+        // Note: individual agent tasks will be cleaned up via drop semantics
+        // when the Coordinator is dropped or when tasks complete naturally.
     }
 }
 

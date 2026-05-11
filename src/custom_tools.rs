@@ -120,9 +120,13 @@ impl CustomToolManager {
         let mut command = Command::new(&tool.path);
         for arg_name in &tool.args {
             if let Some(val) = args.get(arg_name).and_then(|v| v.as_str()) {
-                command.arg(val);
+                if !val.is_empty() {
+                    command.arg(val);
+                } else {
+                    return Err(format!("Tool '{}' requires non-empty value for argument '{}'", name, arg_name));
+                }
             } else {
-                command.arg(""); // or error?
+                return Err(format!("Tool '{}' requires argument '{}'", name, arg_name));
             }
         }
 

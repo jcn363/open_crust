@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Linux Mint Cinnamon native file picker
 //!
 //! Provides native file/folder picker dialogs for Linux Mint Cinnamon.
@@ -31,6 +30,7 @@ pub struct FilePickerOptions {
     /// Window title
     pub title: Option<String>,
     /// Confirm file overwrite (for Save mode)
+    #[allow(dead_code)]
     pub confirm_overwrite: bool,
 }
 
@@ -43,6 +43,7 @@ pub struct FileFilter {
     pub patterns: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl FileFilter {
     /// Create a new filter
     pub fn new(name: impl Into<String>, patterns: impl Into<Vec<String>>) -> Self {
@@ -102,6 +103,7 @@ pub struct FilePickerResult {
     pub cancelled: bool,
 }
 
+#[allow(dead_code)]
 impl FilePickerResult {
     /// Single file result (convenience)
     pub fn single(self) -> Option<PathBuf> {
@@ -132,8 +134,10 @@ pub enum FilePickerBackend {
     None,
 }
 
+#[allow(dead_code)]
 impl FilePickerBackend {
     /// Get backend name
+    #[allow(dead_code)]
     pub fn name(&self) -> &str {
         match self {
             FilePickerBackend::Nemo => "nemo",
@@ -145,6 +149,7 @@ impl FilePickerBackend {
 }
 
 /// Detect available file picker backends
+#[allow(dead_code)]
 pub fn detect_file_picker_backend() -> FilePickerBackend {
     // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
     let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
@@ -187,6 +192,7 @@ pub fn detect_file_picker_backend() -> FilePickerBackend {
 }
 
 /// Check if file picker is available
+#[allow(dead_code)]
 pub fn is_file_picker_available() -> bool {
     detect_file_picker_backend() != FilePickerBackend::None
 }
@@ -301,6 +307,7 @@ except Exception as e:
 }
 
 /// Open file picker using Zenity
+#[allow(dead_code)]
 pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let mut args = vec!["--file-selection".to_string()];
 
@@ -361,6 +368,7 @@ pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> 
 }
 
 /// Open file picker using KDialog (KDE fallback)
+#[allow(dead_code)]
 pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let (dialog_type, _extra) = match mode {
         FilePickerMode::OpenFile => ("--getopenfilename", ""),
@@ -438,6 +446,7 @@ pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) ->
 }
 
 /// Show file picker using the best available backend
+#[allow(dead_code)]
 pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let backend = detect_file_picker_backend();
 
@@ -453,6 +462,7 @@ pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePic
 }
 
 /// Open a single file (convenience function)
+#[allow(dead_code)]
 pub fn open_file(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
     let options = FilePickerOptions {
         initial_dir,
@@ -462,6 +472,7 @@ pub fn open_file(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
 }
 
 /// Open multiple files (convenience function)
+#[allow(dead_code)]
 pub fn open_files(initial_dir: Option<PathBuf>) -> Vec<PathBuf> {
     let options = FilePickerOptions {
         initial_dir,
@@ -476,6 +487,7 @@ pub fn open_files(initial_dir: Option<PathBuf>) -> Vec<PathBuf> {
 }
 
 /// Select a directory (convenience function)
+#[allow(dead_code)]
 pub fn select_directory(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
     let options = FilePickerOptions {
         initial_dir,
@@ -485,6 +497,7 @@ pub fn select_directory(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
 }
 
 /// Save a file (convenience function)
+#[allow(dead_code)]
 pub fn save_file(initial_dir: Option<PathBuf>, default_name: &str) -> Option<PathBuf> {
     let mut options = FilePickerOptions {
         initial_dir,
@@ -506,6 +519,7 @@ pub fn save_file(initial_dir: Option<PathBuf>, default_name: &str) -> Option<Pat
 }
 
 /// Pick source code files
+#[allow(dead_code)]
 pub fn pick_source_file() -> Option<PathBuf> {
     let options = FilePickerOptions {
         filters: vec![FileFilter::source_code()],
@@ -516,6 +530,7 @@ pub fn pick_source_file() -> Option<PathBuf> {
 }
 
 /// Pick multiple source files
+#[allow(dead_code)]
 pub fn pick_source_files() -> Vec<PathBuf> {
     let options = FilePickerOptions {
         filters: vec![FileFilter::source_code()],
@@ -531,6 +546,7 @@ pub fn pick_source_files() -> Vec<PathBuf> {
 }
 
 /// Pick a project directory
+#[allow(dead_code)]
 pub fn pick_project_directory() -> Option<PathBuf> {
     let options = FilePickerOptions {
         title: Some("Select Project Directory".to_string()),

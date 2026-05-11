@@ -81,7 +81,7 @@ impl LspManager {
         }
     }
 
-    #[expect(dead_code, reason = "public API for LSP server management")]
+    #[allow(dead_code)]
     pub async fn add_server(&mut self, name: String, config: LspConfig) -> Result<(), String> {
         let server = LspServer::spawn(&name, &config).await?;
         self.servers.insert(name.clone(), server);
@@ -89,7 +89,7 @@ impl LspManager {
         Ok(())
     }
 
-    #[expect(dead_code, reason = "public API for path-based server lookup")]
+    #[allow(dead_code)]
     fn find_server_for_path(&self, path: &str) -> Result<&LspServer, String> {
         let path_ext = std::path::Path::new(path)
             .extension()

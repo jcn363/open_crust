@@ -6,6 +6,7 @@ pub use tui::McpShowcaseAction;
 pub use tui::McpShowcaseUI;
 
 use crate::config::Config;
+use crate::mcp::resolve_spawn_command;
 use crate::mcp::McpManager;
 use std::process::Stdio;
 use std::sync::Arc;
@@ -159,34 +160,6 @@ pub struct McpServerInfo {
     pub description: String,
     pub installed: bool,
     pub enabled: bool,
-}
-
-/// Parse command string into binary and arguments
-/// Handles formats like "npx some-tool@latest" or "pip install some-pkg"
-///
-/// This function is part of the MCP showcase infrastructure and provides command
-/// resolution for spawning package managers. It remains in the codebase as a
-/// reference implementation for future MCP server integrations.
-#[allow(dead_code)]
-fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {
-    let parts: Vec<&str> = command.split_whitespace().collect();
-    if parts.is_empty() {
-        return Err("Empty command".into());
-    }
-    let bin = parts[0].to_string();
-    let args: Vec<String> = match parts[0] {
-        "npx" | "npm" | "yarn" | "pip" | "pip3" | "cargo" => {
-            if parts.len() < 2 {
-                return Err(format!("Missing package name for {}", parts[0]));
-            }
-            parts[1..].iter().map(|s| s.to_string()).collect()
-        }
-        _ => parts[1..].iter().map(|s| s.to_string()).collect(),
-    };
-    if bin.is_empty() {
-        return Err("Invalid command format".into());
-    }
-    Ok((bin, args))
 }
 
 /// Get a human-readable description for known MCP servers

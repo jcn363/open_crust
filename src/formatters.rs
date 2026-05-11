@@ -1,9 +1,7 @@
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output};
 
 pub fn format_file(path: &Path) {
-    use std::process::Output;
-
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     let result = match extension {

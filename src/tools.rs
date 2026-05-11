@@ -471,16 +471,26 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
-                "name": "lsp_goto_definition",
-                "description": "Jump to the definition of a symbol using LSP.",
+                "name": "notify",
+                "description": "Send a desktop notification to the user. Works on Linux with desktop environments like Cinnamon, Gnome, or KDE.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "path": { "type": "string", "description": "File path" },
-                        "line": { "type": "integer", "description": "Line number (0-indexed)" },
-                        "character": { "type": "integer", "description": "Character position (0-indexed)" }
+                        "title": {
+                            "type": "string",
+                            "description": "Notification title"
+                        },
+                        "body": {
+                            "type": "string",
+                            "description": "Notification body message"
+                        },
+                        "urgency": {
+                            "type": "string",
+                            "description": "Urgency level: low, normal, or critical",
+                            "enum": ["low", "normal", "critical"]
+                        }
                     },
-                    "required": ["path", "line", "character"]
+                    "required": ["title", "body"]
                 }
             }
         },

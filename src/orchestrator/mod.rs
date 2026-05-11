@@ -31,7 +31,7 @@ use crate::orchestrator::coordinator::Coordinator;
 /// High-level orchestrator for multi-agent task execution
 pub struct Orchestrator {
     coordinator: Coordinator,
-    #[expect(dead_code, reason = "retained for future cancellation/auth flows")]
+    #[allow(dead_code)]
     pub(crate) config: Arc<Config>,
 }
 

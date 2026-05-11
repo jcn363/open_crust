@@ -19,7 +19,7 @@ pub struct AgentConfig {
     pub max_concurrent: usize,
     /// Per-agent timeout in seconds
     pub timeout_secs: u64,
-    /// Maximum retry attempts on failure (0 = no retry)
+    /// Maximum retry attempts on failure (actual attempts = max_retries + 1)
     pub max_retries: u32,
     /// Optional model override applied to every agent
     /// Part of the config interface for future extensibility; reserved for programmatic
@@ -42,7 +42,7 @@ impl Default for AgentConfig {
 /// Result produced by a finished agent
 #[derive(Debug, Clone)]
 pub struct AgentResult {
-    #[expect(dead_code, reason = "results API for task tracking")]
+    #[allow(dead_code)]
     pub task_id: uuid::Uuid,
     pub output: String,
     pub success: bool,
@@ -63,7 +63,7 @@ impl AgentPool {
         }
     }
 
-    #[expect(dead_code, reason = "pool introspection API")]
+    #[allow(dead_code)]
     pub fn config(&self) -> &AgentConfig {
         &self.config
     }

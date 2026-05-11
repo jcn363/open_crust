@@ -131,7 +131,12 @@ impl ToolExecutor {
                             Ok(result) => Ok(result),
                             Err(_) => {
                                 // Fallback to built-in tools
-                                Ok(tools::execute_tool(name, args))
+                                let result = tools::execute_tool(name, args);
+                                if result.is_empty() {
+                                    Err(format!("Unknown tool: {}", name).into())
+                                } else {
+                                    Ok(result)
+                                }
                             }
                         }
                     }
@@ -533,7 +538,7 @@ mod tests {
         let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
         let custom_tool_manager = Arc::new(Mutex::new(CustomToolManager::new()));
         let permission_manager = Arc::new(PermissionManager::new(Config::default()));
-        let web_manager = Arc::new(WebManager::new());
+        let web_manager = Arc::new(WebManager::new().expect("Failed to create web manager"));
         let planner = Arc::new(Mutex::new(Planner::new()));
         let rag_manager = Arc::new(Mutex::new(RagManager::new(&Config::default())));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));

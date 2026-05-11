@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 //! Linux Mint Cinnamon desktop environment detection
 //!
 //! Detects if running on Linux Mint Cinnamon and extracts desktop-specific
@@ -39,11 +38,13 @@ pub enum DisplayServer {
 
 impl DisplayServer {
     /// Check if running on Wayland
+    #[allow(dead_code)]
     pub fn is_wayland(&self) -> bool {
         matches!(self, DisplayServer::Wayland)
     }
 
     /// Check if running on X11
+    #[allow(dead_code)]
     pub fn is_x11(&self) -> bool {
         matches!(self, DisplayServer::X11)
     }
@@ -93,10 +94,12 @@ pub struct CinnamonTheme {
     /// Accent/primary color (hex format)
     pub accent: String,
     /// Secondary color (hex format)
+    #[allow(dead_code)]
     pub secondary: String,
     /// Border color (hex format)
     pub border: String,
     /// Error/warning color (hex format)
+    #[allow(dead_code)]
     pub error: String,
 }
 
@@ -138,10 +141,13 @@ pub struct CinnamonInfo {
     /// User's theme settings
     pub theme: CinnamonTheme,
     /// Home directory path
+    #[allow(dead_code)]
     pub home_dir: PathBuf,
     /// Config directory path
+    #[allow(dead_code)]
     pub config_dir: PathBuf,
     /// Data directory path
+    #[allow(dead_code)]
     pub data_dir: PathBuf,
     /// Icon theme
     pub icon_theme: String,

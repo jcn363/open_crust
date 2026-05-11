@@ -1248,47 +1248,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         // Handle background task notifications
         while let Ok(notification) = background_task_rx.try_recv() {
-            if notification.starts_with("[TASK_COMPLETE]") {
-                let parts: Vec<&str> = notification
-                    .strip_prefix("[TASK_COMPLETE]")
-                    .expect("gated by starts_with")
-                    .splitn(2, "::")
-                    .collect();
-                if parts.len() == 2 {
-                    let task_id = parts[0].to_string();
-                    let result = parts[1].to_string();
-                    // Update task status
-                    if let Some(task) = app.background_tasks.iter_mut().find(|t| t.id == task_id) {
-                        task.status = crate::app::TaskStatus::Completed;
-                        task.result = Some(result.clone());
-                    }
-                    // Add to tasks tab
-                    let tasks_tab = &mut app.tabs[1];
-                    tasks_tab
-                        .messages
-                        .push(format!("Task {} completed: {}", task_id, result));
-                }
-            } else if notification.starts_with("[TASK_FAILED]") {
-                let parts: Vec<&str> = notification
-                    .strip_prefix("[TASK_FAILED]")
-                    .expect("gated by starts_with")
-                    .splitn(2, "::")
-                    .collect();
-                if parts.len() == 2 {
-                    let task_id = parts[0].to_string();
-                    let error = parts[1].to_string();
-                    // Update task status
-                    if let Some(task) = app.background_tasks.iter_mut().find(|t| t.id == task_id) {
-                        task.status = crate::app::TaskStatus::Failed;
-                        task.result = Some(error.clone());
-                    }
-                    // Add to tasks tab
-                    let tasks_tab = &mut app.tabs[1];
-                    tasks_tab
-                        .messages
-                        .push(format!("Task {} failed: {}", task_id, error));
-                }
-            }
+            app.handle_background_notification(&notification);
         }
 
         // Frame rate limiting for smoother UI

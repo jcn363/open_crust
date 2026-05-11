@@ -8,13 +8,12 @@ pub struct WebManager {
 }
 
 impl WebManager {
-    pub fn new() -> Self {
-        Self {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Self {
             client: Client::builder()
                 .timeout(Duration::from_secs(30))
-                .build()
-                .unwrap_or_default(),
-        }
+                .build()?,
+        })
     }
 
     pub async fn search(&self, query: &str) -> Result<String, Box<dyn Error + Send + Sync>> {

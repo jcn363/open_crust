@@ -164,7 +164,8 @@ pub async fn run_mcp_server(
 }
 
 /// Helper to parse command format like "npx some-tool@latest" or "pip install some-pkg"
-fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {
+/// Handles package manager prefixes to ensure proper argument splitting.
+pub(crate) fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {
     let parts: Vec<&str> = command.split_whitespace().collect();
     if parts.is_empty() {
         return Err("Empty command".into());

@@ -175,8 +175,8 @@ pub async fn generate_embedding(ollama_url: &str, text: &str) -> Result<Vec<f32>
     }
 }
 
-/// Chunk text into smaller pieces for embedding
-pub fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
+/// Chunk text into smaller pieces for embedding, preserving line numbers
+pub fn chunk_text(text: &str, max_chars: usize) -> Vec<(String, usize, usize)> {
     let mut chunks = Vec::new();
     let mut current_chunk = String::new();
     let mut line_start = 1;
@@ -197,7 +197,7 @@ pub fn chunk_text(text: &str, max_chars: usize) -> Vec<String> {
         chunks.push((current_chunk, line_start, current_line));
     }
 
-    chunks.into_iter().map(|(text, _, _)| text).collect()
+    chunks
 }
 
 pub struct RagManager {
@@ -235,7 +235,7 @@ impl RagManager {
         let chunks = chunk_text(&content, 512);
         let mut indexed = 0;
 
-        for (i, chunk) in chunks.iter().enumerate() {
+        for (i, (chunk, line_start, line_end)) in chunks.iter().enumerate() {
             match generate_embedding(&self.ollama_url, chunk).await {
                 Ok(embedding) => {
                     let stored = StoredEmbedding {
@@ -243,8 +243,8 @@ impl RagManager {
                         content: chunk.clone(),
                         embedding,
                         file_path: file_path.to_string(),
-                        line_start: i * 20, // Approximate line numbers
-                        line_end: (i + 1) * 20,
+                        line_start: *line_start,
+                        line_end: *line_end,
                     };
                     self.vector_store.add(stored);
                     indexed += 1;
@@ -423,7 +423,7 @@ mod tests {
         let chunks = chunk_text(text, 20);
         assert!(!chunks.is_empty(), "Should produce at least one chunk");
         for chunk in &chunks {
-            assert!(chunk.len() <= 20, "Chunk should not exceed max_chars");
+            assert!(chunk.0.len() <= 20, "Chunk should not exceed max_chars");
         }
     }
 

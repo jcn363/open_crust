@@ -112,6 +112,7 @@ pub fn validate_command(command: &str) -> Result<(), SecurityError> {
         "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$($)",
         "$(cat", "$(whoami", "$(ls", "$(id", "$(pwd", "$(date", "$(head", "$(tail", "$(grep",
         "$(find", "$(curl", "$(wget",
+        "&&", "||", "|||",
     ];
 
     let lower_cmd = command.to_lowercase();
