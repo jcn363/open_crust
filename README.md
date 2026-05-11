@@ -1,4 +1,4 @@
-<video src="./crust.mp4" autoplay loop muted playsinline style="max-width: 100%; border-radius: 8px;"></video>
+<img src="./crust.png" alt="OpenCrust" style="max-width: 100%; border-radius: 8px;">
 
 # OpenCrust
 
