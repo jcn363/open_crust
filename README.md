@@ -477,6 +477,6 @@ OpenCrust documentation is organized by use case and audience. Start with **Tier
 
 ---
 
-![Crust Development Showcase](crust_showcase.png)
+![Crust Development Showcase](crust_showcase.gif)
 
 Built with 🦀 by the OpenCrust Team.
