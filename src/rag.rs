@@ -219,6 +219,7 @@ impl RagManager {
     }
 
     /// Index a file by generating embeddings for its chunks
+    /// Note: Does not save the vector store automatically. Call save() or flush() when done indexing.
     pub async fn index_file(&mut self, file_path: &str) -> Result<usize, String> {
         let content = fs::read_to_string(file_path)
             .map_err(|e| format!("Failed to read file {}: {}", file_path, e))?;
@@ -249,8 +250,14 @@ impl RagManager {
             }
         }
 
-        self.vector_store.save(&self.config_dir);
         Ok(indexed)
+    }
+
+    /// Save the vector store to disk
+    /// Should be called after batch indexing operations
+    pub fn flush(&self) -> Result<(), String> {
+        self.vector_store.save(&self.config_dir);
+        Ok(())
     }
 
     /// Index the entire codebase
@@ -283,6 +290,9 @@ impl RagManager {
                 }
             }
         }
+
+        // Flush all changes to disk after indexing
+        self.flush()?;
 
         Ok((files_indexed, chunks_indexed))
     }

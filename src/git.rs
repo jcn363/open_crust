@@ -1,6 +1,18 @@
 use std::process::Command;
 
 pub fn checkpoint() -> Result<String, String> {
+    // First check if there are any changes to avoid unnecessary git add
+    let status_output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .output()
+        .map_err(|e| format!("Failed to execute git status: {}", e))?;
+    
+    let status_stdout = String::from_utf8_lossy(&status_output.stdout);
+    if status_stdout.trim().is_empty() {
+        return Ok("No changes to checkpoint.".to_string());
+    }
+
     // Stage all changes
     let add_status = Command::new("git").arg("add").arg(".").status();
 
