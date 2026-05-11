@@ -241,6 +241,10 @@ impl Coordinator {
     }
 
     /// Cancel all running agents
+    ///
+    /// Public API method for bulk cancellation of agent workloads. Agents
+    /// are cleaned up through drop semantics and individual cancellation tokens.
+    /// Kept as part of the Coordinator public interface for high-level orchestration.
     #[allow(dead_code)]
     pub fn cancel_all(&mut self) {
         // AgentPool cleanup handled via drop / individual cancellation

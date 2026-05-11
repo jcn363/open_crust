@@ -163,6 +163,10 @@ pub struct McpServerInfo {
 
 /// Parse command string into binary and arguments
 /// Handles formats like "npx some-tool@latest" or "pip install some-pkg"
+///
+/// This function is part of the MCP showcase infrastructure and provides command
+/// resolution for spawning package managers. It remains in the codebase as a
+/// reference implementation for future MCP server integrations.
 #[allow(dead_code)]
 fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {
     let parts: Vec<&str> = command.split_whitespace().collect();

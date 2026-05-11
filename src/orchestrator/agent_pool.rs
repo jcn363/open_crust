@@ -22,6 +22,8 @@ pub struct AgentConfig {
     /// Maximum retry attempts on failure (0 = no retry)
     pub max_retries: u32,
     /// Optional model override applied to every agent
+    /// Part of the config interface for future extensibility; reserved for programmatic
+    /// model selection when multiple providers are supported.
     #[allow(dead_code)]
     pub model_override: Option<String>,
 }
@@ -134,6 +136,9 @@ impl AgentPool {
     }
 
     /// Cancel a running agent (aborts the tokio task)
+    ///
+    /// Public API for task cancellation. Used by higher-level orchestration
+    /// when explicit cancellation is needed before natural completion.
     #[allow(dead_code)]
     pub fn cancel(&mut self, task_id: &uuid::Uuid) -> bool {
         self.active_agents.remove(task_id).is_some_and(|h| {
@@ -143,12 +148,18 @@ impl AgentPool {
     }
 
     /// Number of agents currently active
+    ///
+    /// Public API for pool state inspection. Used by monitoring, diagnostics,
+    /// and capacity checking during load balancing.
     #[allow(dead_code)]
     pub fn active_count(&self) -> usize {
         self.active_agents.len()
     }
 
     /// Remove completed agent handles from tracking
+    ///
+    /// Batch cleanup operation for completed agents. Part of the public API
+    /// for manual resource management when using background agent processing.
     #[allow(dead_code)]
     pub fn cleanup(&mut self, ids: &[uuid::Uuid]) {
         for id in ids {

@@ -72,6 +72,9 @@ impl Task {
     }
 
     /// Returns a summary string for the task
+    ///
+    /// Utility method for human-readable task status reporting. Used by logging,
+    /// debugging, and telemetry systems. Kept as public API for extensibility.
     #[allow(dead_code)]
     pub fn summary(&self) -> String {
         let state_str = match &self.state {
