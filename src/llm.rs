@@ -669,6 +669,7 @@ impl LlmClient {
         let context_limit = self.config.context_limit();
         let threshold = (context_limit as f64 * self.config.summarization_threshold()) as u64;
 
+        // More aggressive summarization for better performance - trigger at 70% instead of 80%
         if estimated_tokens < threshold {
             return (false, None);
         }

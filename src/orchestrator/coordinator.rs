@@ -27,6 +27,8 @@ pub struct Coordinator {
     pool: AgentPool,
     /// Shared state for live TUI visualization
     shared_state: Option<std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>>,
+    /// Timestamp of the last shared state sync to prevent excessive updates
+    last_sync: Option<std::time::Instant>,
 }
 
 impl Coordinator {
@@ -35,6 +37,7 @@ impl Coordinator {
         Self {
             pool: AgentPool::new(agent_config),
             shared_state: None,
+            last_sync: None,
         }
     }
 
@@ -50,11 +53,21 @@ impl Coordinator {
     }
 
     /// Snapshot current tasks into shared state (if bridge is attached)
-    fn sync_shared_state(&self, tasks: &[Task]) {
+    /// Rate limited to prevent excessive updates that can impact performance
+    fn sync_shared_state(&mut self, tasks: &[Task]) {
+        // Rate limit shared state updates to every 100ms to reduce overhead
+        let now = std::time::Instant::now();
+        if let Some(last_sync) = self.last_sync {
+            if now.duration_since(last_sync) < std::time::Duration::from_millis(100) {
+                return; // Skip sync if too soon since last update
+            }
+        }
+        
         if let Some(ref shared) = self.shared_state
             && let Ok(mut guard) = shared.try_write()
         {
             *guard = tasks.to_vec();
+            self.last_sync = Some(now);
         }
     }
 
