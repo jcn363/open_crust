@@ -57,12 +57,12 @@ impl Coordinator {
     fn sync_shared_state(&mut self, tasks: &[Task]) {
         // Rate limit shared state updates to every 100ms to reduce overhead
         let now = std::time::Instant::now();
-        if let Some(last_sync) = self.last_sync {
-            if now.duration_since(last_sync) < std::time::Duration::from_millis(100) {
-                return; // Skip sync if too soon since last update
-            }
+        if let Some(last_sync) = self.last_sync
+            && now.duration_since(last_sync) < std::time::Duration::from_millis(100)
+        {
+            return; // Skip sync if too soon since last update
         }
-        
+
         if let Some(ref shared) = self.shared_state
             && let Ok(mut guard) = shared.try_write()
         {

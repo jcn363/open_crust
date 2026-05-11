@@ -146,7 +146,12 @@ impl ToolExecutor {
         // Validate command for safety
         validate_command(command).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
 
-        match tokio::process::Command::new("sh").arg("-c").arg(command).output().await {
+        match tokio::process::Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .output()
+            .await
+        {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -164,15 +169,15 @@ impl ToolExecutor {
             validate_path(path).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
         let validated_path_str = validated_path.to_string_lossy().into_owned();
 
-            // Check cache first (cache for 1 second to balance performance and freshness)
+        // Check cache first (cache for 1 second to balance performance and freshness)
+        {
+            let cache = self.file_cache.lock().await;
+            if let Some((content, timestamp)) = cache.get(&validated_path_str)
+                && timestamp.elapsed() < std::time::Duration::from_secs(1)
             {
-                let cache = self.file_cache.lock().await;
-                if let Some((content, timestamp)) = cache.get(&validated_path_str)
-                    && timestamp.elapsed() < std::time::Duration::from_secs(1) {
-                    return Ok(content.clone());
-                }
+                return Ok(content.clone());
             }
-
+        }
 
         // Read from disk
         let content = match fs::read_to_string(&validated_path) {
@@ -183,7 +188,10 @@ impl ToolExecutor {
         // Update cache
         {
             let mut cache = self.file_cache.lock().await;
-            cache.insert(validated_path_str.clone(), (content.clone(), std::time::Instant::now()));
+            cache.insert(
+                validated_path_str.clone(),
+                (content.clone(), std::time::Instant::now()),
+            );
         }
 
         Ok(content)
@@ -519,7 +527,7 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn test_pin_unpin() {
+    async fn test_pin_unpin() -> Result<(), Box<dyn std::error::Error>> {
         let mcp_manager = Arc::new(Mutex::new(McpManager::new()));
         let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
         let skill_manager = Arc::new(Mutex::new(SkillManager::new()));

@@ -7,7 +7,7 @@ pub fn checkpoint() -> Result<String, String> {
         .arg("--porcelain")
         .output()
         .map_err(|e| format!("Failed to execute git status: {}", e))?;
-    
+
     let status_stdout = String::from_utf8_lossy(&status_output.stdout);
     if status_stdout.trim().is_empty() {
         return Ok("No changes to checkpoint.".to_string());

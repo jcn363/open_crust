@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 /// A stored embedding with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -253,48 +254,49 @@ impl RagManager {
         Ok(indexed)
     }
 
-    /// Save the vector store to disk
-    /// Should be called after batch indexing operations
-    pub fn flush(&self) -> Result<(), String> {
-        self.vector_store.save(&self.config_dir);
-        Ok(())
-    }
-
-    /// Index the entire codebase
+    /// Recursively index all code files in a directory
+    /// Returns (files_indexed, total_chunks)
     pub async fn index_codebase(&mut self, root: &str) -> Result<(usize, usize), String> {
+        let root_path = PathBuf::from(root);
+        if !root_path.exists() {
+            return Err(format!("Root path does not exist: {}", root));
+        }
+
         let mut files_indexed = 0;
-        let mut chunks_indexed = 0;
+        let mut total_chunks = 0;
 
-        // Walk the directory, skipping .git and target
-        let walker = walkdir::WalkDir::new(root)
-            .follow_links(false)
+        for entry in WalkDir::new(root)
             .into_iter()
-            .filter_entry(|e| {
-                let name = e.file_name().to_str().unwrap_or("");
-                !name.starts_with('.') && name != "target" && name != "node_modules"
-            });
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_file())
+        {
+            let file_path = entry.path();
+            let file_path_str = file_path.to_string_lossy().to_string();
 
-        for entry in walker {
-            let entry = entry.map_err(|e| e.to_string())?;
-            if entry.file_type().is_file() {
-                let path = entry.path().to_string_lossy().to_string();
-                // Only index code files
-                if is_code_file(&path) {
-                    match self.index_file(&path).await {
-                        Ok(chunks) => {
-                            files_indexed += 1;
-                            chunks_indexed += chunks;
-                        }
-                        Err(e) => eprintln!("Warning: Failed to index {}: {}", path, e),
+            if is_code_file(&file_path_str) {
+                match self.index_file(&file_path_str).await {
+                    Ok(chunks) => {
+                        files_indexed += 1;
+                        total_chunks += chunks;
+                    }
+                    Err(e) => {
+                        eprintln!("Warning: Failed to index file {}: {}", file_path_str, e);
                     }
                 }
             }
         }
 
-        // Flush all changes to disk after indexing
+        // Save the vector store after batch indexing
         self.flush()?;
 
-        Ok((files_indexed, chunks_indexed))
+        Ok((files_indexed, total_chunks))
+    }
+
+    /// Save the vector store to disk
+    /// Should be called after batch indexing operations
+    pub fn flush(&self) -> Result<(), String> {
+        self.vector_store.save(&self.config_dir);
+        Ok(())
     }
 
     /// Perform semantic search
@@ -466,7 +468,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_generate_embedding() {
+    async fn test_generate_embedding() -> Result<(), Box<dyn std::error::Error>> {
         // This test requires Ollama running with nomic-embed-text model
         if std::process::Command::new("ollama")
             .args(["list"])
@@ -484,5 +486,6 @@ mod tests {
                 "nomic-embed-text should produce 768-dim embeddings"
             );
         }
+        Ok(())
     }
 }

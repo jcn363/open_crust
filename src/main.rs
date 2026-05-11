@@ -1174,7 +1174,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     enable_raw_mode()?;
     io::stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
-    
+
     let mut app = App::new(
         llm_client.config.clone(),
         prompt_tx,
@@ -1183,7 +1183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         llm_client.clone(),
     );
     app.refresh_sidebar();
-    
+
     // Frame rate limiting for smoother UI
     let mut last_frame = std::time::Instant::now();
     let target_frame_duration = std::time::Duration::from_millis(16); // ~60 FPS
