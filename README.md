@@ -475,6 +475,10 @@ OpenCrust documentation is organized by use case and audience. Start with **Tier
 | Write tests | [docs/TESTING.md](./docs/TESTING.md) |
 | Find where code lives | [docs/MODULES.md](./docs/MODULES.md) |
 
+## License
+
+MIT License - see [LICENSE](LICENSE)
+
 ---
 
 ![Crust Development Showcase](crust_showcase.gif)
