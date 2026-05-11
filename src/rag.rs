@@ -476,7 +476,7 @@ mod tests {
         {
             let result = generate_embedding("http://localhost:11434", "test").await;
             assert!(result.is_ok(), "Should generate embedding");
-            let embedding = result.unwrap();
+            let embedding = result?;
             assert!(!embedding.is_empty(), "Embedding should not be empty");
             assert_eq!(
                 embedding.len(),

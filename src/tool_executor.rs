@@ -146,7 +146,7 @@ impl ToolExecutor {
         // Validate command for safety
         validate_command(command).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
 
-        match Command::new("sh").arg("-c").arg(command).output() {
+        match tokio::process::Command::new("sh").arg("-c").arg(command).output().await {
             Ok(output) => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -546,24 +546,24 @@ mod tests {
         );
 
         let pin_args = json!({ "path": "/test/file.rs" });
-        let result = tool_executor.execute_pin(&pin_args).await.unwrap();
+        let result = tool_executor.execute_pin(&pin_args).await.?;
         assert_eq!(result, "Successfully pinned: /test/file.rs");
 
-        let result = tool_executor.execute_pin(&pin_args).await.unwrap();
+        let result = tool_executor.execute_pin(&pin_args).await.?;
         assert_eq!(result, "Already pinned: /test/file.rs");
 
         let unpin_args = json!({ "path": "/test/file.rs" });
-        let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
+        let result = tool_executor.execute_unpin(&unpin_args).await.?;
         assert_eq!(result, "Successfully unpinned: /test/file.rs");
 
-        let result = tool_executor.execute_unpin(&unpin_args).await.unwrap();
+        let result = tool_executor.execute_unpin(&unpin_args).await.?;
         assert_eq!(result, "Not pinned: /test/file.rs");
 
         let empty_args = json!({ "path": "" });
-        let result = tool_executor.execute_pin(&empty_args).await.unwrap();
+        let result = tool_executor.execute_pin(&empty_args).await.?;
         assert_eq!(result, "Error: No path provided for pinning");
 
-        let result = tool_executor.execute_unpin(&empty_args).await.unwrap();
+        let result = tool_executor.execute_unpin(&empty_args).await.?;
         assert_eq!(result, "Error: No path provided for unpinning");
     }
 }
