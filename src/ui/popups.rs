@@ -248,7 +248,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 Span::styled("Note: ", Style::default().fg(Color::Yellow)),
                 Span::styled(
                     if is_installed {
-                        "Restart open_crust to use this server."
+                        "Restart opencrust to use this server."
                     } else {
                         "Press [Enter] to install."
                     },

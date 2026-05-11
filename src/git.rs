@@ -10,7 +10,7 @@ pub fn checkpoint() -> Result<String, String> {
             let commit_output = Command::new("git")
                 .arg("commit")
                 .arg("-m")
-                .arg("open_crust checkpoint")
+                .arg("opencrust checkpoint")
                 .output();
 
             match commit_output {

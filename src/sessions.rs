@@ -23,7 +23,7 @@ impl SessionManager {
     pub fn new() -> Self {
         let cache_dir = dirs::cache_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("open_crust/sessions");
+            .join("opencrust/sessions");
 
         if !cache_dir.exists()
             && let Err(e) = fs::create_dir_all(&cache_dir)

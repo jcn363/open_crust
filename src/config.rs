@@ -429,7 +429,7 @@ impl Config {
     pub fn load() -> Self {
         let config_dir = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".config/open_crust");
+            .join(".config/opencrust");
         let config_path = config_dir.join("config.json");
 
         if config_path.exists() {
@@ -458,7 +458,7 @@ impl Config {
     pub fn save(&self) {
         let config_dir = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".config/open_crust");
+            .join(".config/opencrust");
         if let Err(e) = fs::create_dir_all(&config_dir) {
             eprintln!("Warning: Failed to create config dir: {}", e);
         }

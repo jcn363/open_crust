@@ -14,8 +14,8 @@ Welcome! OpenCrust is built by the community. This guide will help you get start
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/opencrust/open_crust.git
-cd open_crust
+git clone https://github.com/opencrust/opencrust.git
+cd opencrust
 ```
 
 ### 2. Build the Project
@@ -164,7 +164,7 @@ Before pushing your PR, verify:
 ```bash
 # Start feature branch
 git checkout -b feature/add-new-tool
-cd /home/user/Desktop/open_crust
+cd /home/user/Desktop/opencrust
 
 # Make changes
 vim src/custom_tools.rs

@@ -35,11 +35,11 @@ pub struct CacheManager {
 }
 
 impl CacheManager {
-    /// Create a new CacheManager storing files under `~/.cache/open_crust/models/`
+    /// Create a new CacheManager storing files under `~/.cache/opencrust/models/`
     pub fn new() -> Self {
         let cache_dir = dirs::cache_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("open_crust")
+            .join("opencrust")
             .join("models");
         Self { cache_dir }
     }

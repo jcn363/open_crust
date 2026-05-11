@@ -51,10 +51,10 @@ pub fn load_rules(instructions: &[String]) -> String {
         }
     }
 
-    // 3. Global Rules (~/.config/open_crust/AGENTS.md)
+    // 3. Global Rules (~/.config/opencrust/AGENTS.md)
     if let Some(user_dirs) = directories::UserDirs::new() {
         let home = user_dirs.home_dir();
-        let global_rules = home.join(".config").join("open_crust").join("AGENTS.md");
+        let global_rules = home.join(".config").join("opencrust").join("AGENTS.md");
         if global_rules.exists()
             && let Ok(content) = fs::read_to_string(global_rules)
         {

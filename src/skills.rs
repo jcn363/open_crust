@@ -58,7 +58,7 @@ impl SkillManager {
         }
 
         // Global paths
-        if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "open_crust") {
+        if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
             search_paths.push(proj_dirs.config_dir().join("skills"));
         }
         if let Some(home) = dirs::home_dir() {

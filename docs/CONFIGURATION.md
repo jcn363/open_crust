@@ -2,7 +2,7 @@
 
 Complete guide to configuring OpenCrust: all options, all LLM providers, MCP servers, LSP servers, keybindings, and TUI customization.
 
-**Location:** `~/.config/open_crust/config.json`  
+**Location:** `~/.config/opencrust/config.json`  
 **For security:** See **docs/SECURITY.md**.  
 **For extending:** See **docs/DEVELOPMENT.md**.  
 **For troubleshooting:** See **docs/TROUBLESHOOTING.md**.
@@ -14,8 +14,8 @@ Complete guide to configuring OpenCrust: all options, all LLM providers, MCP ser
 OpenCrust works with no config file. Create one to customize:
 
 ```bash
-mkdir -p ~/.config/open_crust
-cat > ~/.config/open_crust/config.json << 'EOF'
+mkdir -p ~/.config/opencrust
+cat > ~/.config/opencrust/config.json << 'EOF'
 {
   "default_model": "gpt-4",
   "default_provider": "openai",
@@ -26,7 +26,7 @@ cat > ~/.config/open_crust/config.json << 'EOF'
   }
 }
 EOF
-chmod 600 ~/.config/open_crust/config.json
+chmod 600 ~/.config/opencrust/config.json
 ```
 
 ---
@@ -871,7 +871,7 @@ opencrust
 
 ```bash
 # Validate JSON syntax
-jq . ~/.config/open_crust/config.json
+jq . ~/.config/opencrust/config.json
 
 # If error, fix syntax and retry
 # Common mistakes:
@@ -884,10 +884,10 @@ jq . ~/.config/open_crust/config.json
 
 ```bash
 # Check config has correct provider name
-grep "default_provider" ~/.config/open_crust/config.json
+grep "default_provider" ~/.config/opencrust/config.json
 
 # Verify API key is set
-grep "api_key" ~/.config/open_crust/config.json | head -1
+grep "api_key" ~/.config/opencrust/config.json | head -1
 
 # Test provider directly
 opencrust -p "Hello" --provider openai
@@ -909,10 +909,10 @@ npm install -g @modelcontextprotocol/server-github
 
 ```bash
 # Check file pattern
-grep "file_patterns" ~/.config/open_crust/config.json
+grep "file_patterns" ~/.config/opencrust/config.json
 
 # Check audit log for denied path
-grep "permission_denied" ~/.config/open_crust/audit.json | tail -1
+grep "permission_denied" ~/.config/opencrust/audit.json | tail -1
 
 # Adjust patterns and restart
 ```

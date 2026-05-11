@@ -1,7 +1,7 @@
 # Architecture Overview
 
 ```text
-open_crust/
+opencrust/
 ├── src/
 │   ├── main.rs            # Entry point, CLI args, TUI event loop
 │   ├── app.rs             # Application state, tabs, history, background tasks

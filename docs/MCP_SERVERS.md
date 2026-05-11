@@ -44,7 +44,7 @@ The AI will automatically use sequential thinking when:
 
 ### Configuration
 
-Already configured in `~/.config/open_crust/config.json`:
+Already configured in `~/.config/opencrust/config.json`:
 ```json
 {
   "sequentialthinking": {
@@ -102,7 +102,7 @@ The AI will automatically use critical thinking when:
 
 ### Configuration
 
-Already configured in `~/.config/open_crust/config.json`:
+Already configured in `~/.config/opencrust/config.json`:
 ```json
 {
   "criticalthinking": {
@@ -155,7 +155,7 @@ The AI will automatically use YOLO when:
 
 ### Configuration
 
-Already configured in `~/.config/open_crust/config.json`:
+Already configured in `~/.config/opencrust/config.json`:
 ```json
 {
   "yolo": {
@@ -218,7 +218,7 @@ The AI will automatically use octocode when:
 
 ### Configuration
 
-Already configured in `~/.config/open_crust/config.json`:
+Already configured in `~/.config/opencrust/config.json`:
 ```json
 {
   "octocode": {
@@ -249,7 +249,7 @@ opencrust mcp list
 # Install a new server
 opencrust mcp install <server-name>
 
-# Servers are stored in ~/.config/open_crust/config.json
+# Servers are stored in ~/.config/opencrust/config.json
 # Restart opencrust to load new servers
 ```
 

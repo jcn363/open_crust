@@ -132,7 +132,7 @@ ollama pull mistral
 ### Step 4: Configure OpenCrust
 
 ```bash
-cat >> ~/.config/open_crust/config.json << 'EOF'
+cat >> ~/.config/opencrust/config.json << 'EOF'
 {
   "default_provider": "ollama",
   "default_model": "mistral",
@@ -212,7 +212,7 @@ ollama pull neural-chat  # 4.7B instead of 7B
 ### Step 2: Add to Config
 
 ```bash
-cat >> ~/.config/open_crust/config.json << 'EOF'
+cat >> ~/.config/opencrust/config.json << 'EOF'
 {
   "mcp": {
     "github": {
@@ -227,7 +227,7 @@ cat >> ~/.config/open_crust/config.json << 'EOF'
 EOF
 
 # Make config private
-chmod 600 ~/.config/open_crust/config.json
+chmod 600 ~/.config/opencrust/config.json
 ```
 
 ### Step 3: Test It
@@ -263,7 +263,7 @@ opencrust
 # 2. Create new token (same process)
 
 # 3. Update config
-sed -i 's/ghp_OLD_TOKEN/ghp_NEW_TOKEN/' ~/.config/open_crust/config.json
+sed -i 's/ghp_OLD_TOKEN/ghp_NEW_TOKEN/' ~/.config/opencrust/config.json
 
 # 4. Restart OpenCrust
 ```
@@ -302,10 +302,10 @@ But it's failing and you don't know why.
 
 ```bash
 # Look at audit log
-tail -20 ~/.config/open_crust/audit.json
+tail -20 ~/.config/opencrust/audit.json
 
 # Find your tool execution
-grep '"tool_name":"deploy"' ~/.config/open_crust/audit.json | tail -1
+grep '"tool_name":"deploy"' ~/.config/opencrust/audit.json | tail -1
 
 # Example output:
 {
@@ -503,7 +503,7 @@ pub fn load_config(path: &str) -> Result<Config, ConfigError> {
 ### Configuration
 
 ```bash
-cat > ~/.config/open_crust/config.json << 'EOF'
+cat > ~/.config/opencrust/config.json << 'EOF'
 {
   "default_model": "gpt-3.5-turbo",
   "default_provider": "openai",
@@ -577,7 +577,7 @@ ollama pull neural-chat:13b  # Capable
 ### Customize
 
 ```bash
-cat >> ~/.config/open_crust/config.json << 'EOF'
+cat >> ~/.config/opencrust/config.json << 'EOF'
 {
   "keybindings": {
     "submit_message": "Ctrl+Enter",      // Changed from Enter
@@ -676,7 +676,7 @@ opencrust
 
 ```bash
 # Check audit log
-grep '"result":"' ~/.config/open_crust/audit.json | tail -1
+grep '"result":"' ~/.config/opencrust/audit.json | tail -1
 
 # Result: "result": "permission_denied"
 # Solution: Check file_patterns in config.json

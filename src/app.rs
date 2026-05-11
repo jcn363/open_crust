@@ -137,7 +137,7 @@ impl App {
         let chat_tab = Tab {
             name: "Chat".to_string(),
             messages: vec![String::from(
-                "Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
+                "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
             )],
         };
         let tasks_tab = Tab {
@@ -359,7 +359,7 @@ impl App {
     fn history_path() -> std::path::PathBuf {
         dirs::home_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join(".config/open_crust/history.txt")
+            .join(".config/opencrust/history.txt")
     }
 
     fn load_history(&mut self) {

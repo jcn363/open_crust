@@ -56,7 +56,7 @@ OpenCrust provides terminal-native CLI subcommands:
 
 **Build:** `cargo build` (debug) or `cargo build --release` (optimized)
 
-**Install locally:** `cargo install --path .` (installs `open_crust` binary to ~/.cargo/bin)
+**Install locally:** `cargo install --path .` (installs `opencrust` binary to ~/.cargo/bin)
 
 **Run in development:** `cargo run` or `cargo run -- [args]`
 

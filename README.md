@@ -78,15 +78,15 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 
 ```bash
 # Download the latest .deb from releases
-wget https://github.com/opencrust/open_crust/releases/latest/download/opencrust_0.1.0_amd64.deb
+wget https://github.com/opencrust/opencrust/releases/latest/download/opencrust_0.1.0_amd64.deb
 sudo dpkg -i opencrust_0.1.0_amd64.deb
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/opencrust/open_crust.git
-cd open_crust
+git clone https://github.com/opencrust/opencrust.git
+cd opencrust
 cargo install --path .
 ```
 
@@ -107,7 +107,7 @@ opencrust --provider gemini --model gemini-2.0-flash
 
 ## ⚙️ Configuration
 
-Configure your environment at `~/.config/open_crust/config.json`:
+Configure your environment at `~/.config/opencrust/config.json`:
 
 ```json
 {
@@ -181,7 +181,7 @@ Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via
 ## 🏗️ Architecture
 
 ```text
-open_crust/
+opencrust/
 ├── src/
 │   ├── main.rs            # Entry point, CLI args, TUI event loop
 │   ├── app.rs             # Application state, tabs, history, background tasks

@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use std::error::Error;
 use tokio::sync::mpsc;
 
-const BASE_SYSTEM_PROMPT: &str = "You are open_crust, a pure Rust terminal-based AI coding agent. 
+const BASE_SYSTEM_PROMPT: &str = "You are opencrust, a pure Rust terminal-based AI coding agent. 
 You have access to tools to interact with the local filesystem and execute bash commands.
 Always follow the project's rules and guidelines provided below.";
 
@@ -204,7 +204,7 @@ impl LlmClient {
         if summarized {
             if let Some(s) = summary {
                 let _ = progress_tx
-                    .send(format!("open_crust: Summarized old context: {}", s))
+                    .send(format!("opencrust: Summarized old context: {}", s))
                     .await;
             }
         } else {
@@ -212,7 +212,7 @@ impl LlmClient {
             if messages_history.len() > 22 {
                 let _ = progress_tx
                     .send(String::from(
-                        "open_crust: Pruning old context to stay within limits...",
+                        "opencrust: Pruning old context to stay within limits...",
                     ))
                     .await;
                 let system_prompt = messages_history.remove(0);
@@ -284,7 +284,7 @@ impl LlmClient {
                                     ))
                                     .await;
                             } else {
-                                let _ = progress_tx.send(format!("open_crust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
+                                let _ = progress_tx.send(format!("opencrust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
                             }
                             approved = approval_rx.recv().await.unwrap_or(false);
                         } else {
@@ -297,7 +297,7 @@ impl LlmClient {
 
                     let result = if approved {
                         let _ = progress_tx
-                            .send(format!("open_crust: Executing tool '{}'...", name))
+                            .send(format!("opencrust: Executing tool '{}'...", name))
                             .await;
 
                         // Use ToolExecutor to execute the tool
@@ -307,7 +307,7 @@ impl LlmClient {
                         }
                     } else {
                         let _ = progress_tx
-                            .send(format!("open_crust: Tool '{}' denied by user.", name))
+                            .send(format!("opencrust: Tool '{}' denied by user.", name))
                             .await;
                         String::from("User denied permission to execute this tool.")
                     };

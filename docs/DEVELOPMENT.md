@@ -26,7 +26,7 @@ cargo test --lib orchestrator --lib ui
 ```
 
 ### Usage
-- Launch with `open_crust --mission-control`.
+- Launch with `opencrust --mission-control`.
 - Toggle with `Ctrl+Shift+M` from any tab.
 - Hotkeys: `p` pause/resume, `c` cancel, `r` retry failed, `q` quit.
 

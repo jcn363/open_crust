@@ -59,10 +59,10 @@ impl McpManager {
             match McpServer::spawn(name, mcp_config).await {
                 Ok(server) => {
                     self.servers.push(server);
-                    println!("open_crust: MCP server '{}' connected.", name);
+                    println!("opencrust: MCP server '{}' connected.", name);
                 }
                 Err(e) => {
-                    eprintln!("open_crust: Error starting MCP server '{}': {}", name, e);
+                    eprintln!("opencrust: Error starting MCP server '{}': {}", name, e);
                 }
             }
         }
@@ -89,7 +89,7 @@ impl McpManager {
                 }
                 Err(e) => {
                     eprintln!(
-                        "open_crust: Error listing tools from server '{}': {}",
+                        "opencrust: Error listing tools from server '{}': {}",
                         server.name, e
                     );
                 }

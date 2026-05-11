@@ -150,7 +150,7 @@ opencrust/
 
 ```rust
 // tests/integration_chat.rs
-use open_crust::app::{App, Message};
+use opencrust::app::{App, Message};
 use std::sync::Arc;
 
 fn setup() -> App {
@@ -643,7 +643,7 @@ fn test_debug_output() {
 cargo test --no-run
 
 # Debug with GDB
-gdb ./target/debug/deps/open_crust-<hash>
+gdb ./target/debug/deps/opencrust-<hash>
 (gdb) run test_name
 ```
 

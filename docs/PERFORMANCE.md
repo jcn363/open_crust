@@ -115,13 +115,13 @@ Option B: Index only specific directories
 
 **Cause:** HDD I/O slower than SSD
 
-**Solution:** Move ~/.config/open_crust to SSD or use ramdisk:
+**Solution:** Move ~/.config/opencrust to SSD or use ramdisk:
 ```bash
 # macOS: Create 100MB ramdisk
 diskutil secureErase freespace 0 -secureRandom 100m ramdisk
 
 # Linux: Mount tmpfs
-sudo mount -t tmpfs -o size=100M tmpfs ~/.config/open_crust
+sudo mount -t tmpfs -o size=100M tmpfs ~/.config/opencrust
 ```
 
 #### 4. Slow Network (MCP/LSP Discovery)

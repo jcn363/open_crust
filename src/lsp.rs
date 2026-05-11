@@ -141,10 +141,10 @@ impl LspManager {
                     Ok(server) => {
                         self.servers.insert(name.clone(), server);
                         self.configs.insert(name.clone(), config.clone());
-                        println!("open_crust: LSP server '{}' connected.", name);
+                        println!("opencrust: LSP server '{}' connected.", name);
                     }
                     Err(e) => {
-                        eprintln!("open_crust: Error starting LSP server '{}': {}", name, e);
+                        eprintln!("opencrust: Error starting LSP server '{}': {}", name, e);
                     }
                 }
             }

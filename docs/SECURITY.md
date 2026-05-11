@@ -224,23 +224,23 @@ Return error: User must explicitly allow in config
 
 ### Accessing Audit Logs
 
-**Location:** `~/.config/open_crust/audit.json` (JSONL format — one event per line)
+**Location:** `~/.config/opencrust/audit.json` (JSONL format — one event per line)
 
 **Query recent events:**
 
 ```bash
 # Last 10 events
-tail -10 ~/.config/open_crust/audit.json
+tail -10 ~/.config/opencrust/audit.json
 
 # All file access today
-grep '"event_type":"file_accessed"' ~/.config/open_crust/audit.json | \
+grep '"event_type":"file_accessed"' ~/.config/opencrust/audit.json | \
   grep "$(date +%Y-%m-%d)"
 
 # All permission denials
-grep '"result":"permission_denied"' ~/.config/open_crust/audit.json
+grep '"result":"permission_denied"' ~/.config/opencrust/audit.json
 
 # All events for a session
-grep '"session_id":"sess_abc123"' ~/.config/open_crust/audit.json
+grep '"session_id":"sess_abc123"' ~/.config/opencrust/audit.json
 ```
 
 **Retention policy:**
@@ -270,7 +270,7 @@ grep '"session_id":"sess_abc123"' ~/.config/open_crust/audit.json
 ```bash
 # Export past 7 days as CSV
 jq -r '[.timestamp, .event_type, .tool_name, .result] | @csv' \
-  ~/.config/open_crust/audit.json | \
+  ~/.config/opencrust/audit.json | \
   awk 'BEGIN{print "timestamp,event_type,tool,result"} {print}' \
   > audit_export.csv
 ```
@@ -348,7 +348,7 @@ OpenCrust              MCP Server (e.g., github)
 
 ```
 ✅ Safe: config.json (with restricted permissions)
-~/.config/open_crust/config.json: chmod 600
+~/.config/opencrust/config.json: chmod 600
 
 Example:
 {
@@ -378,8 +378,8 @@ SOLUTION: Use config.json with proper permissions
 ### Secret Handling Rules
 
 1. **In configuration:**
-   - Store secrets in `~/.config/open_crust/config.json`
-   - Set file permissions: `chmod 600 ~/.config/open_crust/config.json`
+   - Store secrets in `~/.config/opencrust/config.json`
+   - Set file permissions: `chmod 600 ~/.config/opencrust/config.json`
    - Never store in workspace directory
 
 2. **In environment variables:**
@@ -417,7 +417,7 @@ SOLUTION: Use config.json with proper permissions
 # Generate token with 'repo' scope, copy it
 
 # 2. Add to OpenCrust config
-cat >> ~/.config/open_crust/config.json << 'EOF'
+cat >> ~/.config/opencrust/config.json << 'EOF'
 {
   "mcp": {
     "github": {
@@ -431,7 +431,7 @@ cat >> ~/.config/open_crust/config.json << 'EOF'
 EOF
 
 # 3. Fix permissions
-chmod 600 ~/.config/open_crust/config.json
+chmod 600 ~/.config/opencrust/config.json
 
 # 4. Restart OpenCrust
 # Now uses GitHub via MCP (token never shown in UI or logs)
@@ -443,7 +443,7 @@ chmod 600 ~/.config/open_crust/config.json
 # 1. Revoke old token on GitHub
 # 2. Generate new token
 # 3. Update config:
-sed -i 's/ghp_OLD_TOKEN/ghp_NEW_TOKEN/g' ~/.config/open_crust/config.json
+sed -i 's/ghp_OLD_TOKEN/ghp_NEW_TOKEN/g' ~/.config/opencrust/config.json
 # 4. Restart OpenCrust
 ```
 
@@ -627,7 +627,7 @@ Now:
 - [ ] Review `deny_patterns` (secrets, private code)
 - [ ] Review `cli_commands` (what can be executed)
 - [ ] Review network `hosts` (what can be accessed)
-- [ ] Check `~/.config/open_crust/config.json` permissions: `chmod 600`
+- [ ] Check `~/.config/opencrust/config.json` permissions: `chmod 600`
 - [ ] Rotate any API keys if shared
 - [ ] Enable audit logging
 - [ ] Test: Try accessing a denied file/host, verify error message
@@ -670,7 +670,7 @@ Now:
 
 ```bash
 # Check which tool failed:
-grep '"result":"permission_denied"' ~/.config/open_crust/audit.json | tail -1
+grep '"result":"permission_denied"' ~/.config/opencrust/audit.json | tail -1
 
 # Read the error message:
 {
@@ -690,7 +690,7 @@ chmod +x .opencrust/tools/my_linter
 ```bash
 # Check denied path:
 grep '"event_type":"file_accessed".*"result":"permission_denied"' \
-  ~/.config/open_crust/audit.json | tail -1
+  ~/.config/opencrust/audit.json | tail -1
 
 # Result:
 {

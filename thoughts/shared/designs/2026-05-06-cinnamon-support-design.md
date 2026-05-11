@@ -60,7 +60,7 @@ TUI Application → Desktop Integration Module → Platform-Specific Helper → 
 ## Architecture
 
 ```
-open_crust/
+opencrust/
 ├── src/
 │   ├── desktop/
 │   │   ├── mod.rs              # Module entry, exports

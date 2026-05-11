@@ -22,5 +22,5 @@
 | `Enter`             | Submit message / confirm                  |
 | `Ctrl+Q`            | Quit                                      |
 
-> **Tip:** All keybinds are configurable in `~/.config/open_crust/config.json` under `tui.keybinds`.
+> **Tip:** All keybinds are configurable in `~/.config/opencrust/config.json` under `tui.keybinds`.
 > Keep this file as the single source of truth; other docs should link to it.

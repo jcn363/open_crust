@@ -580,7 +580,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 println!("Installed MCP server '{}'.", server);
                 println!("  Description: {}", description);
                 println!("  Setup: {}", env_help);
-                println!("\nRestart open_crust to use the server.");
+                println!("\nRestart opencrust to use the server.");
             }
             McpCommands::Browse => {
                 println!("MCP Showcase TUI Browser");
@@ -900,7 +900,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let config = config::Config::load();
         let log_dir = dirs::config_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("open_crust/logs");
+            .join("opencrust/logs");
         let audit_log_path = log_dir.join("audit.log");
 
         match cmd {
@@ -1085,7 +1085,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             if prompt_str == "/init" {
                 match rules::init_project_rules() {
                     Ok(msg) => {
-                        let _ = response_tx.send(format!("open_crust: {}", msg)).await;
+                        let _ = response_tx.send(format!("opencrust: {}", msg)).await;
                     }
                     Err(e) => {
                         let _ = response_tx.send(format!("Error: {}", e)).await;
@@ -1099,19 +1099,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         client_clone.config.provider = config::ProviderType::Ollama;
                         client_clone.config.save();
                         let _ = response_tx
-                            .send("open_crust: Provider switched to Ollama".to_string())
+                            .send("opencrust: Provider switched to Ollama".to_string())
                             .await;
                     }
                     "openrouter" => {
                         client_clone.config.provider = config::ProviderType::OpenRouter;
                         client_clone.config.save();
                         let _ = response_tx
-                            .send("open_crust: Provider switched to OpenRouter".to_string())
+                            .send("opencrust: Provider switched to OpenRouter".to_string())
                             .await;
                     }
                     _ => {
                         let _ = response_tx
-                            .send(format!("open_crust: Unknown provider '{}'", new_provider))
+                            .send(format!("opencrust: Unknown provider '{}'", new_provider))
                             .await;
                     }
                 }
@@ -1121,13 +1121,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 client_clone.config.model = new_model.to_string();
                 client_clone.config.save();
                 let _ = response_tx
-                    .send(format!("open_crust: Model switched to '{}'", new_model))
+                    .send(format!("opencrust: Model switched to '{}'", new_model))
                     .await;
                 continue;
             } else if prompt_str == "/undo" {
                 match git::undo() {
                     Ok(msg) => {
-                        let _ = response_tx.send(format!("open_crust: {}", msg)).await;
+                        let _ = response_tx.send(format!("opencrust: {}", msg)).await;
                     }
                     Err(e) => {
                         let _ = response_tx.send(format!("Error: {}", e)).await;
@@ -1137,7 +1137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if prompt_str == "/redo" {
                 match git::redo() {
                     Ok(msg) => {
-                        let _ = response_tx.send(format!("open_crust: {}", msg)).await;
+                        let _ = response_tx.send(format!("opencrust: {}", msg)).await;
                     }
                     Err(e) => {
                         let _ = response_tx.send(format!("Error: {}", e)).await;
@@ -1149,7 +1149,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let _ = git::checkpoint();
             let enriched_prompt = context::inject_file_context(&prompt);
             let _ = response_tx
-                .send(String::from("open_crust: Thinking..."))
+                .send(String::from("opencrust: Thinking..."))
                 .await;
 
             let res = client_clone
@@ -1162,7 +1162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .await;
             match res {
                 Ok(reply) => {
-                    let _ = response_tx.send(format!("open_crust: {}", reply)).await;
+                    let _ = response_tx.send(format!("opencrust: {}", reply)).await;
                 }
                 Err(e) => {
                     let _ = response_tx.send(format!("Error: {}", e)).await;
@@ -1234,8 +1234,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
             let tab = &mut app.tabs[0]; // always push to Chat tab
             if let Some(last) = tab.messages.last()
-                && (last == "open_crust: Thinking..."
-                    || last.starts_with("open_crust: Executing tool"))
+                && (last == "opencrust: Thinking..."
+                    || last.starts_with("opencrust: Executing tool"))
             {
                 tab.messages.pop();
             }
@@ -1628,7 +1628,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 };
                                 app.config.mcp.insert(name.clone(), mcp_config);
                                 app.config.save();
-                                app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart open_crust to use it.", name));
+                                app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart opencrust to use it.", name));
                             }
                         }
                         KeyCode::Char(c) => {
@@ -1745,7 +1745,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 2 => {
                                     // Clear Context
                                     app.tabs[0].messages.clear();
-                                    app.tabs[0].messages.push(String::from("Welcome to open_crust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit."));
+                                    app.tabs[0].messages.push(String::from("Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit."));
                                     app.history.clear();
                                     app.save_history();
                                     app.tabs[0].messages.push("Context cleared.".to_string());

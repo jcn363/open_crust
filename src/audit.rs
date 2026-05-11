@@ -20,7 +20,7 @@ impl AuditLogger {
     pub fn with_max_size(max_size_bytes: u64) -> Self {
         let log_dir = dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("open_crust/logs");
+            .join("opencrust/logs");
 
         if !log_dir.exists() {
             let _ = fs::create_dir_all(&log_dir);

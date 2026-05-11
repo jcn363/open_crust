@@ -202,7 +202,7 @@ impl RagManager {
     pub fn new(config: &Config) -> Self {
         let config_dir = dirs::home_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join(".config/open_crust");
+            .join(".config/opencrust");
 
         let ollama_url = config
             .ollama_url

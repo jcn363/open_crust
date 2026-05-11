@@ -147,7 +147,7 @@ opencrust --help
    ```
 
 **Debug:**
-Check audit log: `grep "tool_executed" ~/.config/open_crust/audit.json | tail -5`
+Check audit log: `grep "tool_executed" ~/.config/opencrust/audit.json | tail -5`
 
 ---
 
@@ -163,7 +163,7 @@ Check audit log: `grep "tool_executed" ~/.config/open_crust/audit.json | tail -5
 
 **Solution:**
 1. Test network: `ping api.openai.com` (or your provider)
-2. Verify API key: Check `~/.config/open_crust/config.json`
+2. Verify API key: Check `~/.config/opencrust/config.json`
 3. Check provider status:
    - **OpenAI:** [openai.com/status](https://openai.com/status)
    - **Gemini:** Google Cloud Console
@@ -196,7 +196,7 @@ Check audit log: `grep "tool_executed" ~/.config/open_crust/audit.json | tail -5
      }
    }
    ```
-4. Audit log shows denial: `grep "permission_denied" ~/.config/open_crust/audit.json`
+4. Audit log shows denial: `grep "permission_denied" ~/.config/opencrust/audit.json`
 
 **Prevention:**
 - Set appropriate file permissions: `chmod 600` for secrets, `chmod 644` for code
@@ -222,7 +222,7 @@ Check audit log: `grep "tool_executed" ~/.config/open_crust/audit.json | tail -5
 4. Restart OpenCrust (state might be corrupted)
 
 **Recovery:**
-- Clear corrupted session: `rm ~/.config/open_crust/sessions/*`
+- Clear corrupted session: `rm ~/.config/opencrust/sessions/*`
 - Restart: `opencrust`
 
 ---
@@ -266,7 +266,7 @@ opencrust desktop notify --title "Test" --body "Hello"
 - File extension not mapped
 
 **Solution:**
-1. Check LSP configured: `grep "lsp" ~/.config/open_crust/config.json`
+1. Check LSP configured: `grep "lsp" ~/.config/opencrust/config.json`
 2. Verify server installed: `which rust-analyzer` (for Rust)
 3. Check extension mapping:
    ```json
@@ -298,7 +298,7 @@ opencrust desktop notify --title "Test" --body "Hello"
 - Port already in use
 
 **Solution:**
-1. Check config: `grep "mcp" ~/.config/open_crust/config.json`
+1. Check config: `grep "mcp" ~/.config/opencrust/config.json`
 2. Test manually:
    ```bash
    npx -y @modelcontextprotocol/server-github
@@ -319,7 +319,7 @@ opencrust desktop notify --title "Test" --body "Hello"
 - Wrong value type
 
 **Solution:**
-1. Validate JSON: `jq . ~/.config/open_crust/config.json`
+1. Validate JSON: `jq . ~/.config/opencrust/config.json`
 2. Common mistakes:
    - Missing comma after property: `"key": "value"` ← needs comma
    - Trailing comma: `"key": "value",` ← not allowed in JSON
@@ -371,13 +371,13 @@ opencrust desktop notify --title "Test" --body "Hello"
 - Context window too large
 
 **Solution:**
-1. Limit session history: Check `~/.config/open_crust/sessions/`
+1. Limit session history: Check `~/.config/opencrust/sessions/`
 2. Clear old sessions: Delete old session files
 3. Restart OpenCrust (flush memory)
 4. Reduce context budget in config
 
 **Prevention:**
-- Regularly clear sessions: `rm ~/.config/open_crust/sessions/*.old`
+- Regularly clear sessions: `rm ~/.config/opencrust/sessions/*.old`
 - Limit context: Set `"context_budget": 4096` in config
 
 ---
@@ -523,7 +523,7 @@ opencrust desktop notify --title "Test" --body "Hello"
 1. Save manually: `opencrust session save --name "my_session"`
 2. List sessions: `opencrust session list`
 3. Restore: Reopen and use `opencrust session show <id>`
-4. Check permissions: `ls -la ~/.config/open_crust/sessions/`
+4. Check permissions: `ls -la ~/.config/opencrust/sessions/`
 
 ---
 
@@ -531,8 +531,8 @@ opencrust desktop notify --title "Test" --body "Hello"
 
 **Not in this guide?**
 
-1. **Check existing Issues:** [GitHub Issues](https://github.com/opencrust/open_crust/issues)
-2. **Ask in Discussions:** [GitHub Discussions](https://github.com/opencrust/open_crust/discussions)
+1. **Check existing Issues:** [GitHub Issues](https://github.com/opencrust/opencrust/issues)
+2. **Ask in Discussions:** [GitHub Discussions](https://github.com/opencrust/opencrust/discussions)
 3. **File a new Issue:** Include:
    - OS and version
    - Rust version: `rustc --version`
@@ -542,7 +542,7 @@ opencrust desktop notify --title "Test" --body "Hello"
    - Relevant config snippet (remove secrets)
 
 4. **Check logs:**
-   - Audit log: `~/.config/open_crust/audit.json`
+   - Audit log: `~/.config/opencrust/audit.json`
    - Last error: Check most recent entries in audit log
 
 ---

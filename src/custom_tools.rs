@@ -27,7 +27,7 @@ impl CustomToolManager {
             PathBuf::from(".opencrust/tools"),
             dirs::config_dir()
                 .unwrap_or_else(|| PathBuf::from("."))
-                .join("open_crust/tools"),
+                .join("opencrust/tools"),
         ];
 
         for path in paths {
