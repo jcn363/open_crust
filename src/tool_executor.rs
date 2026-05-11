@@ -20,7 +20,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
-use std::process::Command;
+
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -546,24 +546,24 @@ mod tests {
         );
 
         let pin_args = json!({ "path": "/test/file.rs" });
-        let result = tool_executor.execute_pin(&pin_args).await.?;
+        let result = tool_executor.execute_pin(&pin_args).await?;
         assert_eq!(result, "Successfully pinned: /test/file.rs");
 
-        let result = tool_executor.execute_pin(&pin_args).await.?;
+        let result = tool_executor.execute_pin(&pin_args).await?;
         assert_eq!(result, "Already pinned: /test/file.rs");
 
         let unpin_args = json!({ "path": "/test/file.rs" });
-        let result = tool_executor.execute_unpin(&unpin_args).await.?;
+        let result = tool_executor.execute_unpin(&unpin_args).await?;
         assert_eq!(result, "Successfully unpinned: /test/file.rs");
 
-        let result = tool_executor.execute_unpin(&unpin_args).await.?;
+        let result = tool_executor.execute_unpin(&unpin_args).await?;
         assert_eq!(result, "Not pinned: /test/file.rs");
 
         let empty_args = json!({ "path": "" });
-        let result = tool_executor.execute_pin(&empty_args).await.?;
+        let result = tool_executor.execute_pin(&empty_args).await?;
         assert_eq!(result, "Error: No path provided for pinning");
 
-        let result = tool_executor.execute_unpin(&empty_args).await.?;
+        let result = tool_executor.execute_unpin(&empty_args).await?;
         assert_eq!(result, "Error: No path provided for unpinning");
     }
 }
