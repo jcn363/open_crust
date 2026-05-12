@@ -1,7 +1,7 @@
 use chrono::{Local, NaiveDate, Utc};
 use std::fs;
 use std::fs::OpenOptions;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
 pub struct AuditLogger {
@@ -156,6 +156,57 @@ pub struct AuditEntry {
     pub approved: bool,
 }
 
+impl AuditEntry {
+    /// Parse a log entry from a line of text
+    pub fn parse_entry(line: &str) -> Option<AuditEntry> {
+        let line = line.trim();
+        if !line.starts_with('[') {
+            return None;
+        }
+        let close_bracket = line.find(']')?;
+        let timestamp = line[1..close_bracket].to_string();
+
+        // Validate timestamp format (at least "YYYY-MM-DD")
+        if timestamp.len() < 10 {
+            return None;
+        }
+
+        let rest = line[close_bracket + 1..].trim();
+        let mut session_id = String::new();
+        let mut agent_type = String::new();
+        let mut tool = String::new();
+        let mut input = String::new();
+        let mut duration_ms: u64 = 0;
+        let mut approved = false;
+
+        for part in rest.split_whitespace() {
+            if let Some(val) = part.strip_prefix("session=") {
+                session_id = val.to_string();
+            } else if let Some(val) = part.strip_prefix("agent=") {
+                agent_type = val.to_string();
+            } else if let Some(val) = part.strip_prefix("tool=") {
+                tool = val.to_string();
+            } else if let Some(val) = part.strip_prefix("input=") {
+                input = val.to_string();
+            } else if let Some(val) = part.strip_prefix("duration=") {
+                duration_ms = val.parse().unwrap_or(0);
+            } else if let Some(val) = part.strip_prefix("status=") {
+                approved = val == "APPROVED";
+            }
+        }
+
+        Some(AuditEntry {
+            timestamp,
+            session_id,
+            agent_type,
+            tool,
+            input,
+            duration_ms,
+            approved,
+        })
+    }
+}
+
 pub struct AuditQuery {
     pub from_date: Option<NaiveDate>,
     pub to_date: Option<NaiveDate>,
@@ -202,6 +253,39 @@ impl AuditQuery {
             status_filter: status,
         }
     }
+    fn matches(&self, entry: &AuditEntry) -> bool {
+        if let Some(from) = self.from_date {
+            if entry.timestamp.len() < 10 {
+                return true; // Include entries with malformed timestamps in date-filtered queries
+            }
+            if let Ok(entry_date) = NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
+                && entry_date < from
+            {
+                return false;
+            }
+        }
+        if let Some(to) = self.to_date {
+            if entry.timestamp.len() < 10 {
+                return true;
+            }
+            if let Ok(entry_date) = NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
+                && entry_date > to
+            {
+                return false;
+            }
+        }
+        if let Some(ref pattern) = self.action_pattern
+            && !entry.tool.contains(pattern)
+        {
+            return false;
+        }
+        if let Some(status) = self.status_filter
+            && entry.approved != status
+        {
+            return false;
+        }
+        true
+    }
 
     pub fn execute(&self, log_path: &Path) -> Result<Vec<AuditEntry>, Box<dyn std::error::Error>> {
         let mut entries = Vec::new();
@@ -225,10 +309,9 @@ impl AuditQuery {
 
         for file_path in &log_files {
             if let Ok(file) = fs::File::open(file_path) {
-                let reader = BufReader::new(file);
-                for line in reader.lines() {
-                    let Ok(line) = line else { continue };
-                    if let Some(entry) = Self::parse_entry(&line)
+                let reader = std::io::BufReader::new(file);
+                for line in reader.lines().flatten() {
+                    if let Some(entry) = AuditEntry::parse_entry(&line)
                         && self.matches(&entry)
                     {
                         entries.push(entry);
@@ -238,75 +321,6 @@ impl AuditQuery {
         }
 
         Ok(entries)
-    }
-
-    fn parse_entry(line: &str) -> Option<AuditEntry> {
-        let line = line.trim();
-        if !line.starts_with('[') {
-            return None;
-        }
-        let close_bracket = line.find(']')?;
-        let timestamp = line[1..close_bracket].to_string();
-
-        let rest = line[close_bracket + 1..].trim();
-        let mut session_id = String::new();
-        let mut agent_type = String::new();
-        let mut tool = String::new();
-        let mut input = String::new();
-        let mut duration_ms: u64 = 0;
-        let mut approved = false;
-
-        for part in rest.split_whitespace() {
-            if let Some(val) = part.strip_prefix("session=") {
-                session_id = val.to_string();
-            } else if let Some(val) = part.strip_prefix("agent=") {
-                agent_type = val.to_string();
-            } else if let Some(val) = part.strip_prefix("tool=") {
-                tool = val.to_string();
-            } else if let Some(val) = part.strip_prefix("input=") {
-                input = val.to_string();
-            } else if let Some(val) = part.strip_prefix("duration=") {
-                duration_ms = val.parse().unwrap_or(0);
-            } else if let Some(val) = part.strip_prefix("status=") {
-                approved = val == "APPROVED";
-            }
-        }
-
-        Some(AuditEntry {
-            timestamp,
-            session_id,
-            agent_type,
-            tool,
-            input,
-            duration_ms,
-            approved,
-        })
-    }
-
-    fn matches(&self, entry: &AuditEntry) -> bool {
-        if let Some(from) = self.from_date
-            && let Ok(entry_date) = NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
-            && entry_date < from
-        {
-            return false;
-        }
-        if let Some(to) = self.to_date
-            && let Ok(entry_date) = NaiveDate::parse_from_str(&entry.timestamp[..10], "%Y-%m-%d")
-            && entry_date > to
-        {
-            return false;
-        }
-        if let Some(ref pattern) = self.action_pattern
-            && !entry.tool.contains(pattern)
-        {
-            return false;
-        }
-        if let Some(status) = self.status_filter
-            && entry.approved != status
-        {
-            return false;
-        }
-        true
     }
 }
 
@@ -372,5 +386,133 @@ impl AuditExport {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = fs::File::create(path)?;
         Self::export(entries, format, &mut file)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_parse_entry_valid() {
+        let line = "[2026-05-12T10:30:00.000Z] session=abc123 agent=llm tool=bash input=ls duration=100 status=APPROVED";
+        let entry = AuditEntry::parse_entry(line).unwrap();
+        assert_eq!(entry.timestamp, "2026-05-12T10:30:00.000Z");
+        assert_eq!(entry.session_id, "abc123");
+        assert_eq!(entry.tool, "bash");
+        assert_eq!(entry.approved, true);
+    }
+
+    #[test]
+    fn test_parse_entry_missing_brackets() {
+        let line = "no brackets here";
+        let entry = AuditEntry::parse_entry(line);
+        assert!(entry.is_none());
+    }
+
+    #[test]
+    fn test_parse_entry_short_timestamp() {
+        // Timestamp too short (< 10 chars) should return None
+        let line = "[2026-05-1] session=abc123 tool=ls";
+        let entry = AuditEntry::parse_entry(line);
+        assert!(entry.is_none());
+    }
+
+    #[test]
+    fn test_parse_entry_malformed() {
+        let line = "[2026-05-12T10:30:00Z]";
+        let entry = AuditEntry::parse_entry(line);
+        assert!(entry.is_some()); // Should parse with empty fields
+        let e = entry.unwrap();
+        assert_eq!(e.session_id, "");
+        assert_eq!(e.tool, "");
+    }
+
+    #[test]
+    fn test_matches_date_filter() {
+        let query = AuditQuery {
+            from_date: Some(NaiveDate::from_ymd_opt(2026, 1, 1).unwrap()),
+            to_date: Some(NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()),
+            action_pattern: None,
+            status_filter: None,
+        };
+        let entry = AuditEntry {
+            timestamp: "2026-06-15T10:00:00.000Z".to_string(),
+            session_id: "s1".to_string(),
+            agent_type: "llm".to_string(),
+            tool: "bash".to_string(),
+            input: "ls".to_string(),
+            duration_ms: 0,
+            approved: true,
+        };
+        assert!(query.matches(&entry));
+
+        let entry_outside = AuditEntry {
+            timestamp: "2025-06-15T10:00:00.000Z".to_string(),
+            session_id: "s1".to_string(),
+            agent_type: "llm".to_string(),
+            tool: "bash".to_string(),
+            input: "ls".to_string(),
+            duration_ms: 0,
+            approved: true,
+        };
+        assert!(!query.matches(&entry_outside));
+    }
+
+    #[test]
+    fn test_export_csv() {
+        let entries = vec![AuditEntry {
+            timestamp: "2026-01-01T00:00:00.000Z".to_string(),
+            session_id: "test-session".to_string(),
+            agent_type: "llm".to_string(),
+            tool: "bash".to_string(),
+            input: "ls -la".to_string(),
+            duration_ms: 100,
+            approved: true,
+        }];
+        let mut output = Vec::new();
+        let result = AuditExport::export(&entries, ExportFormat::Csv, &mut output);
+        assert!(result.is_ok());
+        let csv = String::from_utf8(output).unwrap();
+        assert!(csv.contains("timestamp"));
+        assert!(csv.contains("test-session"));
+    }
+
+    #[test]
+    fn test_export_json() {
+        let entries = vec![AuditEntry {
+            timestamp: "2026-01-01T00:00:00.000Z".to_string(),
+            session_id: "test-session".to_string(),
+            agent_type: "llm".to_string(),
+            tool: "bash".to_string(),
+            input: "ls -la".to_string(),
+            duration_ms: 100,
+            approved: true,
+        }];
+        let mut output = Vec::new();
+        let result = AuditExport::export(&entries, ExportFormat::Json, &mut output);
+        assert!(result.is_ok());
+        let json = String::from_utf8(output).unwrap();
+        assert!(json.contains("test-session"));
+    }
+
+    #[test]
+    fn test_export_to_file() {
+        let entries = vec![AuditEntry {
+            timestamp: "2026-01-01T00:00:00.000Z".to_string(),
+            session_id: "test-session".to_string(),
+            agent_type: "llm".to_string(),
+            tool: "bash".to_string(),
+            input: "ls -la".to_string(),
+            duration_ms: 100,
+            approved: true,
+        }];
+        let file = NamedTempFile::new().unwrap();
+        let path = file.path().to_path_buf();
+        drop(file);
+        let result = AuditExport::export_to_file(&entries, ExportFormat::Csv, &path);
+        assert!(result.is_ok());
+        assert!(path.exists());
     }
 }

@@ -471,32 +471,6 @@ pub fn get_tools_schema() -> Value {
         {
             "type": "function",
             "function": {
-                "name": "notify",
-                "description": "Send a desktop notification to the user. Works on Linux with desktop environments like Cinnamon, Gnome, or KDE.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "Notification title"
-                        },
-                        "body": {
-                            "type": "string",
-                            "description": "Notification body message"
-                        },
-                        "urgency": {
-                            "type": "string",
-                            "description": "Urgency level: low, normal, or critical",
-                            "enum": ["low", "normal", "critical"]
-                        }
-                    },
-                    "required": ["title", "body"]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
                 "name": "lsp_hover",
                 "description": "Get hover information for a symbol using LSP.",
                 "parameters": {

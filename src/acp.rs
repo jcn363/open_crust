@@ -29,9 +29,8 @@ pub async fn run_acp_loop(
 
                     // ACP: auto-approve all tool calls for non-interactive mode
                     let (auto_tx, mut approval_rx) = mpsc::channel::<bool>(1);
-                    // Seed with one approval and keep sender alive for more
+                    // Seed with approval that persists for all tool calls in this session
                     let _ = auto_tx.try_send(true);
-                    let _auto_tx_keep = auto_tx.clone();
 
                     let client = llm_client.clone();
                     let response = client

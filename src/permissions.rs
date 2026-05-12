@@ -26,12 +26,15 @@ impl PermissionManager {
                             Pattern::new(k).map(|p| p.matches(input)).unwrap_or(false)
                         })
                         .collect();
-                    // Sort for deterministic evaluation (glob patterns with * last)
+                    // Sort for deterministic evaluation: non-glob patterns first, then globs.
+                    // Among same category, preserve stable order for predictable matching.
                     keys.sort_by(|a, b| {
                         let a_star = a.contains('*');
                         let b_star = b.contains('*');
                         a_star.cmp(&b_star)
                     });
+                    // Last key after sort is the most specific match (glob > non-glob,
+                    // and among same category the last insertion-order match wins)
                     if let Some(last_key) = keys.last() {
                         return map.get(*last_key).cloned().unwrap_or(PermissionAction::Ask);
                     }

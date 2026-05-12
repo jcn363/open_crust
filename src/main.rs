@@ -1222,9 +1222,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if response.starts_with("[DIFF_REQUIRED]") {
                 let parts: Vec<&str> = response
                     .strip_prefix("[DIFF_REQUIRED]")
-                    .expect("gated by starts_with")
-                    .splitn(3, '|')
-                    .collect();
+                    .map(|s| s.splitn(3, '|').collect())
+                    .unwrap_or_default();
                 if parts.len() == 3 {
                     app.proposed_changes.push(crate::app::ProposedChange {
                         path: parts[0].to_string(),
@@ -2033,7 +2032,7 @@ async fn run_headless(
         }
         Err(e) => {
             eprintln!("Error: {}", e);
-            std::process::exit(1);
+            return Err(e);
         }
     }
 }

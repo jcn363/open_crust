@@ -247,7 +247,7 @@ pub fn send_notification(notification: &Notification) -> Result<(), String> {
 /// Uses dbus-send to invoke the Freedesktop Notifications DBus interface.
 /// This enables richer notifications with action buttons and persistence.
 pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Result<u32, String> {
-    let _urgency: u32 = match notification.options.urgency {
+    let urgency: u32 = match notification.options.urgency {
         NotificationUrgency::Low => 0,
         NotificationUrgency::Normal => 1,
         NotificationUrgency::Critical => 2,
@@ -281,7 +281,7 @@ pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Re
         .arg(format!("string:{}", notification.title))
         .arg(format!("string:{}", notification.body))
         .arg("array:string:[]") // Actions (empty for no buttons)
-        .arg("dict:string:variant:") // Hints (empty)
+        .arg(format!("dict:string:variant:urgency,byte:{}", urgency)) // Hints: include urgency
         .arg(format!("int32:{}", expire_timeout))
         .output();
 

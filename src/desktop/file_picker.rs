@@ -269,7 +269,7 @@ fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> Strin
     };
 
     format!(
-        r"
+        r#"
 import sys
 import os
 import subprocess
@@ -280,17 +280,17 @@ try:
     # when Nemo is not available or fails
 
     # Try using zenity for file selection (more reliable)
-    cmd = ['zenity', '--file-selection', '--title={}']
+    cmd = ['zenity', '--file-selection', '--title={title}']
 
     if '{action}' == 'directory':
         cmd.append('--directory')
     elif '{action}' == 'open-multiple':
         cmd.append('--multiple')
 
-    cmd.append('--filename={}')
+    cmd.append('--filename={dir}')
 
     if len('{filter_str}') > 0:
-        cmd.append('--file-filter={}')
+        cmd.append('--file-filter={filter_str}')
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
@@ -301,8 +301,11 @@ try:
 except Exception as e:
     print(str(e), file=sys.stderr)
     sys.exit(1)
-",
-        title, dir, filter_str
+"#,
+        action = action,
+        title = title,
+        dir = dir,
+        filter_str = filter_str,
     )
 }
 

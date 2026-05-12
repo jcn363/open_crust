@@ -435,9 +435,8 @@ impl Config {
 
         if config_path.exists() {
             match fs::read_to_string(&config_path) {
-                Ok(content) => match serde_json::from_str(&content) {
+                Ok(content) => match serde_json::from_str::<Config>(&content) {
                     Ok(config) => {
-                        let config: Config = config;
                         let _ = config.validate();
                         config
                     }
@@ -858,5 +857,70 @@ mod tests {
         // Paid model without key should produce warnings
         let result = cfg.validate();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_all_providers_missing_keys() {
+        // Ensure each provider produces a warning when its key is missing
+        let providers = [
+            (ProviderType::OpenAI, "gpt-4o"),
+            (ProviderType::Gemini, "gemini-pro"),
+            (ProviderType::Mistral, "mistral-large"),
+            (ProviderType::Anthropic, "claude-sonnet"),
+            (ProviderType::Groq, "llama3-70b"),
+            (ProviderType::TogetherAi, "togethercomputer/llama-2-70b"),
+            (ProviderType::Replicate, "replicate/model"),
+            (ProviderType::DeepSeek, "deepseek-chat"),
+            (ProviderType::LocalAi, "local-model"),
+        ];
+
+        for (provider, model) in providers {
+            let cfg = Config {
+                provider: provider.clone(),
+                model: model.to_string(),
+                openai_key: None,
+                gemini_api_key: None,
+                mistral_api_key: None,
+                anthropic_api_key: None,
+                groq_api_key: None,
+                together_api_key: None,
+                replicate_api_key: None,
+                deepseek_api_key: None,
+                localai_url: None,
+                localai_api_key: None,
+                ..Default::default()
+            };
+            let result = cfg.validate();
+            // All providers except Ollama (which has no key requirement) should fail
+            if provider != ProviderType::Ollama {
+                assert!(result.is_err(), "Provider {:?} should warn about missing key", provider);
+            }
+        }
+    }
+
+    #[test]
+    fn validate_hex_color_accepts_valid_colors() {
+        let mut warnings = Vec::new();
+        validate_hex_color("#1e1e1e", "test.field", &mut warnings);
+        assert!(warnings.is_empty(), "Valid 7-char hex should not warn");
+
+        let mut warnings = Vec::new();
+        validate_hex_color("#fff", "test.field", &mut warnings);
+        assert!(warnings.is_empty(), "Valid 4-char hex should not warn");
+    }
+
+    #[test]
+    fn validate_hex_color_rejects_invalid_colors() {
+        let mut warnings = Vec::new();
+        validate_hex_color("not-a-color", "test.field", &mut warnings);
+        assert!(!warnings.is_empty(), "Invalid hex should warn");
+
+        let mut warnings = Vec::new();
+        validate_hex_color("#gggggg", "test.field", &mut warnings);
+        assert!(!warnings.is_empty(), "Invalid hex chars should warn");
+
+        let mut warnings = Vec::new();
+        validate_hex_color("", "test.field", &mut warnings);
+        assert!(!warnings.is_empty(), "Empty string should warn");
     }
 }
