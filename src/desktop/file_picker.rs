@@ -30,7 +30,6 @@ pub struct FilePickerOptions {
     /// Window title
     pub title: Option<String>,
     /// Confirm file overwrite (for Save mode)
-    #[allow(dead_code)]
     pub confirm_overwrite: bool,
 }
 
@@ -45,6 +44,7 @@ pub struct FileFilter {
 
 impl FileFilter {
     /// Create a new filter
+    #[allow(dead_code)]
     pub fn new(name: impl Into<String>, patterns: impl Into<Vec<String>>) -> Self {
         Self {
             name: name.into(),
@@ -53,6 +53,7 @@ impl FileFilter {
     }
 
     /// Common filter: source code
+    #[allow(dead_code)]
     pub fn source_code() -> Self {
         Self::new(
             "Source Code",
@@ -62,34 +63,6 @@ impl FileFilter {
                 "*.js".to_string(),
                 "*.ts".to_string(),
                 "*.go".to_string(),
-            ],
-        )
-    }
-
-    /// Common filter: text files
-    #[allow(dead_code)]
-    pub fn text() -> Self {
-        Self::new(
-            "Text Files",
-            vec![
-                "*.txt".to_string(),
-                "*.md".to_string(),
-                "*.json".to_string(),
-            ],
-        )
-    }
-
-    /// Common filter: images
-    #[allow(dead_code)]
-    pub fn images() -> Self {
-        Self::new(
-            "Images",
-            vec![
-                "*.png".to_string(),
-                "*.jpg".to_string(),
-                "*.jpeg".to_string(),
-                "*.gif".to_string(),
-                "*.svg".to_string(),
             ],
         )
     }
@@ -106,18 +79,13 @@ pub struct FilePickerResult {
 
 impl FilePickerResult {
     /// Single file result (convenience)
+    #[allow(dead_code)]
     pub fn single(self) -> Option<PathBuf> {
         if self.cancelled {
             None
         } else {
             self.paths.into_iter().next()
         }
-    }
-
-    /// Check if cancelled
-    #[allow(dead_code)]
-    pub fn is_cancelled(&self) -> bool {
-        self.cancelled
     }
 }
 
@@ -135,10 +103,8 @@ pub enum FilePickerBackend {
     None,
 }
 
-#[allow(dead_code)]
 impl FilePickerBackend {
     /// Get backend name
-    #[allow(dead_code)]
     pub fn name(&self) -> &str {
         match self {
             FilePickerBackend::Nemo => "nemo",
@@ -150,7 +116,6 @@ impl FilePickerBackend {
 }
 
 /// Detect available file picker backends
-#[allow(dead_code)]
 pub fn detect_file_picker_backend() -> FilePickerBackend {
     // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
     let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
@@ -193,7 +158,6 @@ pub fn detect_file_picker_backend() -> FilePickerBackend {
 }
 
 /// Check if file picker is available
-#[allow(dead_code)]
 pub fn is_file_picker_available() -> bool {
     detect_file_picker_backend() != FilePickerBackend::None
 }
@@ -269,6 +233,12 @@ fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> Strin
         filters.join("|")
     };
 
+    let confirm_overwrite_py = if options.confirm_overwrite && mode == FilePickerMode::Save {
+        "True"
+    } else {
+        "False"
+    };
+
     format!(
         r#"
 import sys
@@ -276,17 +246,15 @@ import os
 import subprocess
 
 try:
-    # Use nemo --select or nemo --no-default-window to open file picker
-    # Nemo doesn't have a native file picker dialog via Python, so we use zenity as fallback
-    # when Nemo is not available or fails
-
-    # Try using zenity for file selection (more reliable)
     cmd = ['zenity', '--file-selection', '--title={title}']
 
     if '{action}' == 'directory':
         cmd.append('--directory')
     elif '{action}' == 'open-multiple':
         cmd.append('--multiple')
+
+    if '{action}' == 'save' and {confirm_overwrite}:
+        cmd.append('--confirm-overwrite')
 
     cmd.append('--filename={dir}')
 
@@ -307,11 +275,11 @@ except Exception as e:
         title = title,
         dir = dir,
         filter_str = filter_str,
+        confirm_overwrite = confirm_overwrite_py,
     )
 }
 
 /// Open file picker using Zenity
-#[allow(dead_code)]
 pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let mut args = vec!["--file-selection".to_string()];
 
@@ -372,7 +340,6 @@ pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> 
 }
 
 /// Open file picker using KDialog (KDE fallback)
-#[allow(dead_code)]
 pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let dialog_type = match mode {
         FilePickerMode::OpenFile => "--getopenfilename",
@@ -450,7 +417,6 @@ pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) ->
 }
 
 /// Show file picker using the best available backend
-#[allow(dead_code)]
 pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let backend = detect_file_picker_backend();
 
@@ -463,100 +429,6 @@ pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePic
             cancelled: true,
         },
     }
-}
-
-/// Open a single file (convenience function)
-#[allow(dead_code)]
-pub fn open_file(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
-    let options = FilePickerOptions {
-        initial_dir,
-        ..Default::default()
-    };
-    file_picker(FilePickerMode::OpenFile, &options).single()
-}
-
-/// Open multiple files (convenience function)
-#[allow(dead_code)]
-pub fn open_files(initial_dir: Option<PathBuf>) -> Vec<PathBuf> {
-    let options = FilePickerOptions {
-        initial_dir,
-        ..Default::default()
-    };
-    let result = file_picker(FilePickerMode::OpenMultiple, &options);
-    if result.cancelled {
-        vec![]
-    } else {
-        result.paths
-    }
-}
-
-/// Select a directory (convenience function)
-#[allow(dead_code)]
-pub fn select_directory(initial_dir: Option<PathBuf>) -> Option<PathBuf> {
-    let options = FilePickerOptions {
-        initial_dir,
-        ..Default::default()
-    };
-    file_picker(FilePickerMode::Directory, &options).single()
-}
-
-/// Save a file (convenience function)
-#[allow(dead_code)]
-pub fn save_file(initial_dir: Option<PathBuf>, default_name: &str) -> Option<PathBuf> {
-    let mut options = FilePickerOptions {
-        initial_dir,
-        confirm_overwrite: true,
-        ..Default::default()
-    };
-    if let Some(ref mut dir) = options.initial_dir
-        && dir.exists()
-        && !dir.is_file()
-    {
-        dir.push(default_name);
-    }
-    let result = file_picker(FilePickerMode::Save, &options);
-    if result.cancelled {
-        None
-    } else {
-        result.paths.into_iter().next()
-    }
-}
-
-/// Pick source code files
-#[allow(dead_code)]
-pub fn pick_source_file() -> Option<PathBuf> {
-    let options = FilePickerOptions {
-        filters: vec![FileFilter::source_code()],
-        title: Some("Select Source File".to_string()),
-        ..Default::default()
-    };
-    file_picker(FilePickerMode::OpenFile, &options).single()
-}
-
-/// Pick multiple source files
-#[allow(dead_code)]
-pub fn pick_source_files() -> Vec<PathBuf> {
-    let options = FilePickerOptions {
-        filters: vec![FileFilter::source_code()],
-        title: Some("Select Source Files".to_string()),
-        ..Default::default()
-    };
-    let result = file_picker(FilePickerMode::OpenMultiple, &options);
-    if result.cancelled {
-        vec![]
-    } else {
-        result.paths
-    }
-}
-
-/// Pick a project directory
-#[allow(dead_code)]
-pub fn pick_project_directory() -> Option<PathBuf> {
-    let options = FilePickerOptions {
-        title: Some("Select Project Directory".to_string()),
-        ..Default::default()
-    };
-    file_picker(FilePickerMode::Directory, &options).single()
 }
 
 #[cfg(test)]
@@ -589,7 +461,7 @@ mod tests {
             paths: vec![],
             cancelled: true,
         };
-        assert!(result.is_cancelled());
+        assert!(result.cancelled);
         assert_eq!(result.single(), None);
     }
 }

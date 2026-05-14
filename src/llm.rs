@@ -224,17 +224,21 @@ impl LlmClient {
 
         loop {
             let res = match self.config.provider {
-                ProviderType::Ollama => self.generate_ollama(messages_history).await?,
-                ProviderType::OpenRouter => self.generate_openrouter(messages_history).await?,
-                ProviderType::OpenAI => self.generate_openai(messages_history).await?,
-                ProviderType::Gemini => self.generate_gemini(messages_history).await?,
-                ProviderType::Mistral => self.generate_mistral(messages_history).await?,
-                ProviderType::Anthropic => self.generate_anthropic(messages_history).await?,
-                ProviderType::Groq => self.generate_groq(messages_history).await?,
-                ProviderType::TogetherAi => self.generate_together_ai(messages_history).await?,
-                ProviderType::Replicate => self.generate_replicate(messages_history).await?,
-                ProviderType::DeepSeek => self.generate_deepseek(messages_history).await?,
-                ProviderType::LocalAi => self.generate_local_ai(messages_history).await?,
+                ProviderType::Ollama => self.generate_ollama(messages_history, None).await?,
+                ProviderType::OpenRouter => {
+                    self.generate_openrouter(messages_history, None).await?
+                }
+                ProviderType::OpenAI => self.generate_openai(messages_history, None).await?,
+                ProviderType::Gemini => self.generate_gemini(messages_history, None).await?,
+                ProviderType::Mistral => self.generate_mistral(messages_history, None).await?,
+                ProviderType::Anthropic => self.generate_anthropic(messages_history, None).await?,
+                ProviderType::Groq => self.generate_groq(messages_history, None).await?,
+                ProviderType::TogetherAi => {
+                    self.generate_together_ai(messages_history, None).await?
+                }
+                ProviderType::Replicate => self.generate_replicate(messages_history, None).await?,
+                ProviderType::DeepSeek => self.generate_deepseek(messages_history, None).await?,
+                ProviderType::LocalAi => self.generate_local_ai(messages_history, None).await?,
             };
 
             if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
@@ -334,7 +338,9 @@ impl LlmClient {
         messages: &[Value],
         url: &str,
         auth_header: Option<(&str, String)>,
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let model = model_override.unwrap_or(&self.config.model);
         // Assemble tool schemas using ToolExecutor
         let tools_schema = crate::tool_executor::get_all_tool_schemas(
             &self.mcp_manager,
@@ -344,7 +350,7 @@ impl LlmClient {
 
         // Build request body
         let body = json!({
-            "model": self.config.model,
+            "model": model,
             "messages": messages,
             "tools": tools_schema,
             "stream": false
@@ -364,6 +370,7 @@ impl LlmClient {
     async fn generate_ollama(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let ollama_url = self
             .config
@@ -371,13 +378,19 @@ impl LlmClient {
             .as_deref()
             .unwrap_or("http://localhost:11434");
         // Use Ollama-native endpoint
-        self.generate_completion(messages, &format!("{}/api/chat", ollama_url), None)
-            .await
+        self.generate_completion(
+            messages,
+            &format!("{}/api/chat", ollama_url),
+            None,
+            model_override,
+        )
+        .await
     }
 
     async fn generate_openrouter(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.openrouter_key.as_deref().unwrap_or("");
         let res_json = self
@@ -385,6 +398,7 @@ impl LlmClient {
                 messages,
                 "https://openrouter.ai/api/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -398,6 +412,7 @@ impl LlmClient {
     async fn generate_openai(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.openai_key.as_deref().unwrap_or("");
         let res_json = self
@@ -405,6 +420,7 @@ impl LlmClient {
                 messages,
                 "https://api.openai.com/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -418,6 +434,7 @@ impl LlmClient {
     async fn generate_gemini(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.gemini_api_key.as_deref().unwrap_or("");
         // Use Google's OpenAI-compatible endpoint for easier integration
@@ -426,6 +443,7 @@ impl LlmClient {
                 messages,
                 "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -439,6 +457,7 @@ impl LlmClient {
     async fn generate_mistral(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.mistral_api_key.as_deref().unwrap_or("");
         let res_json = self
@@ -446,6 +465,7 @@ impl LlmClient {
                 messages,
                 "https://api.mistral.ai/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -459,6 +479,7 @@ impl LlmClient {
     async fn generate_anthropic(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.anthropic_api_key.as_deref().unwrap_or("");
 
@@ -474,8 +495,9 @@ impl LlmClient {
             }
         }
 
+        let model = model_override.unwrap_or(&self.config.model);
         let body = json!({
-            "model": self.config.model,
+            "model": model,
             "messages": anthropic_messages,
             "max_tokens": 4096
         });
@@ -502,6 +524,7 @@ impl LlmClient {
     async fn generate_groq(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.groq_api_key.as_deref().unwrap_or("");
         let res_json = self
@@ -509,6 +532,7 @@ impl LlmClient {
                 messages,
                 "https://api.groq.com/openai/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -522,6 +546,7 @@ impl LlmClient {
     async fn generate_together_ai(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.together_api_key.as_deref().unwrap_or("");
         let res_json = self
@@ -529,6 +554,7 @@ impl LlmClient {
                 messages,
                 "https://api.together.xyz/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -542,6 +568,7 @@ impl LlmClient {
     async fn generate_replicate(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.replicate_api_key.as_deref().unwrap_or("");
         let res_json = self
@@ -549,6 +576,7 @@ impl LlmClient {
                 messages,
                 "https://api.replicate.com/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -562,6 +590,7 @@ impl LlmClient {
     async fn generate_deepseek(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let api_key = self.config.deepseek_api_key.as_deref().unwrap_or("");
         let res_json = self
@@ -569,6 +598,7 @@ impl LlmClient {
                 messages,
                 "https://api.deepseek.com/v1/chat/completions",
                 Some(("Authorization", format!("Bearer {}", api_key))),
+                model_override,
             )
             .await?;
         Ok(res_json
@@ -582,6 +612,7 @@ impl LlmClient {
     async fn generate_local_ai(
         &self,
         messages: &[Value],
+        model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let base_url = self
             .config
@@ -595,7 +626,12 @@ impl LlmClient {
             Some(("Authorization", format!("Bearer {}", api_key)))
         };
         let res_json = self
-            .generate_completion(messages, &format!("{}/v1/chat/completions", base_url), auth)
+            .generate_completion(
+                messages,
+                &format!("{}/v1/chat/completions", base_url),
+                auth,
+                model_override,
+            )
             .await?;
         Ok(res_json
             .get("choices")
@@ -606,21 +642,31 @@ impl LlmClient {
     }
 
     /// Simple query without tool execution - for multi-agent comparison
-    pub async fn query_simple(&self, prompt: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+    pub async fn query_simple(
+        &self,
+        prompt: &str,
+        model_override: Option<&str>,
+    ) -> Result<String, Box<dyn Error + Send + Sync>> {
         let messages = vec![json!({"role": "user", "content": prompt})];
 
-        let res = match self.config.provider {
-            ProviderType::Ollama => self.generate_ollama(&messages).await?,
-            ProviderType::OpenRouter => self.generate_openrouter(&messages).await?,
-            ProviderType::OpenAI => self.generate_openai(&messages).await?,
-            ProviderType::Gemini => self.generate_gemini(&messages).await?,
-            ProviderType::Mistral => self.generate_mistral(&messages).await?,
-            ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
-            ProviderType::Groq => self.generate_groq(&messages).await?,
-            ProviderType::TogetherAi => self.generate_together_ai(&messages).await?,
-            ProviderType::Replicate => self.generate_replicate(&messages).await?,
-            ProviderType::DeepSeek => self.generate_deepseek(&messages).await?,
-            ProviderType::LocalAi => self.generate_local_ai(&messages).await?,
+        let (provider, model) = if let Some(override_str) = model_override {
+            self.config.parse_model_string(override_str)
+        } else {
+            (self.config.provider.clone(), self.config.model.clone())
+        };
+
+        let res = match provider {
+            ProviderType::Ollama => self.generate_ollama(&messages, Some(&model)).await?,
+            ProviderType::OpenRouter => self.generate_openrouter(&messages, Some(&model)).await?,
+            ProviderType::OpenAI => self.generate_openai(&messages, Some(&model)).await?,
+            ProviderType::Gemini => self.generate_gemini(&messages, Some(&model)).await?,
+            ProviderType::Mistral => self.generate_mistral(&messages, Some(&model)).await?,
+            ProviderType::Anthropic => self.generate_anthropic(&messages, Some(&model)).await?,
+            ProviderType::Groq => self.generate_groq(&messages, Some(&model)).await?,
+            ProviderType::TogetherAi => self.generate_together_ai(&messages, Some(&model)).await?,
+            ProviderType::Replicate => self.generate_replicate(&messages, Some(&model)).await?,
+            ProviderType::DeepSeek => self.generate_deepseek(&messages, Some(&model)).await?,
+            ProviderType::LocalAi => self.generate_local_ai(&messages, Some(&model)).await?,
         };
 
         // Extract content from response - handle multiple formats:
@@ -718,27 +764,27 @@ impl LlmClient {
         let summary_result = match self.config.provider {
             crate::config::ProviderType::Ollama => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_ollama(&messages).await
+                self.generate_ollama(&messages, None).await
             }
             crate::config::ProviderType::OpenRouter => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_openrouter(&messages).await
+                self.generate_openrouter(&messages, None).await
             }
             crate::config::ProviderType::OpenAI => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_openai(&messages).await
+                self.generate_openai(&messages, None).await
             }
             crate::config::ProviderType::Gemini => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_gemini(&messages).await
+                self.generate_gemini(&messages, None).await
             }
             crate::config::ProviderType::Mistral => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_mistral(&messages).await
+                self.generate_mistral(&messages, None).await
             }
             crate::config::ProviderType::Anthropic => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_anthropic(&messages).await
+                self.generate_anthropic(&messages, None).await
             }
             crate::config::ProviderType::Groq
             | crate::config::ProviderType::TogetherAi
@@ -746,7 +792,7 @@ impl LlmClient {
             | crate::config::ProviderType::DeepSeek
             | crate::config::ProviderType::LocalAi => {
                 let messages = [json!({"role": "user", "content": &summarize_prompt})];
-                self.generate_openai(&messages).await
+                self.generate_openai(&messages, None).await
             }
         };
 
@@ -801,17 +847,21 @@ impl LlmClient {
         let messages = vec![json!({"role": "user", "content": &prompt})];
 
         let result = match self.config.provider {
-            crate::config::ProviderType::Ollama => self.generate_ollama(&messages).await?,
-            crate::config::ProviderType::OpenRouter => self.generate_openrouter(&messages).await?,
-            crate::config::ProviderType::OpenAI => self.generate_openai(&messages).await?,
-            crate::config::ProviderType::Gemini => self.generate_gemini(&messages).await?,
-            crate::config::ProviderType::Mistral => self.generate_mistral(&messages).await?,
-            crate::config::ProviderType::Anthropic => self.generate_anthropic(&messages).await?,
+            crate::config::ProviderType::Ollama => self.generate_ollama(&messages, None).await?,
+            crate::config::ProviderType::OpenRouter => {
+                self.generate_openrouter(&messages, None).await?
+            }
+            crate::config::ProviderType::OpenAI => self.generate_openai(&messages, None).await?,
+            crate::config::ProviderType::Gemini => self.generate_gemini(&messages, None).await?,
+            crate::config::ProviderType::Mistral => self.generate_mistral(&messages, None).await?,
+            crate::config::ProviderType::Anthropic => {
+                self.generate_anthropic(&messages, None).await?
+            }
             crate::config::ProviderType::Groq
             | crate::config::ProviderType::TogetherAi
             | crate::config::ProviderType::Replicate
             | crate::config::ProviderType::DeepSeek
-            | crate::config::ProviderType::LocalAi => self.generate_openai(&messages).await?,
+            | crate::config::ProviderType::LocalAi => self.generate_openai(&messages, None).await?,
         };
 
         // Extract content from the response based on provider

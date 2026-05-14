@@ -244,7 +244,6 @@ impl Coordinator {
     ///
     /// Public API method for bulk cancellation of agent workloads. Clears the
     /// shared state and aborts all active agent tasks.
-    #[allow(dead_code)]
     pub fn cancel_all(&mut self) {
         // Clear shared state to signal cancellation to TUI
         if let Some(ref shared) = self.shared_state
@@ -252,8 +251,15 @@ impl Coordinator {
         {
             guard.clear();
         }
-        // Note: individual agent tasks will be cleaned up via drop semantics
-        // when the Coordinator is dropped or when tasks complete naturally.
+        // Abort all active agent tasks
+        while self.pool.active_count() > 0 {
+            // Collect active IDs and cancel them
+            let ids: Vec<uuid::Uuid> = self.pool.running_ids();
+            for id in &ids {
+                self.pool.cancel(id);
+            }
+            self.pool.cleanup(&ids);
+        }
     }
 }
 

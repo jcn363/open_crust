@@ -40,7 +40,6 @@ pub enum ResponseMode {
 }
 
 impl ResponseMode {
-    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Normal => "normal",
@@ -680,7 +679,7 @@ impl Config {
 
     /// Parse a model string in "provider/model" format
     /// Returns (provider, model_id)
-    fn parse_model_string(&self, model_str: &str) -> (ProviderType, String) {
+    pub(crate) fn parse_model_string(&self, model_str: &str) -> (ProviderType, String) {
         // Check if it's a model alias first
         if let Some(alias) = self.model_aliases.get(model_str) {
             return (alias.provider.clone(), alias.model_id.clone());

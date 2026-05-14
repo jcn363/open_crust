@@ -86,6 +86,7 @@ impl AgentPool {
         let description = task.description.clone();
         let timeout = Duration::from_secs(self.config.timeout_secs);
         let max_retries = self.config.max_retries;
+        let model_override = self.config.model_override.clone();
 
         let handle = tokio::spawn(async move {
             let mut last_error = String::from("unknown error");
@@ -97,8 +98,11 @@ impl AgentPool {
                     tokio::time::sleep(backoff).await;
                 }
 
-                let result =
-                    tokio::time::timeout(timeout, llm_client.query_simple(&description)).await;
+                let result = tokio::time::timeout(
+                    timeout,
+                    llm_client.query_simple(&description, model_override.as_deref()),
+                )
+                .await;
 
                 match result {
                     Ok(Ok(output)) => {
@@ -136,10 +140,6 @@ impl AgentPool {
     }
 
     /// Cancel a running agent (aborts the tokio task)
-    ///
-    /// Public API for task cancellation. Used by higher-level orchestration
-    /// when explicit cancellation is needed before natural completion.
-    #[allow(dead_code)]
     pub fn cancel(&mut self, task_id: &uuid::Uuid) -> bool {
         self.active_agents.remove(task_id).is_some_and(|h| {
             h.abort();
@@ -148,23 +148,20 @@ impl AgentPool {
     }
 
     /// Number of agents currently active
-    ///
-    /// Public API for pool state inspection. Used by monitoring, diagnostics,
-    /// and capacity checking during load balancing.
-    #[allow(dead_code)]
     pub fn active_count(&self) -> usize {
         self.active_agents.len()
     }
 
     /// Remove completed agent handles from tracking
-    ///
-    /// Batch cleanup operation for completed agents. Part of the public API
-    /// for manual resource management when using background agent processing.
-    #[allow(dead_code)]
     pub fn cleanup(&mut self, ids: &[uuid::Uuid]) {
         for id in ids {
             self.active_agents.remove(id);
         }
+    }
+
+    /// Get all running agent task IDs
+    pub fn running_ids(&self) -> Vec<uuid::Uuid> {
+        self.active_agents.keys().copied().collect()
     }
 }
 

@@ -289,7 +289,7 @@ impl App {
             let llm = self.llm_client.clone();
 
             tokio::spawn(async move {
-                let result = llm.query_simple(&prompt).await;
+                let result = llm.query_simple(&prompt, None).await;
                 let response = match result {
                     Ok(content) => format!("[TASK_COMPLETE]{}::{}", task_id, content),
                     Err(e) => format!("[TASK_FAILED]{}::{}", task_id, e),

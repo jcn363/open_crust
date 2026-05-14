@@ -40,27 +40,12 @@ impl NotificationUrgency {
 pub enum NotificationCategory {
     #[default]
     General,
-    #[expect(dead_code, reason = "NotificationCategory variant")]
-    Message,
-    #[expect(dead_code, reason = "NotificationCategory variant")]
-    Email,
-    #[expect(dead_code, reason = "NotificationCategory variant")]
-    Alarm,
-    #[expect(dead_code, reason = "NotificationCategory variant")]
-    Transfer,
 }
 
-#[allow(dead_code)]
 impl NotificationCategory {
     /// Get DBus category string
     pub fn to_dbus(&self) -> &str {
-        match self {
-            NotificationCategory::General => "general",
-            NotificationCategory::Message => "im",
-            NotificationCategory::Email => "email",
-            NotificationCategory::Alarm => "alarm",
-            NotificationCategory::Transfer => "transfer",
-        }
+        "general"
     }
 }
 
@@ -76,7 +61,6 @@ pub struct NotificationOptions {
     /// Category
     pub category: NotificationCategory,
     /// Action to invoke on click
-    #[expect(dead_code, reason = "click action for notification")]
     pub action: Option<String>,
 }
 
@@ -91,7 +75,6 @@ pub struct Notification {
     pub options: NotificationOptions,
 }
 
-#[expect(dead_code, reason = "notification builder API")]
 impl Notification {
     /// Create a new notification
     pub fn new(title: impl Into<String>, body: impl Into<String>) -> Self {
@@ -119,17 +102,11 @@ impl Notification {
         self.options.icon = Some(icon.into());
         self
     }
-
-    /// Set category
-    pub fn with_category(mut self, category: NotificationCategory) -> Self {
-        self.options.category = category;
-        self
-    }
 }
 
 /// Notification daemon status
 #[derive(Debug, Clone, Default)]
-#[expect(dead_code, reason = "daemon capability inspection")]
+#[expect(dead_code, reason = "daemon capability inspection fields")]
 pub struct NotificationDaemon {
     /// Whether notifications are available
     pub available: bool,
@@ -142,7 +119,6 @@ pub struct NotificationDaemon {
 }
 
 /// Check if notification daemon is available
-#[allow(dead_code)]
 pub fn check_notification_daemon() -> NotificationDaemon {
     // Try to get info from dbus-send
     let output = Command::new("dbus-send")
@@ -192,7 +168,6 @@ pub fn check_notification_daemon() -> NotificationDaemon {
 }
 
 /// Check if notifications require a running daemon
-#[expect(dead_code, reason = "capability check API")]
 pub fn is_notification_available() -> bool {
     check_notification_daemon().available
 }
@@ -280,7 +255,13 @@ pub fn send_notification_dbus(app_name: &str, notification: &Notification) -> Re
         .arg(format!("string:{}", icon))
         .arg(format!("string:{}", notification.title))
         .arg(format!("string:{}", notification.body))
-        .arg("array:string:[]") // Actions (empty for no buttons)
+        .arg({
+            if let Some(ref action) = notification.options.action {
+                format!("array:string:default,{}", action)
+            } else {
+                "array:string:[]".to_string()
+            }
+        }) // Actions (empty for no buttons)
         .arg(format!("dict:string:variant:urgency,byte:{}", urgency)) // Hints: include urgency
         .arg(format!("int32:{}", expire_timeout))
         .output();
@@ -320,7 +301,7 @@ fn simple_hash(s: &str) -> u32 {
 }
 
 /// Close a notification by ID
-#[expect(dead_code, reason = "notification dismissal API")]
+#[allow(dead_code)]
 pub fn close_notification(id: u32) -> Result<(), String> {
     let output = Command::new("dbus-send")
         .args([
@@ -363,30 +344,8 @@ pub fn send_notification_smart(notification: &Notification) -> Result<(), String
     send_notification(notification)
 }
 
-/// Send a simple notification (convenience function)
-#[expect(dead_code, reason = "convenience notification wrapper")]
-pub fn notify(title: impl Into<String>, body: impl Into<String>) -> Result<(), String> {
-    let notification = Notification::new(title, body);
-    send_notification(&notification)
-}
-
-/// Send a notification with options
-#[expect(dead_code, reason = "convenience notification wrapper")]
-pub fn notify_with_options(
-    title: impl Into<String>,
-    body: impl Into<String>,
-    options: NotificationOptions,
-) -> Result<(), String> {
-    let notification = Notification {
-        title: title.into(),
-        body: body.into(),
-        options,
-    };
-    send_notification(&notification)
-}
-
-/// Show a transient notification that auto-dismiss after duration
-#[expect(dead_code, reason = "convenience notification wrapper")]
+/// Show a transient notification with auto-dismiss
+#[allow(dead_code)]
 pub fn notify_timed(
     title: impl Into<String>,
     body: impl Into<String>,
@@ -398,14 +357,12 @@ pub fn notify_timed(
 }
 
 /// Show an error notification
-#[expect(dead_code, reason = "convenience notification wrapper")]
 pub fn notify_error(title: impl Into<String>, body: impl Into<String>) -> Result<(), String> {
     let notification = Notification::new(title, body).with_urgency(NotificationUrgency::Critical);
     send_notification(&notification)
 }
 
 /// Show a success notification
-#[expect(dead_code, reason = "convenience notification wrapper")]
 pub fn notify_success(title: impl Into<String>, body: impl Into<String>) -> Result<(), String> {
     let notification = Notification::new(title, body)
         .with_urgency(NotificationUrgency::Low)
