@@ -9,6 +9,22 @@ use ratatui::{
 use super::ThemeContext;
 use crate::app::{App, Mode};
 
+/// Get the input text style for the current mode
+fn input_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
+    match mode {
+        Mode::Insert => Style::default().fg(theme.accent),
+        _ => Style::default().fg(theme.fg),
+    }
+}
+
+/// Get the input border style for the current mode
+fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
+    match mode {
+        Mode::Insert => Style::default().fg(theme.accent),
+        _ => Style::default().fg(theme.border),
+    }
+}
+
 pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
     let mut all_items: Vec<ListItem> = Vec::new();
 
@@ -96,30 +112,12 @@ pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         }
         line
     })
-    .style(match app.mode {
-        Mode::Normal => Style::default().fg(theme.fg),
-        Mode::Insert => Style::default().fg(theme.accent),
-        Mode::Review => Style::default().fg(theme.fg),
-        Mode::Servers => Style::default().fg(theme.fg),
-        Mode::SkillBrowser => Style::default().fg(theme.fg),
-        Mode::CommandPalette => Style::default().fg(theme.fg),
-        Mode::McpShowcase => Style::default().fg(theme.fg),
-        Mode::MissionControl => Style::default().fg(theme.fg),
-    })
+    .style(input_style_for_mode(app.mode, theme))
     .block(
         Block::default()
             .borders(Borders::ALL)
             .title(" Input ")
-            .border_style(match app.mode {
-                Mode::Normal => Style::default().fg(theme.border),
-                Mode::Insert => Style::default().fg(theme.accent),
-                Mode::Review => Style::default().fg(theme.border),
-                Mode::Servers => Style::default().fg(theme.border),
-                Mode::SkillBrowser => Style::default().fg(theme.border),
-                Mode::CommandPalette => Style::default().fg(theme.border),
-                Mode::McpShowcase => Style::default().fg(theme.border),
-                Mode::MissionControl => Style::default().fg(theme.border),
-            }),
+            .border_style(input_border_style_for_mode(app.mode, theme)),
     );
     f.render_widget(input, area);
 

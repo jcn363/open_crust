@@ -10,6 +10,22 @@ use super::ThemeContext;
 use super::layout::centered_rect;
 use crate::app::{App, ChangeStatus};
 
+/// Create a themed block with title and accent border
+fn themed_block<'a>(title: &str, theme: &ThemeContext) -> Block<'a> {
+    Block::default()
+        .borders(Borders::ALL)
+        .title(format!(" {} ", title))
+        .border_style(Style::default().fg(theme.accent))
+}
+
+/// Create a themed block with custom border color
+fn themed_block_with_color<'a>(title: &str, border_color: Color) -> Block<'a> {
+    Block::default()
+        .borders(Borders::ALL)
+        .title(format!(" {} ", title))
+        .border_style(Style::default().fg(border_color))
+}
+
 pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     if app.proposed_changes.is_empty() {
         return;
@@ -69,12 +85,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .collect();
 
     let file_list_widget = List::new(file_list)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" Files ")
-                .border_style(Style::default().fg(theme.accent)),
-        )
+        .block(themed_block("Files", theme))
         .highlight_style(Style::default().bg(Color::DarkGray));
     f.render_widget(file_list_widget, main_chunks[0]);
 
@@ -85,18 +96,10 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(main_chunks[1]);
 
-        let original = Paragraph::new(change.original.as_str()).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" Original ")
-                .border_style(Style::default().fg(Color::Red)),
-        );
-        let proposed = Paragraph::new(change.proposed.as_str()).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" Proposed ")
-                .border_style(Style::default().fg(Color::Green)),
-        );
+        let original = Paragraph::new(change.original.as_str())
+            .block(themed_block_with_color("Original", Color::Red));
+        let proposed = Paragraph::new(change.proposed.as_str())
+            .block(themed_block_with_color("Proposed", Color::Green));
 
         f.render_widget(original, diff_chunks[0]);
         f.render_widget(proposed, diff_chunks[1]);
@@ -152,11 +155,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 .fg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         )
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme.accent)),
-        );
+        .block(themed_block("MCP Server Browser", theme));
     f.render_widget(title, chunks[0]);
 
     // Content area
@@ -194,12 +193,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         })
         .collect();
 
-    let list_block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Available Servers ")
-        .border_style(Style::default().fg(theme.accent));
-
-    let list = List::new(available_servers).block(list_block);
+    let list = List::new(available_servers).block(themed_block("Available Servers", theme));
     f.render_widget(list, content_chunks[0]);
 
     // Right panel: Selected server details
@@ -257,13 +251,8 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
             ]),
         ];
 
-        let details_block = Block::default()
-            .borders(Borders::ALL)
-            .title(" Server Details ")
-            .border_style(Style::default().fg(theme.accent));
-
         let details_para = Paragraph::new(details)
-            .block(details_block)
+            .block(themed_block("Server Details", theme))
             .wrap(Wrap { trim: true });
         f.render_widget(details_para, content_chunks[1]);
     }
@@ -308,11 +297,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 .fg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         )
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme.accent)),
-        );
+        .block(themed_block("Command Palette", theme));
     f.render_widget(title, chunks[0]);
 
     // Items
@@ -348,8 +333,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
         })
         .collect();
 
-    let list =
-        List::new(menu_items).block(Block::default().borders(Borders::ALL).title(" Commands "));
+    let list = List::new(menu_items).block(themed_block("Commands", theme));
     f.render_widget(list, chunks[1]);
 
     // Status
@@ -382,11 +366,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 .fg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         )
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(theme.accent)),
-        );
+        .block(themed_block("Skill Browser (Ctrl+Shift+K)", theme));
     f.render_widget(title, chunks[0]);
 
     // Content area
@@ -423,12 +403,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
         })
         .collect();
 
-    let list_block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Available Skills ")
-        .border_style(Style::default().fg(theme.accent));
-
-    let list = List::new(skill_list).block(list_block);
+    let list = List::new(skill_list).block(themed_block("Available Skills", theme));
     f.render_widget(list, content_chunks[0]);
 
     // Right panel: Selected skill details
@@ -475,13 +450,8 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
             ]),
         ];
 
-        let details_block = Block::default()
-            .borders(Borders::ALL)
-            .title(" Skill Details ")
-            .border_style(Style::default().fg(theme.accent));
-
         let details_para = Paragraph::new(details)
-            .block(details_block)
+            .block(themed_block("Skill Details", theme))
             .wrap(Wrap { trim: true });
         f.render_widget(details_para, content_chunks[1]);
     }

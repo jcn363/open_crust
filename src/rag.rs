@@ -328,14 +328,14 @@ impl RagManager {
     }
 
     /// Clear all indexed data
-    #[expect(dead_code, reason = "public API for CodeIndexer")]
+    #[allow(dead_code, reason = "public API for CodeIndexer")]
     pub fn clear_index(&mut self) {
         self.vector_store.clear();
         self.vector_store.save(&self.config_dir);
     }
 
     /// Get index statistics
-    #[expect(dead_code, reason = "public API for CodeIndexer")]
+    #[allow(dead_code, reason = "public API for CodeIndexer")]
     pub fn stats(&self) -> (usize, usize) {
         self.vector_store.stats()
     }

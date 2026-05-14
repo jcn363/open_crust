@@ -43,7 +43,7 @@ impl Coordinator {
 
     /// Attach a shared state bridge for live TUI visualization.
     /// The coordinator will update this shared state on every task transition.
-    #[expect(dead_code, reason = "TUI visualization bridge")]
+    #[allow(dead_code, reason = "TUI visualization bridge")]
     pub fn with_shared_state(
         mut self,
         state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,

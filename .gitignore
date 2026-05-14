@@ -46,6 +46,11 @@ debian/.debhelper/*
 !/thirdparty/*/build-ios.sh
 !/thirdparty/*/build-kobo.sh
 
+# OpenCrust local data (skills, tools, logs)
+.opencrust/
+.thoughts/
+.uncensored/
+
 # User data and runtime state
 /Settings.toml
 /.agents

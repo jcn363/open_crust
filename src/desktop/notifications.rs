@@ -106,7 +106,7 @@ impl Notification {
 
 /// Notification daemon status
 #[derive(Debug, Clone, Default)]
-#[expect(dead_code, reason = "daemon capability inspection fields")]
+#[allow(dead_code, reason = "daemon capability inspection fields")]
 pub struct NotificationDaemon {
     /// Whether notifications are available
     pub available: bool,
@@ -301,7 +301,7 @@ fn simple_hash(s: &str) -> u32 {
 }
 
 /// Close a notification by ID
-#[expect(
+#[allow(
     dead_code,
     reason = "notification management API for programmatic dismissal"
 )]
@@ -348,7 +348,7 @@ pub fn send_notification_smart(notification: &Notification) -> Result<u32, Strin
 }
 
 /// Show a transient notification with auto-dismiss
-#[expect(dead_code, reason = "convenience API for timed notifications")]
+#[allow(dead_code, reason = "convenience API for timed notifications")]
 pub fn notify_timed(
     title: impl Into<String>,
     body: impl Into<String>,

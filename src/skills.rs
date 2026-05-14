@@ -18,199 +18,194 @@ pub struct Skill {
     pub active: bool,
 }
 
+impl Skill {
+    fn new(metadata: SkillMetadata, content: String) -> Self {
+        Self {
+            metadata,
+            content,
+            active: true,
+        }
+    }
+}
+
 pub struct SkillManager {
-     pub skills: HashMap<String, Skill>,
-     pub active_skills: Vec<String>,
-     last_discovery: Instant,
- }
+    pub skills: HashMap<String, Skill>,
+    pub active_skills: Vec<String>,
+    last_discovery: Instant,
+}
 
- impl SkillManager {
-     pub fn new() -> Self {
-         Self {
-             skills: HashMap::new(),
-             active_skills: Vec::new(),
-             last_discovery: Instant::now(),
-         }
-     }
+impl SkillManager {
+    pub fn new() -> Self {
+        Self {
+            skills: HashMap::new(),
+            active_skills: Vec::new(),
+            last_discovery: Instant::now(),
+        }
+    }
 
-     pub fn discover(&mut self) {
-         let mut search_paths = Vec::new();
+    /// Collect all skill search paths, in priority order (local first, then global).
+    fn search_paths() -> Vec<std::path::PathBuf> {
+        let mut paths = Vec::new();
 
-         // Local project paths
-         if let Ok(current_dir) = std::env::current_dir() {
-             let mut curr = current_dir.as_path();
-             loop {
-                 search_paths.push(curr.join(".opencrust/skills"));
-                 search_paths.push(curr.join(".claude/skills"));
-                 search_paths.push(curr.join(".agents/skills"));
+        if let Ok(current_dir) = std::env::current_dir() {
+            let mut curr = current_dir.as_path();
+            loop {
+                paths.push(curr.join(".opencrust/skills"));
+                paths.push(curr.join(".claude/skills"));
+                paths.push(curr.join(".agents/skills"));
 
-                 if let Some(parent) = curr.parent() {
-                     curr = parent;
-                 } else {
-                     break;
-                 }
+                if let Some(parent) = curr.parent() {
+                    curr = parent;
+                } else {
+                    break;
+                }
 
-                 // Stop at git root if possible (optional optimization)
-                 if curr.join(".git").exists() {
-                     search_paths.push(curr.join(".opencrust/skills"));
-                     search_paths.push(curr.join(".claude/skills"));
-                     search_paths.push(curr.join(".agents/skills"));
-                     break;
-                 }
-             }
-         }
+                if curr.join(".git").exists() {
+                    paths.push(curr.join(".opencrust/skills"));
+                    paths.push(curr.join(".claude/skills"));
+                    paths.push(curr.join(".agents/skills"));
+                    break;
+                }
+            }
+        }
 
-         // Global paths
-         if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
-             search_paths.push(proj_dirs.config_dir().join("skills"));
-         }
-         if let Some(home) = dirs::home_dir() {
-             search_paths.push(home.join(".config/opencrust/skills"));
-             search_paths.push(home.join(".claude/skills"));
-             search_paths.push(home.join(".agents/skills"));
-         }
+        if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
+            paths.push(proj_dirs.config_dir().join("skills"));
+        }
+        if let Some(home) = dirs::home_dir() {
+            paths.push(home.join(".config/opencrust/skills"));
+            paths.push(home.join(".claude/skills"));
+            paths.push(home.join(".agents/skills"));
+        }
 
-         for path in search_paths {
-             self.load_from_dir(&path);
-         }
-         self.last_discovery = Instant::now();
-     }
+        paths
+    }
 
-     /// Discover only new skills that were added since the last discovery.
-     /// Preserves deactivation state of existing skills.
-     /// Returns the names of any newly discovered skills.
-     pub fn discover_new(&mut self) -> Vec<String> {
-         let mut search_paths = Vec::new();
+    /// Scan all search paths and load/reload every skill.
+    pub fn discover(&mut self) {
+        for path in Self::search_paths() {
+            self.load_from_dir(&path);
+        }
+        self.last_discovery = Instant::now();
+    }
 
-         if let Ok(current_dir) = std::env::current_dir() {
-             let mut curr = current_dir.as_path();
-             loop {
-                 search_paths.push(curr.join(".opencrust/skills"));
-                 search_paths.push(curr.join(".claude/skills"));
-                 search_paths.push(curr.join(".agents/skills"));
+    /// Full re-discovery: detects new, modified, and deleted skills.
+    /// Preserves deactivation state of existing, unmodified skills.
+    /// Returns (added, removed, modified) skill names.
+    pub fn discover_changes(&mut self) -> (Vec<String>, Vec<String>, Vec<String>) {
+        self.discover_changes_with_path(&Self::search_paths())
+    }
 
-                 if let Some(parent) = curr.parent() {
-                     curr = parent;
-                 } else {
-                     break;
-                 }
+    /// Like discover_changes, but accepts custom paths for isolated testing.
+    fn discover_changes_with_path(
+        &mut self,
+        paths: &[std::path::PathBuf],
+    ) -> (Vec<String>, Vec<String>, Vec<String>) {
+        let mut added = Vec::new();
+        let mut modified = Vec::new();
+        let mut seen_names: HashMap<String, Skill> = HashMap::new();
 
-                 if curr.join(".git").exists() {
-                     search_paths.push(curr.join(".opencrust/skills"));
-                     search_paths.push(curr.join(".claude/skills"));
-                     search_paths.push(curr.join(".agents/skills"));
-                     break;
-                 }
-             }
-         }
+        for path in paths {
+            if !path.is_dir() {
+                continue;
+            }
+            if let Ok(entries) = fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    let skill_dir = entry.path();
+                    if skill_dir.is_dir() {
+                        if let Some(skill) = self.parse_skill_file(&skill_dir) {
+                            let name = skill.metadata.name.clone();
+                            if let Some(existing) = self.skills.get(&name) {
+                                // Check if content or description changed
+                                if existing.content != skill.content
+                                    || existing.metadata.description != skill.metadata.description
+                                {
+                                    let was_active = existing.active;
+                                    self.skills.insert(
+                                        name.clone(),
+                                        Skill {
+                                            metadata: skill.metadata,
+                                            content: skill.content,
+                                            active: was_active,
+                                        },
+                                    );
+                                    modified.push(name.clone());
+                                }
+                            } else {
+                                self.skills.insert(name.clone(), skill);
+                                added.push(name.clone());
+                            }
+                            seen_names.insert(name.clone(), self.skills[&name].clone());
+                        }
+                    }
+                }
+            }
+        }
 
-         if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
-             search_paths.push(proj_dirs.config_dir().join("skills"));
-         }
-         if let Some(home) = dirs::home_dir() {
-             search_paths.push(home.join(".config/opencrust/skills"));
-             search_paths.push(home.join(".claude/skills"));
-             search_paths.push(home.join(".agents/skills"));
-         }
+        // Detect removed skills: skills in memory but no longer on disk
+        let mut removed = Vec::new();
+        self.skills.retain(|name, _skill| {
+            if seen_names.contains_key(name) {
+                true
+            } else {
+                removed.push(name.clone());
+                false
+            }
+        });
 
-         let mut new_skills = Vec::new();
-         for path in search_paths {
-             for name in self.load_from_dir_new(&path) {
-                 new_skills.push(name);
-             }
-         }
-         self.last_discovery = Instant::now();
-         new_skills
-     }
+        // Also clean up active_skills for removed skills
+        self.active_skills
+            .retain(|name| self.skills.contains_key(name));
 
-     /// Check if it's time to poll for new skills (every 30 seconds)
-     pub fn should_check_for_updates(&self) -> bool {
-         self.last_discovery.elapsed() >= Duration::from_secs(30)
-     }
+        self.last_discovery = Instant::now();
+        (added, removed, modified)
+    }
 
-     fn load_from_dir(&mut self, dir: &Path) {
-         if !dir.is_dir() {
-             return;
-         }
+    /// Check if it's time to poll for new skills (every 30 seconds).
+    pub fn should_check_for_updates(&self) -> bool {
+        self.last_discovery.elapsed() >= Duration::from_secs(30)
+    }
 
-         if let Ok(entries) = fs::read_dir(dir) {
-             for entry in entries.flatten() {
-                 let skill_dir = entry.path();
-                 if skill_dir.is_dir() {
-                     let skill_file = skill_dir.join("SKILL.md");
-                     if skill_file.exists()
-                         && let Ok(content) = fs::read_to_string(&skill_file)
-                         && let Some((metadata, body)) = self.parse_skill(&content)
-                     {
-                         let name = metadata.name.clone();
-                         self.skills.insert(
-                             name,
-                             Skill {
-                                 metadata,
-                                 content: body.to_string(),
-                                 active: true,
-                             },
-                         );
-                     }
-                 }
-             }
-         }
-     }
+    fn load_from_dir(&mut self, dir: &Path) {
+        if !dir.is_dir() {
+            return;
+        }
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let skill_dir = entry.path();
+                if skill_dir.is_dir()
+                    && let Some(skill) = self.parse_skill_file(&skill_dir)
+                {
+                    self.skills.insert(skill.metadata.name.clone(), skill);
+                }
+            }
+        }
+    }
 
-     /// Load new skills from a directory, skipping already-known skills.
-     fn load_from_dir_new(&mut self, dir: &Path) -> Vec<String> {
-         let mut new_names = Vec::new();
-         if !dir.is_dir() {
-             return new_names;
-         }
-
-         if let Ok(entries) = fs::read_dir(dir) {
-             for entry in entries.flatten() {
-                 let skill_dir = entry.path();
-                 if skill_dir.is_dir() {
-                     let skill_file = skill_dir.join("SKILL.md");
-                     if skill_file.exists()
-                         && let Ok(content) = fs::read_to_string(&skill_file)
-                         && let Some((metadata, body)) = self.parse_skill(&content)
-                     {
-                         let name = metadata.name.clone();
-                         // Only add skills we don't already know about
-                         if !self.skills.contains_key(&name) {
-                             self.skills.insert(
-                                 name.clone(),
-                                 Skill {
-                                     metadata,
-                                     content: body.to_string(),
-                                     active: true,
-                                 },
-                             );
-                             new_names.push(name);
-                         }
-                     }
-                 }
-             }
-         }
-         new_names
-     }
+    /// Parse a SKILL.md file from a skill directory.
+    fn parse_skill_file(&self, skill_dir: &std::path::Path) -> Option<Skill> {
+        let skill_file = skill_dir.join("SKILL.md");
+        if !skill_file.exists() {
+            return None;
+        }
+        let content = fs::read_to_string(&skill_file).ok()?;
+        self.parse_skill(&content)
+            .map(|(metadata, body)| Skill::new(metadata, body.to_string()))
+    }
 
     fn parse_skill<'a>(&self, content: &'a str) -> Option<(SkillMetadata, &'a str)> {
         if !content.starts_with("---") {
             return None;
         }
-
         let parts: Vec<&str> = content.splitn(3, "---").collect();
         if parts.len() < 3 {
             return None;
         }
-
         let yaml = parts[1];
         let body = parts[2];
-
-        if let Ok(metadata) = serde_yaml::from_str::<SkillMetadata>(yaml) {
-            Some((metadata, body))
-        } else {
-            None
-        }
+        serde_yaml::from_str::<SkillMetadata>(yaml)
+            .ok()
+            .map(|metadata| (metadata, body))
     }
 
     pub fn get_available_skills_xml(&self) -> String {
@@ -225,7 +220,6 @@ pub struct SkillManager {
         xml
     }
 
-    /// Activate a skill for the current session
     pub fn activate_skill(&mut self, name: &str) -> bool {
         if let Some(skill) = self.skills.get_mut(name) {
             skill.active = true;
@@ -238,7 +232,6 @@ pub struct SkillManager {
         }
     }
 
-    /// Deactivate a skill for the current session
     pub fn deactivate_skill(&mut self, name: &str) -> bool {
         if let Some(skill) = self.skills.get_mut(name) {
             if skill.active {
@@ -253,18 +246,15 @@ pub struct SkillManager {
         }
     }
 
-/// Get a specific skill by name
-     pub fn get_skill(&self, name: &str) -> Option<&Skill> {
-         self.skills.get(name)
-     }
+    pub fn get_skill(&self, name: &str) -> Option<&Skill> {
+        self.skills.get(name)
+    }
 
-     /// Get mutable reference to a specific skill
-     #[allow(dead_code)]
-     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
-         self.skills.get_mut(name)
-     }
+    #[allow(dead_code)]
+    pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
+        self.skills.get_mut(name)
+    }
 
-    /// List all skills with their statistics (for the browser UI)
     pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool)> {
         self.skills
             .values()
@@ -282,10 +272,10 @@ pub struct SkillManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     fn create_test_skill_manager() -> SkillManager {
         let mut manager = SkillManager::new();
-        // Manually add a test skill
         let skill = Skill {
             metadata: SkillMetadata {
                 name: "test-skill".to_string(),
@@ -298,28 +288,36 @@ mod tests {
         manager
     }
 
+    fn create_skill_dir(base: &std::path::Path, name: &str, description: &str, content: &str) {
+        let dir = base.join(name);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(
+            dir.join("SKILL.md"),
+            format!(
+                "---\nname: {}\ndescription: {}\n---\n{}",
+                name, description, content
+            ),
+        )
+        .unwrap();
+    }
+
+    // ---- Core unit tests ----
+
     #[test]
     fn test_activate_skill() {
         let mut manager = create_test_skill_manager();
         assert!(manager.activate_skill("test-skill"));
         assert!(manager.skills["test-skill"].active);
-
-        // Deactivate
         assert!(manager.deactivate_skill("test-skill"));
         assert!(!manager.skills["test-skill"].active);
-
-        // Non-existent skill
         assert!(!manager.activate_skill("non-existent"));
     }
 
     #[test]
     fn test_deactivate_skill() {
         let mut manager = create_test_skill_manager();
-        // First deactivate
         assert!(manager.deactivate_skill("test-skill"));
         assert!(!manager.skills["test-skill"].active);
-
-        // Already deactivated
         assert!(!manager.deactivate_skill("test-skill"));
     }
 
@@ -327,7 +325,6 @@ mod tests {
     fn test_list_skills_with_stats() {
         let mut manager = create_test_skill_manager();
         manager.deactivate_skill("test-skill");
-
         let stats = manager.list_skills_with_stats();
         assert_eq!(stats.len(), 1);
         let (name, desc, active) = &stats[0];
@@ -342,9 +339,7 @@ mod tests {
         let skill = manager.get_skill("test-skill");
         assert!(skill.is_some());
         assert_eq!(skill.unwrap().metadata.name, "test-skill");
-
-        let none = manager.get_skill("non-existent");
-        assert!(none.is_none());
+        assert!(manager.get_skill("non-existent").is_none());
     }
 
     #[test]
@@ -354,5 +349,313 @@ mod tests {
         assert!(skill.is_some());
         skill.unwrap().active = false;
         assert!(!manager.skills["test-skill"].active);
+    }
+
+    #[test]
+    fn test_search_paths_includes_global() {
+        let paths = SkillManager::search_paths();
+        assert!(!paths.is_empty());
+    }
+
+    // ---- Integration tests: parsing ----
+
+    #[test]
+    fn test_parse_skill_full_pipeline() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_parse_skill");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let full_content = format!(
+            "---\nname: my-skill\ndescription: Does cool things\n---\n# My Skill\n\nThis skill does really cool stuff."
+        );
+        let skill_file = temp_dir.join("SKILL.md");
+        fs::write(&skill_file, &full_content).unwrap();
+
+        let manager = SkillManager::new();
+        let skill = manager
+            .parse_skill_file(&skill_file)
+            .expect("Skill should parse");
+
+        assert_eq!(skill.metadata.name, "my-skill");
+        assert_eq!(skill.metadata.description, "Does cool things");
+        assert_eq!(
+            skill.content,
+            "# My Skill\n\nThis skill does really cool stuff."
+        );
+        assert!(skill.active);
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_skill_missing_file_returns_none() {
+        let manager = SkillManager::new();
+        let nonexistent = std::path::Path::new("/tmp/nonexistent_skill/SKILL.md");
+        assert!(manager.parse_skill_file(nonexistent).is_none());
+    }
+
+    #[test]
+    fn test_parse_skill_invalid_yaml_returns_none() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_invalid_yaml");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let skill_file = temp_dir.join("SKILL.md");
+        fs::write(&skill_file, "---\nname: broken\ninvalid yaml here").unwrap();
+
+        let manager = SkillManager::new();
+        assert!(manager.parse_skill_file(&skill_file).is_none());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_skill_no_frontmatter_returns_none() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_no_frontmatter");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let skill_file = temp_dir.join("SKILL.md");
+        fs::write(&skill_file, "Just some content without frontmatter").unwrap();
+
+        let manager = SkillManager::new();
+        assert!(manager.parse_skill_file(&skill_file).is_none());
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_skill_active_by_default_after_creation() {
+        let skill = Skill::new(
+            SkillMetadata {
+                name: "test".to_string(),
+                description: "test".to_string(),
+            },
+            "content".to_string(),
+        );
+        assert!(skill.active);
+    }
+
+    // ---- Integration tests: discover_changes lifecycle ----
+
+    #[test]
+    fn test_discover_changes_detects_new_skill() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_changes_new");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        create_skill_dir(&temp_dir, "new-skill", "A new skill", "Instructions");
+
+        let mut manager = SkillManager::new();
+        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+
+        assert_eq!(added, vec!["new-skill"]);
+        assert!(removed.is_empty());
+        assert!(modified.is_empty());
+        assert!(manager.skills.contains_key("new-skill"));
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_discover_changes_detects_modified_skill() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_changes_mod");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        create_skill_dir(&temp_dir, "mod-skill", "Original desc", "Original content");
+
+        let mut manager = SkillManager::new();
+        // First discovery
+        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        assert_eq!(added, vec!["mod-skill"]);
+
+        // Deactivate before modifying on disk
+        manager.deactivate_skill("mod-skill");
+        assert!(!manager.skills["mod-skill"].active);
+
+        // Overwrite the file with new content/description
+        let skill_dir = temp_dir.join("mod-skill");
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            "---\nname: mod-skill\ndescription: Updated desc\n---\nUpdated content",
+        )
+        .unwrap();
+
+        // Re-discover
+        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+
+        assert!(added.is_empty());
+        assert!(removed.is_empty());
+        assert_eq!(modified, vec!["mod-skill"]);
+        assert_eq!(manager.skills["mod-skill"].content, "Updated content");
+        assert_eq!(
+            manager.skills["mod-skill"].metadata.description,
+            "Updated desc"
+        );
+        // Deactivation state must survive modification
+        assert!(!manager.skills["mod-skill"].active);
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_discover_changes_detects_deleted_skill() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_changes_del");
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        fs::create_dir_all(&temp_dir).unwrap();
+        create_skill_dir(&temp_dir, "to-delete", "Will be deleted", "Some content");
+
+        let mut manager = SkillManager::new();
+        // First discovery
+        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        assert_eq!(added, vec!["to-delete"]);
+
+        // Remove the skill directory
+        fs::remove_dir_all(temp_dir.join("to-delete")).unwrap();
+
+        // Re-discover
+        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+
+        assert!(added.is_empty());
+        assert_eq!(removed, vec!["to-delete"]);
+        assert!(modified.is_empty());
+        assert!(!manager.skills.contains_key("to-delete"));
+
+        // Cleanup
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_discover_changes_preserves_active_state_of_unmodified_skills() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_changes_preserve");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        create_skill_dir(&temp_dir, "persist-active", "Test", "Content");
+
+        let mut manager = SkillManager::new();
+        manager.discover_changes_with_path(&[temp_dir.clone()]);
+        manager.deactivate_skill("persist-active");
+        assert!(!manager.skills["persist-active"].active);
+
+        // Re-discover with no changes on disk
+        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+
+        assert!(added.is_empty());
+        assert!(removed.is_empty());
+        assert!(modified.is_empty());
+        assert!(!manager.skills["persist-active"].active);
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    // ---- Integration tests: XML generation for LLM ----
+
+    #[test]
+    fn test_get_available_skills_xml_includes_active_only() {
+        let mut manager = SkillManager::new();
+        manager.skills.insert(
+            "active-skill".to_string(),
+            Skill {
+                metadata: SkillMetadata {
+                    name: "active-skill".to_string(),
+                    description: "I am active".to_string(),
+                },
+                content: "active".to_string(),
+                active: true,
+            },
+        );
+        manager.skills.insert(
+            "inactive-skill".to_string(),
+            Skill {
+                metadata: SkillMetadata {
+                    name: "inactive-skill".to_string(),
+                    description: "I am inactive".to_string(),
+                },
+                content: "inactive".to_string(),
+                active: false,
+            },
+        );
+
+        let xml = manager.get_available_skills_xml();
+        assert!(xml.contains("<available_skills>"));
+        assert!(xml.contains("active-skill"));
+        assert!(xml.contains("I am active"));
+        assert!(!xml.contains("inactive-skill"));
+        assert!(!xml.contains("I am inactive"));
+    }
+
+    #[test]
+    fn test_get_available_skills_xml_empty_when_no_skills() {
+        let manager = SkillManager::new();
+        let xml = manager.get_available_skills_xml();
+        assert!(xml.contains("<available_skills>"));
+        assert!(xml.contains("</available_skills>"));
+        assert_eq!(xml.lines().count(), 2);
+    }
+
+    #[test]
+    fn test_full_pipeline_from_disk_to_xml() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_full_pipeline");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        create_skill_dir(
+            &temp_dir,
+            "python-skill",
+            "Helps with Python",
+            "Write Python code",
+        );
+        create_skill_dir(
+            &temp_dir,
+            "rust-skill",
+            "Helps with Rust",
+            "Write Rust code",
+        );
+
+        let mut manager = SkillManager::new();
+        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        assert_eq!(added.len(), 2);
+        assert!(manager.skills.contains_key("python-skill"));
+        assert!(manager.skills.contains_key("rust-skill"));
+
+        manager.deactivate_skill("rust-skill");
+
+        let xml = manager.get_available_skills_xml();
+        assert!(xml.contains("python-skill"));
+        assert!(xml.contains("Helps with Python"));
+        assert!(!xml.contains("rust-skill"));
+
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    // ---- Integration tests: UI browser items sync ----
+
+    #[test]
+    fn test_skill_browser_items_sync() {
+        let temp_dir = std::env::temp_dir().join("opencrust_test_browser_sync");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        create_skill_dir(
+            &temp_dir,
+            "browser-test",
+            "Browser test skill",
+            "Test content",
+        );
+
+        let mut manager = SkillManager::new();
+        manager.discover_changes_with_path(&[temp_dir.clone()]);
+
+        let stats = manager.list_skills_with_stats();
+        assert_eq!(stats.len(), 1);
+        let (name, desc, active) = &stats[0];
+        assert_eq!(name, "browser-test");
+        assert_eq!(desc, "Browser test skill");
+        assert!(active);
+
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }

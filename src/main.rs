@@ -1262,6 +1262,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             app.handle_background_notification(&notification);
         }
 
+        // Periodic skill hot-reload check
+        {
+            let mut skills = skill_manager.lock().await;
+            if skills.should_check_for_updates() {
+                let (added, removed, modified) = skills.discover_changes();
+                if !added.is_empty() {
+                    eprintln!("[Skills] Discovered new skills: {}", added.join(", "));
+                    for name in &added {
+                        if let Some(skill) = skills.get_skill(name) {
+                            app.skill_browser_items.push((
+                                skill.metadata.name.clone(),
+                                skill.metadata.description.clone(),
+                                skill.active,
+                            ));
+                        }
+                    }
+                }
+                if !removed.is_empty() {
+                    eprintln!("[Skills] Removed skills: {}", removed.join(", "));
+                    app.skill_browser_items
+                        .retain(|(name, _, _)| !removed.contains(name));
+                }
+                if !modified.is_empty() {
+                    eprintln!("[Skills] Modified skills: {}", modified.join(", "));
+                    for name in &modified {
+                        if let Some(skill) = skills.get_skill(name) {
+                            // Remove stale entry first, then re-add with updated data
+                            app.skill_browser_items.retain(|(n, _, _)| n != name);
+                            app.skill_browser_items.push((
+                                skill.metadata.name.clone(),
+                                skill.metadata.description.clone(),
+                                skill.active,
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
         // Frame rate limiting for smoother UI
         let now = std::time::Instant::now();
         let elapsed = now.duration_since(last_frame);
