@@ -35,7 +35,8 @@ pub fn extract_headings(md: &str) -> Vec<(u8, String)> {
 
 /// Extract code blocks with language
 pub fn extract_code_blocks(md: &str) -> Vec<(Option<String>, String)> {
-    let re = Regex::new(r"(?s)```(\w*?)\n(.+?)```").expect("valid regex: fenced code block pattern");
+    let re =
+        Regex::new(r"(?s)```(\w*?)\n(.+?)```").expect("valid regex: fenced code block pattern");
     re.captures_iter(md)
         .map(|c| {
             let lang = if c.get(1).is_some_and(|m| !m.as_str().is_empty()) {
@@ -65,7 +66,8 @@ pub fn extract_links(md: &str) -> Vec<(String, String)> {
 
 /// Extract images ![alt](url)
 pub fn extract_images(md: &str) -> Vec<(String, String)> {
-    let re = Regex::new(r"!\[([^\]]*)\]\(([^)]+)\)").expect("valid regex: image pattern ![alt](url)");
+    let re =
+        Regex::new(r"!\[([^\]]*)\]\(([^)]+)\)").expect("valid regex: image pattern ![alt](url)");
     re.captures_iter(md)
         .map(|c| (c[1].to_string(), c[2].to_string()))
         .collect()
@@ -103,7 +105,8 @@ pub fn extract_tasks(md: &str) -> Vec<(bool, String)> {
 
 /// Extract tables
 pub fn extract_tables(md: &str) -> Vec<Vec<Vec<String>>> {
-    let re = Regex::new(r"(?ms)^\|.+\|\n\|[-:|]+\|\n(.+?)\n\n").expect("valid regex: table block pattern");
+    let re = Regex::new(r"(?ms)^\|.+\|\n\|[-:|]+\|\n(.+?)\n\n")
+        .expect("valid regex: table block pattern");
     re.captures_iter(md)
         .map(|c| {
             let table_str = c.get(1).map_or("", |m| m.as_str());
@@ -132,7 +135,8 @@ pub fn extract_quotes(md: &str) -> Vec<String> {
 
 /// Extract bold (**text** or __text__)
 pub fn extract_bold(md: &str) -> Vec<String> {
-    let re = Regex::new(r"\*\*(.+?)\*\*|__(.+?)__").expect("valid regex: bold pattern **text** or __text__");
+    let re = Regex::new(r"\*\*(.+?)\*\*|__(.+?)__")
+        .expect("valid regex: bold pattern **text** or __text__");
     re.captures_iter(md)
         .map(|c| c.get(1).map_or("", |m| m.as_str()).to_string())
         .collect()
@@ -141,7 +145,8 @@ pub fn extract_bold(md: &str) -> Vec<String> {
 /// Extract italic (*text* or _text_)
 pub fn extract_italic(md: &str) -> Vec<String> {
     // Match *text* or _text_ patterns (single asterisk/underscore delimiters)
-    let re = Regex::new(r"\*(.+?)\*|_(.+?)_").expect("valid regex: italic pattern *text* or _text_");
+    let re =
+        Regex::new(r"\*(.+?)\*|_(.+?)_").expect("valid regex: italic pattern *text* or _text_");
     re.captures_iter(md)
         .map(|c| c.get(1).map_or("", |m| m.as_str()).to_string())
         .collect()

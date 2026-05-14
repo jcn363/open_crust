@@ -29,9 +29,6 @@ opencrust/
 │   ├── permissions.rs     # Permission enforcement (file access, command exec)
 │   ├── security.rs        # Additional security module
 │   ├── audit.rs           # Audit logging (every tool call)
-│   ├── stats.rs           # Token & cost tracking
-│   ├── telemetry.rs       # Session telemetry export
-│   │
 │   ├── sessions.rs        # Session persistence (save/load/list/fork)
 │   ├── markdown.rs        # Markdown rendering
 │   ├── events.rs          # Event bus and handler dispatch
@@ -61,7 +58,6 @@ opencrust/
 - **Tool integration (`tools.rs`, `mcp.rs`, `lsp.rs`, `custom_tools.rs`)** provides a uniform interface for external services (MCP servers, LSP, user-defined scripts).
 - **Intelligence modules (`rag.rs`, `skills.rs`, `planner.rs`)** add semantic search, skill-based behaviour, and multi-step planning.
 - **Security & Auditing (`permissions.rs`, `audit.rs`, `config.rs`)** enforce file-access policies, network gating, and log every tool call.
-- **Observability (`stats.rs`, `telemetry.rs`)** tracks token usage, cost, and exports a session telemetry file.
 - **Session Management (`sessions.rs`)** lets users save, restore, and fork interactive sessions.
 - **Orchestrator (`orchestrator/`)** pools multiple agents, schedules tasks, and visualises the DAG in *Mission Control*.
 - **Desktop integration (`desktop/`)** handles OS-specific notifications and native file-picker dialogs.

@@ -42,7 +42,7 @@ impl Default for AgentConfig {
 /// Result produced by a finished agent
 #[derive(Debug, Clone)]
 pub struct AgentResult {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "result correlation identifier")]
     pub task_id: uuid::Uuid,
     pub output: String,
     pub success: bool,
@@ -63,7 +63,7 @@ impl AgentPool {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "pool config inspector")]
     pub fn config(&self) -> &AgentConfig {
         &self.config
     }

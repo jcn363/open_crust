@@ -81,7 +81,7 @@ impl LspManager {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "runtime LSP server registration")]
     pub async fn add_server(&mut self, name: String, config: LspConfig) -> Result<(), String> {
         let server = LspServer::spawn(&name, &config).await?;
         self.servers.insert(name.clone(), server);
@@ -89,7 +89,7 @@ impl LspManager {
         Ok(())
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "immutable server lookup API")]
     fn find_server_for_path(&self, path: &str) -> Result<&LspServer, String> {
         let path_ext = std::path::Path::new(path)
             .extension()
@@ -129,7 +129,7 @@ impl LspManager {
             Some(name) => Ok(self
                 .servers
                 .get_mut(&name)
-                .expect("just checked contains_key")),
+                .expect("server_name was validated via contains_key above")),
             None => Err("No LSP server available for this file type".to_string()),
         }
     }

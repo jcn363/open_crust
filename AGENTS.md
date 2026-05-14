@@ -9,7 +9,6 @@
 - **Tool Integration** (`tools.rs`, `mcp.rs`, `lsp.rs`, `custom_tools.rs`): Tool schema definitions, MCP/LSP server communication over JSON-RPC, and custom script execution
 - **Intelligence** (`rag.rs`, `skills.rs`, `planner.rs`): Semantic search, skill discovery, and task planning
 - **Security & Auditing** (`permissions.rs`, `audit.rs`, `config.rs`): Granular file/command permissions, network gating, audit logging, and configuration loading
-- **Observability** (`stats.rs`, `telemetry.rs`): Token tracking, cost estimation, and session telemetry export
 - **Session Management** (`sessions.rs`): Persistent session storage and history
 - **Desktop Integration** (`desktop/mod.rs`, `desktop/detection.rs`, `desktop/notifications.rs`, `desktop/file_picker.rs`): Cinnamon desktop environment detection, system notifications, and native file pickers
 - **Utilities** (`git.rs`, `rules.rs`, `formatters.rs`, `web.rs`, `events.rs`, `context.rs`, `acp.rs`, `json_utils.rs`): Git integration, rule parsing, auto-formatters, web search, event handling, context management, ACP stdio interface, and JSON path utilities

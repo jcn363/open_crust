@@ -88,7 +88,7 @@ impl CacheManager {
     }
 
     /// Remove deprecated models from cache that are no longer in the fresh list
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "cache synchronization API")]
     pub fn sync(&self, provider: &str, fresh_models: &[ProviderModel]) -> Vec<ProviderModel> {
         let path = self.cache_dir.join(format!("{}.json", provider));
         if !path.exists() {
@@ -110,7 +110,7 @@ impl CacheManager {
     }
 
     /// Get the last update timestamp for a provider
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "cache staleness check API")]
     pub fn last_updated(&self, provider: &str) -> Option<u64> {
         let path = self.cache_dir.join(format!("{}.json", provider));
         let content = std::fs::read_to_string(&path).ok()?;
@@ -188,7 +188,7 @@ impl ModelFetcher {
     }
 
     /// Refresh models in the background and return updated list.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "explicit model refresh API")]
     pub async fn refresh(
         &self,
         provider: &str,

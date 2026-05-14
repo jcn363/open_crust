@@ -123,7 +123,10 @@ impl CustomToolManager {
                 if !val.is_empty() {
                     command.arg(val);
                 } else {
-                    return Err(format!("Tool '{}' requires non-empty value for argument '{}'", name, arg_name));
+                    return Err(format!(
+                        "Tool '{}' requires non-empty value for argument '{}'",
+                        name, arg_name
+                    ));
                 }
             } else {
                 return Err(format!("Tool '{}' requires argument '{}'", name, arg_name));

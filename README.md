@@ -209,9 +209,6 @@ opencrust/
 │   ├── permissions.rs     # Permission enforcement (file access, command exec)
 │   ├── security.rs        # Additional security module
 │   ├── audit.rs           # Audit logging (every tool call)
-│   ├── stats.rs           # Token & cost tracking
-│   ├── telemetry.rs       # Session telemetry export
-│   │
 │   ├── sessions.rs        # Session persistence (save/load/list/fork)
 │   ├── markdown.rs        # Markdown rendering
 │   ├── events.rs          # Event bus and handler dispatch

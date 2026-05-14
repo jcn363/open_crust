@@ -155,14 +155,6 @@ impl McpManager {
     }
 }
 
-pub async fn run_mcp_server(
-    port: u16,
-    stdio: bool,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let _ = (port, stdio);
-    Err("Standalone MCP server mode is not yet implemented".into())
-}
-
 /// Helper to parse command format like "npx some-tool@latest" or "pip install some-pkg"
 /// Handles quoted arguments (e.g., `"arg with spaces"`) and ensures proper splitting.
 pub(crate) fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {

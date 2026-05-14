@@ -254,35 +254,7 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ---
 
-## Observability Modules
-
-### stats.rs
-**Purpose:** Token and cost tracking, usage metrics  
-**Key types:** `Stats`, `TokenCount`, `CostEstimate`  
-**Key functions:** `track_tokens()`, `calculate_cost()`, `get_stats()`  
-**When to modify:**
-- Adding new metric types
-- Changing cost calculation
-- Modifying token tracking
-
-**Related modules:** `telemetry.rs`, `llm.rs`  
-**Lines of code:** ~300
-
----
-
-### telemetry.rs
-**Purpose:** Session telemetry export to telemetry.json  
-**Key types:** `TelemetryEvent`, `SessionMetrics`, `EventBuffer`  
-**Key functions:** `export()`, `flush()`, `record_event()`  
-**When to modify:**
-- Changing export format
-- Adding telemetry event types
-- Modifying session tracking
-
-**Related modules:** `stats.rs`, `sessions.rs`  
-**Lines of code:** ~300
-
----
+## Events Module
 
 ### events.rs
 **Purpose:** Event bus and handler dispatch  
@@ -323,7 +295,7 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 - Changing status display
 - Modifying updates
 
-**Related modules:** `ui.rs`, `stats.rs`  
+**Related modules:** `ui.rs`  
 **Lines of code:** ~200
 
 ---
@@ -571,7 +543,7 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 - Adding session features
 - Modifying persistence
 
-**Related modules:** `app.rs`, `config.rs`, `telemetry.rs`  
+**Related modules:** `app.rs`, `config.rs`  
 **Lines of code:** ~500
 
 ---

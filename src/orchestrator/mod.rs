@@ -31,7 +31,7 @@ use crate::orchestrator::coordinator::Coordinator;
 /// High-level orchestrator for multi-agent task execution
 pub struct Orchestrator {
     coordinator: Coordinator,
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "accessible to subagent coordination")]
     pub(crate) config: Arc<Config>,
 }
 
@@ -124,7 +124,7 @@ impl Orchestrator {
     /// High-level public API for bulk agent cancellation. Delegates to the
     /// Coordinator which manages agent pool lifecycle. Part of the Orchestrator
     /// public interface for feature-complete agent control.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "public API for orchestrator cancellation")]
     pub fn cancel_all(&mut self) {
         self.coordinator.cancel_all();
     }

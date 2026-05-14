@@ -141,7 +141,7 @@ impl Default for SubagentConfig {
 }
 
 impl ProviderType {
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "serialization helper")]
     pub fn as_str(&self) -> &str {
         match self {
             ProviderType::Ollama => "ollama",
@@ -475,7 +475,7 @@ impl Config {
         }
     }
 
-/// Validate configuration and return warnings/errors
+    /// Validate configuration and return warnings/errors
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut warnings = Vec::new();
 
@@ -490,7 +490,10 @@ impl Config {
                 if self.openrouter_key.as_ref().is_none_or(|v| v.is_empty()) {
                     let is_free = self.model.to_lowercase().contains("free");
                     if !is_free {
-                        warnings.push("OpenRouter provider selected but openrouter_key is not set".to_string());
+                        warnings.push(
+                            "OpenRouter provider selected but openrouter_key is not set"
+                                .to_string(),
+                        );
                     }
                 }
             }
@@ -501,17 +504,22 @@ impl Config {
             }
             ProviderType::Gemini => {
                 if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Gemini provider selected but gemini_api_key is not set".to_string());
+                    warnings
+                        .push("Gemini provider selected but gemini_api_key is not set".to_string());
                 }
             }
             ProviderType::Mistral => {
                 if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Mistral provider selected but mistral_api_key is not set".to_string());
+                    warnings.push(
+                        "Mistral provider selected but mistral_api_key is not set".to_string(),
+                    );
                 }
             }
             ProviderType::Anthropic => {
                 if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Anthropic provider selected but anthropic_api_key is not set".to_string());
+                    warnings.push(
+                        "Anthropic provider selected but anthropic_api_key is not set".to_string(),
+                    );
                 }
             }
             ProviderType::Groq => {
@@ -521,22 +529,29 @@ impl Config {
             }
             ProviderType::TogetherAi => {
                 if self.together_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("TogetherAi provider selected but together_api_key is not set".to_string());
+                    warnings.push(
+                        "TogetherAi provider selected but together_api_key is not set".to_string(),
+                    );
                 }
             }
             ProviderType::Replicate => {
                 if self.replicate_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Replicate provider selected but replicate_api_key is not set".to_string());
+                    warnings.push(
+                        "Replicate provider selected but replicate_api_key is not set".to_string(),
+                    );
                 }
             }
             ProviderType::DeepSeek => {
                 if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("DeepSeek provider selected but deepseek_api_key is not set".to_string());
+                    warnings.push(
+                        "DeepSeek provider selected but deepseek_api_key is not set".to_string(),
+                    );
                 }
             }
             ProviderType::LocalAi => {
                 if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("LocalAi provider selected but localai_url is not set".to_string());
+                    warnings
+                        .push("LocalAi provider selected but localai_url is not set".to_string());
                 }
             }
         }
@@ -559,7 +574,10 @@ impl Config {
                 warnings.push(format!("LSP server '{}' has empty command", name));
             }
             if lsp.extensions.is_empty() {
-                warnings.push(format!("LSP server '{}' has no file extensions specified", name));
+                warnings.push(format!(
+                    "LSP server '{}' has no file extensions specified",
+                    name
+                ));
             }
         }
 
@@ -627,7 +645,7 @@ impl Config {
     ///          2. Per-agent override in subagent_config.agent_overrides
     ///          3. Default subagent model in subagent_config.default_model
     ///          4. Fall back to main config model (self.model)
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "model resolution for subagents")]
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
         if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL")
@@ -689,8 +707,14 @@ impl Config {
 
 /// Basic validation for hex color strings
 fn validate_hex_color(color: &str, field_name: &str, warnings: &mut Vec<String>) {
-    if !color.starts_with('#') || (color.len() != 7 && color.len() != 4) {
-        warnings.push(format!("{} should be a hex color (e.g., #1e1e1e), got: {}", field_name, color));
+    let valid = color.starts_with('#')
+        && (color.len() == 7 || color.len() == 4)
+        && color[1..].chars().all(|c| c.is_ascii_hexdigit());
+    if !valid {
+        warnings.push(format!(
+            "{} should be a hex color (e.g., #1e1e1e), got: {}",
+            field_name, color
+        ));
     }
 }
 
@@ -893,7 +917,11 @@ mod tests {
             let result = cfg.validate();
             // All providers except Ollama (which has no key requirement) should fail
             if provider != ProviderType::Ollama {
-                assert!(result.is_err(), "Provider {:?} should warn about missing key", provider);
+                assert!(
+                    result.is_err(),
+                    "Provider {:?} should warn about missing key",
+                    provider
+                );
             }
         }
     }

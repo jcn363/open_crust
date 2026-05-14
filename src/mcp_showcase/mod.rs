@@ -6,8 +6,8 @@ pub use tui::McpShowcaseAction;
 pub use tui::McpShowcaseUI;
 
 use crate::config::Config;
-use crate::mcp::resolve_spawn_command;
 use crate::mcp::McpManager;
+use crate::mcp::resolve_spawn_command;
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::process::Command as TokioCommand;
@@ -45,8 +45,9 @@ impl McpShowcase {
         }
 
         // Add community servers with registry metadata
-        // TODO: In the future, fetch from mcpdirectory.app API at:
-        // https://mcpdirectory.app/api/v1/servers
+        // Currently uses a curated hardcoded list. When the mcpdirectory.app API
+        // at https://mcpdirectory.app/api/v1/servers becomes publicly available,
+        // replace this with a dynamic fetch + configured-server merge.
         let community_servers = [
             ("playwright", "Browser automation & E2E testing"),
             ("supabase", "RLS-aware database access"),

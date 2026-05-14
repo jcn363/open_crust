@@ -59,8 +59,7 @@ impl LlmClient {
             skill_manager.clone(),
             custom_tool_manager.clone(),
             permission_manager.clone(),
-            Arc::new(WebManager::new()
-                .expect("Failed to create web manager")),
+            Arc::new(WebManager::new().expect("Failed to create web manager")),
             Arc::new(Mutex::new(Planner::new())),
             Arc::new(Mutex::new(RagManager::new(&config))),
             pinned_files.clone(),
@@ -140,7 +139,7 @@ impl LlmClient {
                     ResponseMode::Normal => "",
                 };
 
-            if !mode_directive.is_empty() {
+                if !mode_directive.is_empty() {
                     system_prompt.push_str("\n\n## DAN Mode Active\n");
                     system_prompt.push_str(mode_directive);
                 }
@@ -161,7 +160,7 @@ impl LlmClient {
                             ResponseMode::Based => "raw opinion",
                             ResponseMode::Genius => "expert analysis",
                             ResponseMode::Chaos => "wild creative",
-                            _ => unreachable!(),
+                            ResponseMode::Normal => "",
                         }
                     ));
 
@@ -481,7 +480,8 @@ impl LlmClient {
             "max_tokens": 4096
         });
 
-        let res = self.client
+        let res = self
+            .client
             .post("https://api.anthropic.com/v1/messages")
             .header("x-api-key", api_key)
             .header("Content-Type", "application/json")

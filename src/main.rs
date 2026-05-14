@@ -119,15 +119,6 @@ enum Commands {
         #[command(subcommand)]
         cmd: AuditCommands,
     },
-    /// Run as an MCP server (expose OpenCrust tools via MCP protocol)
-    Serve {
-        /// Port to listen on (default: 8765)
-        #[arg(short, long, default_value = "8765")]
-        port: u16,
-        /// Use stdio transport instead of TCP
-        #[arg(long)]
-        stdio: bool,
-    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -1065,11 +1056,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         return Ok(());
     }
 
-    // Handle Serve command (MCP server mode)
-    if let Some(Commands::Serve { port, stdio }) = &args.command {
-        return mcp::run_mcp_server(*port, *stdio).await;
-    }
-
     let (prompt_tx, mut prompt_rx) = mpsc::channel::<String>(32);
     let (response_tx, mut response_rx) = mpsc::channel::<String>(32);
     let (approval_tx, mut approval_rx) = mpsc::channel::<bool>(1);
@@ -1818,9 +1804,7 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
                 "down" => target_code = Some(KeyCode::Down),
                 "left" => target_code = Some(KeyCode::Left),
                 "right" => target_code = Some(KeyCode::Right),
-                c if c.len() == 1 => {
-                    target_code = Some(KeyCode::Char(c.chars().next().expect("len==1")))
-                }
+                c if c.len() == 1 => target_code = c.chars().next().map(KeyCode::Char),
                 _ => {}
             }
         }
@@ -2032,7 +2016,7 @@ async fn run_headless(
         }
         Err(e) => {
             eprintln!("Error: {}", e);
-            return Err(e);
+            Err(e)
         }
     }
 }

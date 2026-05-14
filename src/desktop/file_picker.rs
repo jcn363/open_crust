@@ -43,7 +43,6 @@ pub struct FileFilter {
     pub patterns: Vec<String>,
 }
 
-#[allow(dead_code)]
 impl FileFilter {
     /// Create a new filter
     pub fn new(name: impl Into<String>, patterns: impl Into<Vec<String>>) -> Self {
@@ -68,6 +67,7 @@ impl FileFilter {
     }
 
     /// Common filter: text files
+    #[allow(dead_code)]
     pub fn text() -> Self {
         Self::new(
             "Text Files",
@@ -80,6 +80,7 @@ impl FileFilter {
     }
 
     /// Common filter: images
+    #[allow(dead_code)]
     pub fn images() -> Self {
         Self::new(
             "Images",
@@ -103,7 +104,6 @@ pub struct FilePickerResult {
     pub cancelled: bool,
 }
 
-#[allow(dead_code)]
 impl FilePickerResult {
     /// Single file result (convenience)
     pub fn single(self) -> Option<PathBuf> {
@@ -115,6 +115,7 @@ impl FilePickerResult {
     }
 
     /// Check if cancelled
+    #[allow(dead_code)]
     pub fn is_cancelled(&self) -> bool {
         self.cancelled
     }
@@ -373,11 +374,11 @@ pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> 
 /// Open file picker using KDialog (KDE fallback)
 #[allow(dead_code)]
 pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
-    let (dialog_type, _extra) = match mode {
-        FilePickerMode::OpenFile => ("--getopenfilename", ""),
-        FilePickerMode::OpenMultiple => ("--getopenfilename", "--multiple"),
-        FilePickerMode::Save => ("--getsavefilename", ""),
-        FilePickerMode::Directory => ("--getexistingdirectory", ""),
+    let dialog_type = match mode {
+        FilePickerMode::OpenFile => "--getopenfilename",
+        FilePickerMode::OpenMultiple => "--getopenfilename",
+        FilePickerMode::Save => "--getsavefilename",
+        FilePickerMode::Directory => "--getexistingdirectory",
     };
 
     let mut args = vec![dialog_type.to_string()];

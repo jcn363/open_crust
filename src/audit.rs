@@ -35,19 +35,19 @@ impl AuditLogger {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_session_id(mut self, session_id: String) -> Self {
         self.session_id = session_id;
         self
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_agent_type(mut self, agent_type: Option<String>) -> Self {
         self.agent_type = agent_type;
         self
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_compliance_mode(mut self, enabled: bool) -> Self {
         self.compliance_mode = enabled;
         self
@@ -113,7 +113,7 @@ impl AuditLogger {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditLogger maintenance API")]
     pub fn cleanup_old_logs(&self, retention_days: u64) {
         // In compliance mode, logs must never be deleted (immutable audit trail)
         if self.compliance_mode {
@@ -224,7 +224,7 @@ impl AuditQuery {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_dates(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Self {
         Self {
             from_date: from,
@@ -234,7 +234,7 @@ impl AuditQuery {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_action(pattern: Option<String>) -> Self {
         Self {
             from_date: None,
@@ -244,7 +244,7 @@ impl AuditQuery {
         }
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_status(status: Option<bool>) -> Self {
         Self {
             from_date: None,
@@ -310,7 +310,7 @@ impl AuditQuery {
         for file_path in &log_files {
             if let Ok(file) = fs::File::open(file_path) {
                 let reader = std::io::BufReader::new(file);
-                for line in reader.lines().flatten() {
+                for line in reader.lines().map_while(Result::ok) {
                     if let Some(entry) = AuditEntry::parse_entry(&line)
                         && self.matches(&entry)
                     {
