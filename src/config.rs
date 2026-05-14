@@ -254,7 +254,7 @@ fn default_color_fg() -> String {
     "#ffffff".to_string()
 }
 fn default_color_accent() -> String {
-    "#007acc".to_string()
+    "#1e90ff".to_string()
 }
 fn default_color_border() -> String {
     "#333333".to_string()

@@ -32,7 +32,7 @@ impl ThemeContext {
     }
 }
 
-fn parse_color(s: &str) -> Color {
+pub fn parse_color(s: &str) -> Color {
     if s.starts_with('#') {
         let hex = &s[1..];
         match hex.len() {
@@ -77,19 +77,20 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         .iter()
         .map(|t| Line::from(t.name.as_str()))
         .collect();
-    let tabs_widget = Tabs::new(tab_titles)
-        .block(
-            Block::default()
-                .borders(ratatui::widgets::Borders::ALL)
-                .title(" Views ")
-                .border_style(Style::default().fg(theme.border)),
-        )
-        .select(app.active_tab)
-        .highlight_style(
-            Style::default()
-                .fg(theme.accent)
-                .add_modifier(ratatui::style::Modifier::BOLD),
-        );
+     let tabs_widget = Tabs::new(tab_titles)
+         .block(
+             Block::default()
+                 .borders(ratatui::widgets::Borders::ALL)
+                 .title(" Views ")
+                 .border_style(Style::default().fg(theme.border)),
+         )
+         .select(app.active_tab)
+         .highlight_style(
+             Style::default()
+                 .bg(theme.accent)
+                 .fg(Color::Black)
+                 .add_modifier(ratatui::style::Modifier::BOLD),
+         );
     f.render_widget(tabs_widget, chunks[0]);
 
     let (sidebar_area, main_content_area) = layout::sidebar_layout(chunks[1], app.show_sidebar);

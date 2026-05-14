@@ -3,12 +3,26 @@ use ratatui::{
     layout::Rect,
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Padding},
 };
 
 use crate::app::{App, Mode};
 use crate::ui::ThemeContext;
 use chrono::Utc;
+
+/// Determine message style based on message content
+fn message_style(message: &str) -> Style {
+    if message.starts_with("You: ") {
+        // User message - green
+        Style::default().fg(Color::Green)
+    } else if message.starts_with("opencrust: ") {
+        // System message - gray
+        Style::default().fg(Color::DarkGray)
+    } else {
+        // LLM response - cyan
+        Style::default().fg(Color::Cyan)
+    }
+}
 
 /// Get the input text style for the current mode
 fn input_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
@@ -23,20 +37,6 @@ fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
     match mode {
         Mode::Insert => Style::default().fg(theme.accent),
         _ => Style::default().fg(theme.border),
-    }
-}
-
-/// Determine message style based on message content
-fn message_style(message: &str) -> Style {
-    if message.starts_with("You: ") {
-        // User message - green
-        Style::default().fg(Color::Green)
-    } else if message.starts_with("opencrust: ") {
-        // System message - gray
-        Style::default().fg(Color::DarkGray)
-    } else {
-        // LLM response - cyan
-        Style::default().fg(Color::Cyan)
     }
 }
 
