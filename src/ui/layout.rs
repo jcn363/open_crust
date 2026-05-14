@@ -5,16 +5,16 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 /// Create a centered popup area within the given rectangle.
 pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     // Adaptive popup sizing for small terminals
-    let adjusted_percent_x = if r.width < 50 { 
+    let adjusted_percent_x = if r.width < 50 {
         // Very narrow terminal: use full width with small margins
-        if r.width < 30 { 90 } else { 80 } 
+        if r.width < 30 { 90 } else { 80 }
     } else if r.width < 80 {
         // Narrow terminal: reduce width
         percent_x.saturating_sub(10)
     } else {
         percent_x
     };
-    
+
     let adjusted_percent_y = if r.height < 20 {
         // Short terminal: use more vertical space
         if r.height < 15 { 85 } else { 75 }
@@ -56,15 +56,15 @@ pub fn main_layout(area: Rect) -> Rc<[Rect]> {
     let tabs_height = if area.height < 20 { 2 } else { 3 };
     let input_height = if area.height < 20 { 2 } else { 3 };
     let status_height = 1;
-    
+
     Layout::default()
         .direction(Direction::Vertical)
         .margin(if area.height < 20 { 0 } else { 1 })
         .constraints(
             [
-                Constraint::Length(tabs_height), // Tabs
-                Constraint::Min(1),              // Main content
-                Constraint::Length(input_height), // Input
+                Constraint::Length(tabs_height),   // Tabs
+                Constraint::Min(1),                // Main content
+                Constraint::Length(input_height),  // Input
                 Constraint::Length(status_height), // Status
             ]
             .as_ref(),
@@ -86,7 +86,7 @@ pub fn sidebar_layout(area: Rect, show: bool) -> (Rect, Rect) {
         // Wide terminal: full sidebar
         if show { 25 } else { 0 }
     };
-    
+
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Length(sidebar_width), Constraint::Min(0)].as_ref())

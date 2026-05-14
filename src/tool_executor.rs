@@ -29,7 +29,7 @@ pub type ToolResult = Result<String, Box<dyn Error + Send + Sync>>;
 
 /// Main tool executor that coordinates all tool types
 pub struct ToolExecutor {
-    pub config: Config,
+    pub config: Arc<Config>,
     pub mcp_manager: Arc<Mutex<McpManager>>,
     pub lsp_manager: Arc<Mutex<LspManager>>,
     pub skill_manager: Arc<Mutex<SkillManager>>,
@@ -47,7 +47,7 @@ pub struct ToolExecutor {
 impl ToolExecutor {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        config: Config,
+        config: Arc<Config>,
         mcp_manager: Arc<Mutex<McpManager>>,
         lsp_manager: Arc<Mutex<LspManager>>,
         skill_manager: Arc<Mutex<SkillManager>>,
@@ -537,15 +537,16 @@ mod tests {
         let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
         let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
         let custom_tool_manager = Arc::new(Mutex::new(CustomToolManager::new()));
-        let permission_manager = Arc::new(PermissionManager::new(Config::default()));
+        let config = Arc::new(Config::default());
+        let permission_manager = Arc::new(PermissionManager::new(config.clone()));
         let web_manager = Arc::new(WebManager::new().expect("Failed to create web manager"));
         let planner = Arc::new(Mutex::new(Planner::new()));
-        let rag_manager = Arc::new(Mutex::new(RagManager::new(&Config::default())));
+        let rag_manager = Arc::new(Mutex::new(RagManager::new(&config)));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
-        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(Arc::new(Config::default()))));
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(config.clone())));
 
         let tool_executor = ToolExecutor::new(
-            Config::default(),
+            config.clone(),
             mcp_manager,
             lsp_manager,
             skill_manager,

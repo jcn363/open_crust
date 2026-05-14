@@ -365,7 +365,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     let llm_client = llm::LlmClient::new(
-        config,
+        Arc::new(config),
         mcp_manager.clone(),
         lsp_manager.clone(),
         skill_manager.clone(),
@@ -1087,7 +1087,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (background_task_tx, mut background_task_rx) = mpsc::channel::<String>(32);
     let (prediction_tx, mut prediction_rx) = mpsc::channel::<(String, String)>(32); // (input_text, prediction)
 
-    let mut client_clone = llm_client.clone();
+    let client_clone = llm_client.clone();
     tokio::spawn(async move {
         let mut messages_history: Vec<Value> = Vec::new();
         while let Some(prompt) = prompt_rx.recv().await {
@@ -1105,17 +1105,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 continue;
             } else if prompt_str.starts_with("/provider ") {
                 let new_provider = prompt_str.trim_start_matches("/provider ").trim();
+                let mut new_config = (*client_clone.config).clone();
                 match new_provider.to_lowercase().as_str() {
                     "ollama" => {
-                        client_clone.config.provider = config::ProviderType::Ollama;
-                        client_clone.config.save();
+                        new_config.provider = config::ProviderType::Ollama;
+                        new_config.save();
                         let _ = response_tx
                             .send("opencrust: Provider switched to Ollama".to_string())
                             .await;
                     }
                     "openrouter" => {
-                        client_clone.config.provider = config::ProviderType::OpenRouter;
-                        client_clone.config.save();
+                        new_config.provider = config::ProviderType::OpenRouter;
+                        new_config.save();
                         let _ = response_tx
                             .send("opencrust: Provider switched to OpenRouter".to_string())
                             .await;
@@ -1129,8 +1130,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 continue;
             } else if prompt_str.starts_with("/model ") {
                 let new_model = prompt_str.trim_start_matches("/model ").trim();
-                client_clone.config.model = new_model.to_string();
-                client_clone.config.save();
+                let mut new_config = (*client_clone.config).clone();
+                new_config.model = new_model.to_string();
+                new_config.save();
                 let _ = response_tx
                     .send(format!("opencrust: Model switched to '{}'", new_model))
                     .await;
@@ -1187,7 +1189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
 
     let mut app = App::new(
-        llm_client.config.clone(),
+        (*llm_client.config).clone(),
         prompt_tx,
         approval_tx,
         background_task_tx,
@@ -1984,7 +1986,8 @@ async fn run_multi_agent(
         let prompt = prompt.to_string();
 
         let handle = tokio::spawn(async move {
-            let llm_client = llm::LlmClient::new(config, mcp_mgr, lsp_mgr, skill_mgr, custom_mgr);
+            let llm_client =
+                llm::LlmClient::new(Arc::new(config), mcp_mgr, lsp_mgr, skill_mgr, custom_mgr);
 
             let provider_name = format!("{:?}", provider);
             println!("Agent {} ({}) thinking...", provider_name, model);
@@ -2068,7 +2071,7 @@ async fn run_headless(
 
     // Create LLM client
     let llm_client = llm::LlmClient::new(
-        config,
+        Arc::new(config),
         mcp_manager,
         lsp_manager,
         skill_manager,

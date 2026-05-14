@@ -1,12 +1,13 @@
 use crate::config::{Config, PermissionAction, PermissionRule};
 use glob::Pattern;
+use std::sync::Arc;
 
 pub struct PermissionManager {
-    config: Config,
+    config: Arc<Config>,
 }
 
 impl PermissionManager {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
 

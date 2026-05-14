@@ -258,15 +258,16 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     }
 
     // Status bar
-    let status_text = if let Some((name, _, _)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
-        if app.config.mcp.contains_key(name) {
-            " [↑/↓] Navigate | [Esc] Close "
+    let status_text =
+        if let Some((name, _, _)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
+            if app.config.mcp.contains_key(name) {
+                " [↑/↓] Navigate | [Esc] Close "
+            } else {
+                " [↑/↓] Navigate | [Enter] Install | [Esc] Close "
+            }
         } else {
-            " [↑/↓] Navigate | [Enter] Install | [Esc] Close "
-        }
-    } else {
-        " [↑/↓] Navigate | [Esc] Close "
-    };
+            " [↑/↓] Navigate | [Esc] Close "
+        };
     let status = Paragraph::new(status_text)
         .style(Style::default().bg(theme.accent).fg(Color::Black))
         .block(Block::default().borders(Borders::ALL));

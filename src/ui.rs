@@ -33,15 +33,31 @@ impl ThemeContext {
 }
 
 fn parse_color(s: &str) -> Color {
-    if s.starts_with('#')
-        && s.len() == 7
-        && let (Ok(r), Ok(g), Ok(b)) = (
-            u8::from_str_radix(&s[1..3], 16),
-            u8::from_str_radix(&s[3..5], 16),
-            u8::from_str_radix(&s[5..7], 16),
-        )
-    {
-        return Color::Rgb(r, g, b);
+    if s.starts_with('#') {
+        let hex = &s[1..];
+        match hex.len() {
+            6 => {
+                // Standard 6-char hex: #RRGGBB
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    u8::from_str_radix(&hex[0..2], 16),
+                    u8::from_str_radix(&hex[2..4], 16),
+                    u8::from_str_radix(&hex[4..6], 16),
+                ) {
+                    return Color::Rgb(r, g, b);
+                }
+            }
+            3 => {
+                // Short 3-char hex: #RGB → expand to #RRGGBB
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    u8::from_str_radix(&hex[0..1].repeat(2), 16),
+                    u8::from_str_radix(&hex[1..2].repeat(2), 16),
+                    u8::from_str_radix(&hex[2..3].repeat(2), 16),
+                ) {
+                    return Color::Rgb(r, g, b);
+                }
+            }
+            _ => {}
+        }
     }
     Color::Reset
 }

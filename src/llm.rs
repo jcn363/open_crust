@@ -27,7 +27,7 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct LlmClient {
     client: Client,
-    pub config: Config,
+    pub config: Arc<Config>,
     pub mcp_manager: Arc<Mutex<McpManager>>,
     pub skill_manager: Arc<Mutex<SkillManager>>,
     pub custom_tool_manager: Arc<Mutex<CustomToolManager>>,
@@ -39,7 +39,7 @@ pub struct LlmClient {
 
 impl LlmClient {
     pub fn new(
-        config: Config,
+        config: Arc<Config>,
         mcp_manager: Arc<Mutex<McpManager>>,
         lsp_manager: Arc<Mutex<LspManager>>,
         skill_manager: Arc<Mutex<SkillManager>>,
@@ -49,7 +49,7 @@ impl LlmClient {
         let audit_logger = Arc::new(AuditLogger::new());
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
 
-        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(Arc::new(config.clone()))));
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(config.clone())));
 
         // Create ToolExecutor with all the managers
         let tool_executor = Arc::new(ToolExecutor::new(

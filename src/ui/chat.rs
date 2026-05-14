@@ -6,8 +6,9 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use super::ThemeContext;
 use crate::app::{App, Mode};
+use crate::ui::ThemeContext;
+use chrono::Utc;
 
 /// Get the input text style for the current mode
 fn input_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
@@ -22,6 +23,20 @@ fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
     match mode {
         Mode::Insert => Style::default().fg(theme.accent),
         _ => Style::default().fg(theme.border),
+    }
+}
+
+/// Determine message style based on message content
+fn message_style(message: &str) -> Style {
+    if message.starts_with("You: ") {
+        // User message - green
+        Style::default().fg(Color::Green)
+    } else if message.starts_with("opencrust: ") {
+        // System message - gray
+        Style::default().fg(Color::DarkGray)
+    } else {
+        // LLM response - cyan
+        Style::default().fg(Color::Cyan)
     }
 }
 
@@ -68,20 +83,32 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
                 Style::default().fg(Color::DarkGray),
             )]);
             all_items.push(ListItem::new(sep_line));
-            all_items.extend(
-                tab.messages
-                    .iter()
-                    .map(|m| ListItem::new(Line::from(Span::raw(m)))),
-            );
+            all_items.extend(tab.messages.iter().map(|m| {
+                let ts = Utc::now().format("%H:%M").to_string();
+                let parts: Vec<&str> = m.splitn(2, ':').collect();
+                let prefix = parts.get(0).unwrap_or(&"");
+                let body = parts.get(1).unwrap_or(&"");
+                ListItem::new(Line::from(vec![
+                    Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
+                    Span::styled(format!("{}: ", prefix), message_style(m)),
+                    Span::styled(*body, Style::default().fg(Color::DarkGray)),
+                ]))
+            }));
         }
     } else {
         // Chat tab: just show messages
         if let Some(tab) = app.tabs.get(app.active_tab) {
-            all_items.extend(
-                tab.messages
-                    .iter()
-                    .map(|m| ListItem::new(Line::from(Span::raw(m)))),
-            );
+            all_items.extend(tab.messages.iter().map(|m| {
+                let ts = Utc::now().format("%H:%M").to_string();
+                let parts: Vec<&str> = m.splitn(2, ':').collect();
+                let prefix = parts.get(0).unwrap_or(&"");
+                let body = parts.get(1).unwrap_or(&"");
+                ListItem::new(Line::from(vec![
+                    Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
+                    Span::styled(format!("{}: ", prefix), message_style(m)),
+                    Span::styled(*body, Style::default().fg(Color::DarkGray)),
+                ]))
+            }));
         }
     }
 
@@ -147,7 +174,7 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
 mod tests {
     use ratatui::style::Color;
 
-    use super::ThemeContext;
+    use crate::ui::ThemeContext;
 
     fn dummy_theme() -> ThemeContext {
         ThemeContext {
