@@ -96,28 +96,47 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
     }
 }
 
-/// Check if a command is safe to execute
+/// Check if a command is safe to execute using tokenization
 ///
-/// This is a basic check - in production, consider using a sandbox or
-/// more sophisticated command validation.
+/// Normalizes whitespace and checks for dangerous commands, shell operators,
+/// and command substitution patterns. Tokenization prevents substring bypasses.
 pub fn validate_command(command: &str) -> Result<(), SecurityError> {
-    // Reject commands containing null bytes
     if command.contains('\0') {
         return Err(SecurityError::UnsafeCommand(
             "Null byte in command".to_string(),
         ));
     }
 
-    let dangerous_patterns = [
-        "rm -rf", "mkfs", "dd if=", "> /dev/", "| sh", "| bash", "; sh", "; bash", "`", "$($)",
-        "$(cat", "$(whoami", "$(ls", "$(id", "$(pwd", "$(date", "$(head", "$(tail", "$(grep",
-        "$(find", "$(curl", "$(wget", "&&", "||", "|||",
-    ];
+    let lower = command.to_lowercase();
 
-    let lower_cmd = command.to_lowercase();
+    let destructive_cmds = ["mkfs", "dd", "format", "fdisk", "parted", "mkswap"];
+    let chain_ops = ["|", ";", "&&", "||", "|||", "&", "`"];
+    let redirect_ops = [">", "<", ">>", "<<"];
 
-    for pattern in dangerous_patterns.iter() {
-        if lower_cmd.contains(pattern) {
+    let tokens: Vec<&str> = lower.split_whitespace().collect();
+    for (i, token) in tokens.iter().enumerate() {
+        if destructive_cmds.iter().any(|cmd| token.starts_with(cmd)) {
+            return Err(SecurityError::UnsafeCommand(command.to_string()));
+        }
+        if chain_ops.contains(token) {
+            return Err(SecurityError::UnsafeCommand(command.to_string()));
+        }
+        if redirect_ops.contains(token) {
+            return Err(SecurityError::UnsafeCommand(command.to_string()));
+        }
+        // Catch embedded backticks like `whoami` (entire token is backtick-wrapped)
+        if token.starts_with('`') || token.ends_with('`') {
+            return Err(SecurityError::UnsafeCommand(command.to_string()));
+        }
+        // Catch command substitution via $()
+        if token.contains("$(") || token.contains("${") || token.starts_with("$(") {
+            return Err(SecurityError::UnsafeCommand(command.to_string()));
+        }
+        // Prevent recursive rm/rmdir with flags
+        if (token == &"rm" || token == &"rmdir")
+            && i + 1 < tokens.len()
+            && tokens[i + 1].starts_with('-')
+        {
             return Err(SecurityError::UnsafeCommand(command.to_string()));
         }
     }

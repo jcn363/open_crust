@@ -70,11 +70,10 @@ impl PermissionManager {
         if let Ok(parsed_url) = url::Url::parse(url_str)
             && let Some(host) = parsed_url.host_str()
         {
-            return self
-                .config
-                .allowed_domains
-                .iter()
-                .any(|domain| host.ends_with(domain));
+            return self.config.allowed_domains.iter().any(|domain| {
+                // Exact match OR subdomain match (prefix with dot to prevent suffix bypass)
+                host == domain || host.ends_with(&format!(".{}", domain))
+            });
         }
         false
     }

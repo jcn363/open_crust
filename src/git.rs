@@ -50,16 +50,18 @@ pub fn checkpoint() -> Result<String, String> {
 }
 
 pub fn undo() -> Result<String, String> {
+    // Use --mixed to preserve working directory changes, only unstage and uncommit
     let output = Command::new("git")
         .arg("reset")
-        .arg("--hard")
+        .arg("--mixed")
         .arg("HEAD~1")
         .output();
 
     match output {
-        Ok(out) if out.status.success() => {
-            Ok("Successfully undid the last checkpoint.".to_string())
-        }
+        Ok(out) if out.status.success() => Ok(
+            "Successfully undid the last checkpoint (changes preserved in working directory)."
+                .to_string(),
+        ),
         Ok(out) => Err(format!(
             "Failed to undo: {}",
             String::from_utf8_lossy(&out.stderr)
@@ -92,7 +94,7 @@ pub fn redo() -> Result<String, String> {
             let refspec = "HEAD@{1}";
             let reset_output = Command::new("git")
                 .arg("reset")
-                .arg("--hard")
+                .arg("--mixed")
                 .arg(refspec)
                 .output()
                 .map_err(|e| format!("Failed to execute git reset: {}", e))?;

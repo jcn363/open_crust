@@ -27,14 +27,9 @@ pub async fn run_acp_loop(
 
                     let (progress_tx, _progress_rx) = mpsc::channel::<String>(32);
 
-                    // ACP: auto-approve all tool calls for non-interactive mode
-                    let (auto_tx, mut approval_rx) = mpsc::channel::<bool>(1);
-                    // Seed with approval that persists for all tool calls in this session
-                    let _ = auto_tx.try_send(true);
-
                     let client = llm_client.clone();
                     let response = client
-                        .send_message(&mut history, prompt, progress_tx, &mut approval_rx)
+                        .send_message(&mut history, prompt, progress_tx, None)
                         .await?;
 
                     let response_json = json!({

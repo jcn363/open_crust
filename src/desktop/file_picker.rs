@@ -167,121 +167,9 @@ pub fn is_file_picker_available() -> bool {
     detect_file_picker_backend() != FilePickerBackend::None
 }
 
-/// Get the Nemo file picker dialog via DBus
+/// Get the file picker dialog via Zenity (no Python injection risk)
 pub fn nemo_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
-    // Use python script for Nemo DBus - most reliable method
-    let script = build_nemo_script(mode, options);
-
-    let output = Command::new("python3").args(["-c", &script]).output();
-
-    match output {
-        Ok(output) => {
-            if output.status.success() {
-                let output_str = String::from_utf8_lossy(&output.stdout);
-                let paths: Vec<PathBuf> = output_str
-                    .lines()
-                    .filter(|l| !l.is_empty())
-                    .map(PathBuf::from)
-                    .collect();
-
-                FilePickerResult {
-                    paths,
-                    cancelled: false,
-                }
-            } else {
-                // User cancelled or error
-                FilePickerResult {
-                    paths: vec![],
-                    cancelled: true,
-                }
-            }
-        }
-        Err(_) => {
-            // Fallback error
-            FilePickerResult {
-                paths: vec![],
-                cancelled: true,
-            }
-        }
-    }
-}
-
-/// Build Python script for Nemo file picker
-/// Uses Nemo's DBus API to open a file picker dialog
-fn build_nemo_script(mode: FilePickerMode, options: &FilePickerOptions) -> String {
-    let action = match mode {
-        FilePickerMode::OpenFile => "open",
-        FilePickerMode::OpenMultiple => "open-multiple",
-        FilePickerMode::Save => "save",
-        FilePickerMode::Directory => "directory",
-    };
-
-    let title = options
-        .title
-        .clone()
-        .unwrap_or_else(|| "Select File".to_string());
-    let dir = options
-        .initial_dir
-        .as_ref()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| ".".to_string());
-
-    // Build filter string for Nemo
-    let filters: Vec<String> = options
-        .filters
-        .iter()
-        .map(|f| format!("{}|{}", f.name, f.patterns.join(" ")))
-        .collect();
-    let filter_str = if filters.is_empty() {
-        "All Files|*".to_string()
-    } else {
-        filters.join("|")
-    };
-
-    let confirm_overwrite_py = if options.confirm_overwrite && mode == FilePickerMode::Save {
-        "True"
-    } else {
-        "False"
-    };
-
-    format!(
-        r#"
-import sys
-import os
-import subprocess
-
-try:
-    cmd = ['zenity', '--file-selection', '--title={title}']
-
-    if '{action}' == 'directory':
-        cmd.append('--directory')
-    elif '{action}' == 'open-multiple':
-        cmd.append('--multiple')
-
-    if '{action}' == 'save' and {confirm_overwrite}:
-        cmd.append('--confirm-overwrite')
-
-    cmd.append('--filename={dir}')
-
-    if len('{filter_str}') > 0:
-        cmd.append('--file-filter={filter_str}')
-
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode == 0:
-        print(result.stdout.strip())
-    else:
-        sys.exit(1)
-
-except Exception as e:
-    print(str(e), file=sys.stderr)
-    sys.exit(1)
-"#,
-        action = action,
-        title = title,
-        dir = dir,
-        filter_str = filter_str,
-        confirm_overwrite = confirm_overwrite_py,
-    )
+    zenity_file_picker(mode, options)
 }
 
 /// Open file picker using Zenity
@@ -305,6 +193,11 @@ pub fn zenity_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> 
         && dir.exists()
     {
         args.push(format!("--filename={}", dir.to_string_lossy()));
+    }
+
+    // Confirm overwrite for Save mode
+    if options.confirm_overwrite && mode == FilePickerMode::Save {
+        args.push("--confirm-overwrite".to_string());
     }
 
     // Add filters

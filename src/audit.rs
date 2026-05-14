@@ -100,10 +100,10 @@ impl AuditLogger {
         if let Ok(metadata) = fs::metadata(&self.log_path)
             && metadata.len() > self.max_size_bytes
         {
-            let date_str = Local::now().format("%Y-%m-%d").to_string();
+            let timestamp = Local::now().format("%Y-%m-%d_%H%M%S").to_string();
             let rotated_path = self
                 .log_path
-                .with_file_name(format!("audit.{}.log", date_str));
+                .with_file_name(format!("audit.{}.log", timestamp));
             let _ = fs::rename(&self.log_path, &rotated_path);
             let _ = OpenOptions::new()
                 .create(true)

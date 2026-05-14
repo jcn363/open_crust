@@ -377,7 +377,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     if let Some(Commands::Run { command }) = args.command {
-        println!("Running command: {}", command);
+        let output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&command)
+            .output()
+            .map_err(|e| format!("Failed to execute command: {}", e))?;
+        if output.status.success() {
+            println!("{}", String::from_utf8_lossy(&output.stdout));
+        } else {
+            eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+            std::process::exit(output.status.code().unwrap_or(1));
+        }
         return Ok(());
     }
 
@@ -1158,7 +1168,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     &mut messages_history,
                     &enriched_prompt,
                     response_tx.clone(),
-                    &mut approval_rx,
+                    Some(&mut approval_rx),
                 )
                 .await;
             match res {
@@ -1236,7 +1246,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
 
-            let tab = &mut app.tabs[0]; // always push to Chat tab
+            let tab_idx = app.active_tab.min(app.tabs.len().saturating_sub(1));
+            let tab = &mut app.tabs[tab_idx];
             if let Some(last) = tab.messages.last()
                 && (last == "opencrust: Thinking..."
                     || last.starts_with("opencrust: Executing tool"))
@@ -1255,8 +1266,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let now = std::time::Instant::now();
         let elapsed = now.duration_since(last_frame);
         if elapsed < target_frame_duration {
-            // Sleep to maintain target frame rate
-            std::thread::sleep(target_frame_duration - elapsed);
+            tokio::time::sleep(target_frame_duration - elapsed).await;
         }
         last_frame = std::time::Instant::now();
         terminal.draw(|f| ui::draw(f, &mut app))?;

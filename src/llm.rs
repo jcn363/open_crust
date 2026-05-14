@@ -85,7 +85,7 @@ impl LlmClient {
         messages_history: &mut Vec<Value>,
         prompt: &str,
         progress_tx: mpsc::Sender<String>,
-        approval_rx: &mut mpsc::Receiver<bool>,
+        mut approval_rx: Option<&mut mpsc::Receiver<bool>>,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
         if messages_history.is_empty() {
             let rules_content = rules::load_rules(&self.config.instructions);
@@ -290,7 +290,10 @@ impl LlmClient {
                             } else {
                                 let _ = progress_tx.send(format!("opencrust: [APPROVAL_REQUIRED] The agent wants to run '{}' with input: '{}'. Allow? (y/n)", name, input_summary)).await;
                             }
-                            approved = approval_rx.recv().await.unwrap_or(false);
+                            approved = match approval_rx.as_deref_mut() {
+                                Some(rx) => rx.recv().await.unwrap_or(false),
+                                None => true,
+                            };
                         } else {
                             // PermissionAction::Deny
                             approved = false;

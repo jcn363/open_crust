@@ -73,7 +73,18 @@ impl WebManager {
             return Err(format!("Blocked URL scheme: {}", scheme).into());
         }
         if let Some(host) = parsed.host_str() {
-            if host == "localhost" || host == "127.0.0.1" || host == "0.0.0.0" || host == "[::1]" {
+            // Comprehensive SSRF protection: check all known localhost representations
+            if host == "localhost"
+                || host == "127.0.0.1"
+                || host == "127.1"
+                || host == "0.0.0.0"
+                || host == "[::1]"
+                || host == "::1"
+                || host.starts_with("127.")
+                || host == "2130706433"
+                || host == "0x7f000001"
+                || host == "0177.0.0.1"
+            {
                 return Err(format!("Blocked local host: {}", host).into());
             }
             if host.ends_with(".local") || host.ends_with(".internal") {

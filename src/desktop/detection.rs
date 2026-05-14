@@ -205,9 +205,14 @@ pub fn detect_desktop() -> DesktopEnvironment {
         }
     }
 
-    // Check for cinnamon-specific processes
-    if let Ok(proc_cmdline) = fs::read_to_string("/proc/1/cmdline")
-        && proc_cmdline.to_lowercase().contains("cinnamon")
+    // Check for cinnamon-specific processes using pgrep (more reliable than /proc/1/cmdline)
+    if std::process::Command::new("pgrep")
+        .arg("-u")
+        .arg(env::var("USER").unwrap_or_default())
+        .arg("cinnamon")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
     {
         return DesktopEnvironment::Cinnamon;
     }

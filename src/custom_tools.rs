@@ -1,3 +1,4 @@
+use crate::security;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
@@ -116,6 +117,10 @@ impl CustomToolManager {
             .tools
             .get(name)
             .ok_or_else(|| format!("Tool '{}' not found", name))?;
+
+        // Validate the tool path before execution
+        security::validate_path(&tool.path)
+            .map_err(|e| format!("Security validation failed for tool '{}': {}", name, e))?;
 
         let mut command = Command::new(&tool.path);
         for arg_name in &tool.args {

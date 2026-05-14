@@ -3,6 +3,7 @@ use crate::jsonrpc::JsonRpcClient;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::env;
+use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
 
@@ -43,7 +44,7 @@ impl LspServer {
     }
 
     async fn initialize(rpc: &mut JsonRpcClient) -> Result<(), String> {
-        let root_dir = env::current_dir().unwrap_or_default();
+        let root_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         let root_uri = format!("file://{}", root_dir.display());
 
         let params = json!({
@@ -126,10 +127,10 @@ impl LspManager {
         }
 
         match server_name {
-            Some(name) => Ok(self
+            Some(name) => self
                 .servers
                 .get_mut(&name)
-                .expect("server_name was validated via contains_key above")),
+                .ok_or_else(|| format!("LSP server '{}' was unregistered unexpectedly", name)),
             None => Err("No LSP server available for this file type".to_string()),
         }
     }

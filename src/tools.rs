@@ -5,6 +5,7 @@ use std::process::Command;
 use crate::desktop::notifications;
 use crate::json_utils;
 use crate::markdown;
+use crate::security;
 
 pub fn execute_tool(name: &str, arguments: &Value) -> String {
     match name {
@@ -13,6 +14,9 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
                 .get("command")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
+            if let Err(e) = security::validate_command(command) {
+                return format!("Security error: {}", e);
+            }
             match Command::new("sh").arg("-c").arg(command).output() {
                 Ok(output) => {
                     let stdout = String::from_utf8_lossy(&output.stdout);
