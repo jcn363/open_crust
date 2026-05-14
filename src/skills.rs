@@ -194,6 +194,7 @@ impl SkillManager {
     }
 
     fn parse_skill<'a>(&self, content: &'a str) -> Option<(SkillMetadata, &'a str)> {
+        // Parse front‑matter delimited by "---".
         if !content.starts_with("---") {
             return None;
         }
@@ -201,8 +202,8 @@ impl SkillManager {
         if parts.len() < 3 {
             return None;
         }
-        let yaml = parts[1];
-        let body = parts[2];
+        let yaml = parts[1].trim_start_matches('\n');
+        let body = parts[2].trim_start_matches('\n');
         serde_yaml::from_str::<SkillMetadata>(yaml)
             .ok()
             .map(|metadata| (metadata, body))
@@ -373,7 +374,7 @@ mod tests {
 
         let manager = SkillManager::new();
         let skill = manager
-            .parse_skill_file(&skill_file)
+            .parse_skill_file(&temp_dir)
             .expect("Skill should parse");
 
         assert_eq!(skill.metadata.name, "my-skill");

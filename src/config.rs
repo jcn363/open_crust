@@ -388,7 +388,7 @@ fn default_permissions() -> std::collections::HashMap<String, PermissionRule> {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            provider: ProviderType::Ollama,
+            provider: ProviderType::OpenRouter,
             model: "openrouter/free-gpt-4o-mini".to_string(),
             ollama_url: Some("http://localhost:11434".to_string()),
             openrouter_key: None,
