@@ -52,7 +52,6 @@ debian/.debhelper/*
 /.git
 /.github
 /.opencode
-/.opencrust
 /.qodo
 /.qwen
 /.metadata.json

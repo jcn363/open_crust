@@ -197,6 +197,30 @@ Specialized assistant for critical thinking, analysis, and evaluation.
 
 ---
 
+### rust-best-practices (Priority: High)
+
+Enforce Apollo GraphQL's Rust Best Practices Handbook for code review, linting, performance, error handling, testing, and type safety.
+
+**When to use:**
+- Reviewing Rust code for best practices compliance
+- Checking borrowing, ownership, and cloning patterns
+- Validating error handling (thiserror/anyhow, Result vs panic)
+- Performance optimization (iterators, zero-cost abstractions, benchmarking)
+- Testing strategy (naming, one assertion per test, snapshot testing)
+- Type-state pattern application
+- Clippy lint enforcement
+- Documentation and comment standards
+
+**Key behaviors:**
+- Flag all `.unwrap()`/`.expect()` in production code
+- Enforce `&T` over `.clone()`, `&str` over `String` in parameters
+- Recommend iterator combinators over manual loops
+- Suggest `thiserror` for libraries, `anyhow` for binaries
+- Apply type-state pattern for stateful objects
+- Require `///` doc comments for public APIs, `//` for *why* explanations
+
+---
+
 ### rust-ai-ide-rules (Priority: Medium)
 
 Global rules for Rust AI IDE development ensuring best practices in code structure, development processes, performance, and security.
@@ -360,4 +384,4 @@ opencrust skills stats
 
 ---
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-05-14*
