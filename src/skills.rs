@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SkillMetadata {
@@ -18,88 +19,179 @@ pub struct Skill {
 }
 
 pub struct SkillManager {
-    pub skills: HashMap<String, Skill>,
-    pub active_skills: Vec<String>,
-}
+     pub skills: HashMap<String, Skill>,
+     pub active_skills: Vec<String>,
+     last_discovery: Instant,
+ }
 
-impl SkillManager {
-    pub fn new() -> Self {
-        Self {
-            skills: HashMap::new(),
-            active_skills: Vec::new(),
-        }
-    }
+ impl SkillManager {
+     pub fn new() -> Self {
+         Self {
+             skills: HashMap::new(),
+             active_skills: Vec::new(),
+             last_discovery: Instant::now(),
+         }
+     }
 
-    pub fn discover(&mut self) {
-        let mut search_paths = Vec::new();
+     pub fn discover(&mut self) {
+         let mut search_paths = Vec::new();
 
-        // Local project paths
-        if let Ok(current_dir) = std::env::current_dir() {
-            let mut curr = current_dir.as_path();
-            loop {
-                search_paths.push(curr.join(".opencrust/skills"));
-                search_paths.push(curr.join(".claude/skills"));
-                search_paths.push(curr.join(".agents/skills"));
+         // Local project paths
+         if let Ok(current_dir) = std::env::current_dir() {
+             let mut curr = current_dir.as_path();
+             loop {
+                 search_paths.push(curr.join(".opencrust/skills"));
+                 search_paths.push(curr.join(".claude/skills"));
+                 search_paths.push(curr.join(".agents/skills"));
 
-                if let Some(parent) = curr.parent() {
-                    curr = parent;
-                } else {
-                    break;
-                }
+                 if let Some(parent) = curr.parent() {
+                     curr = parent;
+                 } else {
+                     break;
+                 }
 
-                // Stop at git root if possible (optional optimization)
-                if curr.join(".git").exists() {
-                    search_paths.push(curr.join(".opencrust/skills"));
-                    search_paths.push(curr.join(".claude/skills"));
-                    search_paths.push(curr.join(".agents/skills"));
-                    break;
-                }
-            }
-        }
+                 // Stop at git root if possible (optional optimization)
+                 if curr.join(".git").exists() {
+                     search_paths.push(curr.join(".opencrust/skills"));
+                     search_paths.push(curr.join(".claude/skills"));
+                     search_paths.push(curr.join(".agents/skills"));
+                     break;
+                 }
+             }
+         }
 
-        // Global paths
-        if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
-            search_paths.push(proj_dirs.config_dir().join("skills"));
-        }
-        if let Some(home) = dirs::home_dir() {
-            search_paths.push(home.join(".config/opencrust/skills"));
-            search_paths.push(home.join(".claude/skills"));
-            search_paths.push(home.join(".agents/skills"));
-        }
+         // Global paths
+         if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
+             search_paths.push(proj_dirs.config_dir().join("skills"));
+         }
+         if let Some(home) = dirs::home_dir() {
+             search_paths.push(home.join(".config/opencrust/skills"));
+             search_paths.push(home.join(".claude/skills"));
+             search_paths.push(home.join(".agents/skills"));
+         }
 
-        for path in search_paths {
-            self.load_from_dir(&path);
-        }
-    }
+         for path in search_paths {
+             self.load_from_dir(&path);
+         }
+         self.last_discovery = Instant::now();
+     }
 
-    fn load_from_dir(&mut self, dir: &Path) {
-        if !dir.is_dir() {
-            return;
-        }
+     /// Discover only new skills that were added since the last discovery.
+     /// Preserves deactivation state of existing skills.
+     /// Returns the names of any newly discovered skills.
+     pub fn discover_new(&mut self) -> Vec<String> {
+         let mut search_paths = Vec::new();
 
-        if let Ok(entries) = fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let skill_dir = entry.path();
-                if skill_dir.is_dir() {
-                    let skill_file = skill_dir.join("SKILL.md");
-                    if skill_file.exists()
-                        && let Ok(content) = fs::read_to_string(&skill_file)
-                        && let Some((metadata, body)) = self.parse_skill(&content)
-                    {
-                        let name = metadata.name.clone();
-                        self.skills.insert(
-                            name,
-                            Skill {
-                                metadata,
-                                content: body.to_string(),
-                                active: true,
-                            },
-                        );
-                    }
-                }
-            }
-        }
-    }
+         if let Ok(current_dir) = std::env::current_dir() {
+             let mut curr = current_dir.as_path();
+             loop {
+                 search_paths.push(curr.join(".opencrust/skills"));
+                 search_paths.push(curr.join(".claude/skills"));
+                 search_paths.push(curr.join(".agents/skills"));
+
+                 if let Some(parent) = curr.parent() {
+                     curr = parent;
+                 } else {
+                     break;
+                 }
+
+                 if curr.join(".git").exists() {
+                     search_paths.push(curr.join(".opencrust/skills"));
+                     search_paths.push(curr.join(".claude/skills"));
+                     search_paths.push(curr.join(".agents/skills"));
+                     break;
+                 }
+             }
+         }
+
+         if let Some(proj_dirs) = ProjectDirs::from("ai", "opencust", "opencrust") {
+             search_paths.push(proj_dirs.config_dir().join("skills"));
+         }
+         if let Some(home) = dirs::home_dir() {
+             search_paths.push(home.join(".config/opencrust/skills"));
+             search_paths.push(home.join(".claude/skills"));
+             search_paths.push(home.join(".agents/skills"));
+         }
+
+         let mut new_skills = Vec::new();
+         for path in search_paths {
+             for name in self.load_from_dir_new(&path) {
+                 new_skills.push(name);
+             }
+         }
+         self.last_discovery = Instant::now();
+         new_skills
+     }
+
+     /// Check if it's time to poll for new skills (every 30 seconds)
+     pub fn should_check_for_updates(&self) -> bool {
+         self.last_discovery.elapsed() >= Duration::from_secs(30)
+     }
+
+     fn load_from_dir(&mut self, dir: &Path) {
+         if !dir.is_dir() {
+             return;
+         }
+
+         if let Ok(entries) = fs::read_dir(dir) {
+             for entry in entries.flatten() {
+                 let skill_dir = entry.path();
+                 if skill_dir.is_dir() {
+                     let skill_file = skill_dir.join("SKILL.md");
+                     if skill_file.exists()
+                         && let Ok(content) = fs::read_to_string(&skill_file)
+                         && let Some((metadata, body)) = self.parse_skill(&content)
+                     {
+                         let name = metadata.name.clone();
+                         self.skills.insert(
+                             name,
+                             Skill {
+                                 metadata,
+                                 content: body.to_string(),
+                                 active: true,
+                             },
+                         );
+                     }
+                 }
+             }
+         }
+     }
+
+     /// Load new skills from a directory, skipping already-known skills.
+     fn load_from_dir_new(&mut self, dir: &Path) -> Vec<String> {
+         let mut new_names = Vec::new();
+         if !dir.is_dir() {
+             return new_names;
+         }
+
+         if let Ok(entries) = fs::read_dir(dir) {
+             for entry in entries.flatten() {
+                 let skill_dir = entry.path();
+                 if skill_dir.is_dir() {
+                     let skill_file = skill_dir.join("SKILL.md");
+                     if skill_file.exists()
+                         && let Ok(content) = fs::read_to_string(&skill_file)
+                         && let Some((metadata, body)) = self.parse_skill(&content)
+                     {
+                         let name = metadata.name.clone();
+                         // Only add skills we don't already know about
+                         if !self.skills.contains_key(&name) {
+                             self.skills.insert(
+                                 name.clone(),
+                                 Skill {
+                                     metadata,
+                                     content: body.to_string(),
+                                     active: true,
+                                 },
+                             );
+                             new_names.push(name);
+                         }
+                     }
+                 }
+             }
+         }
+         new_names
+     }
 
     fn parse_skill<'a>(&self, content: &'a str) -> Option<(SkillMetadata, &'a str)> {
         if !content.starts_with("---") {
@@ -161,29 +253,16 @@ impl SkillManager {
         }
     }
 
-    /// Get a specific skill by name
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "public API for programmatic skill lookup, used in tests"
-        )
-    )]
-    pub fn get_skill(&self, name: &str) -> Option<&Skill> {
-        self.skills.get(name)
-    }
+/// Get a specific skill by name
+     pub fn get_skill(&self, name: &str) -> Option<&Skill> {
+         self.skills.get(name)
+     }
 
-    /// Get mutable reference to a specific skill
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "public API for skill modifications, used in tests"
-        )
-    )]
-    pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
-        self.skills.get_mut(name)
-    }
+     /// Get mutable reference to a specific skill
+     #[allow(dead_code)]
+     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
+         self.skills.get_mut(name)
+     }
 
     /// List all skills with their statistics (for the browser UI)
     pub fn list_skills_with_stats(&self) -> Vec<(String, String, bool)> {
