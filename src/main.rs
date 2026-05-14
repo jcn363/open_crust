@@ -1413,7 +1413,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             if let Some(ref tasks_arc) = app.orchestrator_tasks
                                 && let Some(ref mut ui) = app.mission_control_ui
                             {
-                                ui.refresh_tasks(&Some(tasks_arc.clone()));
+                                ui.refresh_tasks(Some(tasks_arc));
                             }
                         }
                         _ => {}
@@ -1467,7 +1467,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
-                                    app.last_input_time = Some(std::time::Instant::now());
+                                    if app.input_prediction_enabled {
+                                        app.last_input_time = Some(std::time::Instant::now());
+                                    }
                                 }
                                 _ => {}
                             }
@@ -1491,7 +1493,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 }
                                 KeyCode::Char(c) => {
                                     app.handle_char(c);
-                                    app.last_input_time = Some(std::time::Instant::now());
+                                    if app.input_prediction_enabled {
+                                        app.last_input_time = Some(std::time::Instant::now());
+                                    }
                                 }
                                 KeyCode::Up => {
                                     app.history_up();
@@ -1766,7 +1770,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         if let Some(ref mut ui) = app.mission_control_ui {
                             // Refresh tasks from orchestrator bridge before handling input
                             if let Some(ref tasks_arc) = app.orchestrator_tasks {
-                                ui.refresh_tasks(&Some(tasks_arc.clone()));
+                                ui.refresh_tasks(Some(tasks_arc));
                             }
                             if let MissionControlAction::ExitMode = ui.handle_key(key.code) {
                                 app.mode = Mode::Normal;

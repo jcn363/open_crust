@@ -77,14 +77,13 @@ impl MissionControlUI {
     }
 
     /// Refresh task snapshot from shared bridge and recompute layout
-    pub fn refresh_tasks(&mut self, bridge: &Option<Arc<RwLock<Vec<Task>>>>) {
+    pub fn refresh_tasks(&mut self, bridge: Option<&Arc<RwLock<Vec<Task>>>>) {
         if let Some(shared) = bridge {
             // try_read — never block the UI thread. Accept stale data on contention.
             if let Ok(guard) = shared.try_read() {
-                let new_tasks = guard.clone();
                 // Only recompute if tasks actually changed
-                if new_tasks != self.tasks {
-                    self.tasks = new_tasks;
+                if *guard != self.tasks {
+                    self.tasks = guard.clone();
                     self.refresh_layout();
                     self.compute_stats();
                     // Clamp selected index after refresh
@@ -206,8 +205,6 @@ impl MissionControlUI {
         let mut x_cursor: u16 = 1;
 
         for layer in &self.layers {
-            let num_in_layer = layer.len();
-            let _total_layer_height = (num_in_layer as u16) * (node_height + v_gap) - v_gap;
             let mut y_cursor: u16 = 1; // Start from top
 
             for &task_idx in layer {
@@ -480,75 +477,77 @@ impl MissionControlUI {
         }
 
         // Draw edges as unicode box-drawing characters
-        if !self.edges.is_empty() {
-            // Create a buffer of characters for the DAG area
-            let mut buf: Vec<Vec<char>> = (0..area.height as usize)
-                .map(|_| vec![' '; area.width as usize])
-                .collect();
-            // Helper to set a char in buffer, ignoring out-of-bounds
-            let mut set_char = |x: i16, y: i16, c: char| {
-                if x >= 0 && y >= 0 && (x as u16) < area.width && (y as u16) < area.height {
-                    buf[y as usize][x as usize] = c;
-                }
-            };
-            // For each edge, draw a line from source to target
-            for (from_idx, to_idx) in &self.edges {
-                if *from_idx >= self.node_positions.len() || *to_idx >= self.node_positions.len() {
-                    continue;
-                }
-                let src = &self.node_positions[*from_idx];
-                let dst = &self.node_positions[*to_idx];
-                // Compute center of source node (bottom center)
-                let src_cx = src.x as i16 + (node_width as i16) / 2;
-                let src_cy = src.y as i16 + (node_height as i16) - 1; // bottom
-                // Compute center of target node (top center)
-                let dst_cx = dst.x as i16 + (node_width as i16) / 2;
-                let dst_cy = dst.y as i16; // top
-                // Draw vertical line from src bottom to dst top
-                let start_y = src_cy;
-                let end_y = dst_cy;
-                if start_y <= end_y {
-                    for y in start_y..=end_y {
-                        set_char(src_cx, y, '│');
-                    }
-                } else {
-                    for y in end_y..=start_y {
-                        set_char(src_cx, y, '│');
-                    }
-                }
-                // If horizontal offset, draw horizontal line at dst top
-                if src_cx != dst_cx {
-                    let (left, right) = if src_cx < dst_cx {
-                        (src_cx, dst_cx)
-                    } else {
-                        (dst_cx, src_cx)
-                    };
-                    for x in left..=right {
-                        set_char(x, dst_cy, '─');
-                    }
-                    // Adjust corners
-                    if src_cx < dst_cx {
-                        set_char(src_cx, dst_cy, '┌');
-                        set_char(dst_cx, dst_cy, '┐');
-                    } else {
-                        set_char(dst_cx, dst_cy, '└');
-                        set_char(src_cx, dst_cy, '┘');
-                    }
-                } else {
-                    // Same column, just a vertical line; ensure arrow at bottom?
-                    // Use '▲' or keep '│'
-                }
-            }
-            // Convert buffer to string
-            let mut edge_text = String::new();
-            for row in buf.iter() {
-                let row_str: String = row.iter().collect();
-                edge_text.push_str(&row_str);
-                edge_text.push('\n');
-            }
-            let edge_para = Paragraph::new(edge_text).style(Style::default().fg(Color::DarkGray));
-            f.render_widget(edge_para, area);
+        if self.edges.is_empty() {
+            return;
         }
+
+        // Create a buffer of characters for the DAG area
+        let mut buf: Vec<Vec<char>> = (0..area.height as usize)
+            .map(|_| vec![' '; area.width as usize])
+            .collect();
+        // Helper to set a char in buffer, ignoring out-of-bounds
+        let mut set_char = |x: i16, y: i16, c: char| {
+            if x >= 0 && y >= 0 && (x as u16) < area.width && (y as u16) < area.height {
+                buf[y as usize][x as usize] = c;
+            }
+        };
+        // For each edge, draw a line from source to target
+        for (from_idx, to_idx) in &self.edges {
+            if *from_idx >= self.node_positions.len() || *to_idx >= self.node_positions.len() {
+                continue;
+            }
+            let src = &self.node_positions[*from_idx];
+            let dst = &self.node_positions[*to_idx];
+            // Compute center of source node (bottom center)
+            let src_cx = src.x as i16 + (node_width as i16) / 2;
+            let src_cy = src.y as i16 + (node_height as i16) - 1; // bottom
+            // Compute center of target node (top center)
+            let dst_cx = dst.x as i16 + (node_width as i16) / 2;
+            let dst_cy = dst.y as i16; // top
+            // Draw vertical line from src bottom to dst top
+            let start_y = src_cy;
+            let end_y = dst_cy;
+            if start_y <= end_y {
+                for y in start_y..=end_y {
+                    set_char(src_cx, y, '│');
+                }
+            } else {
+                for y in end_y..=start_y {
+                    set_char(src_cx, y, '│');
+                }
+            }
+            // If horizontal offset, draw horizontal line at dst top
+            if src_cx != dst_cx {
+                let (left, right) = if src_cx < dst_cx {
+                    (src_cx, dst_cx)
+                } else {
+                    (dst_cx, src_cx)
+                };
+                for x in left..=right {
+                    set_char(x, dst_cy, '─');
+                }
+                // Adjust corners
+                if src_cx < dst_cx {
+                    set_char(src_cx, dst_cy, '┌');
+                    set_char(dst_cx, dst_cy, '┐');
+                } else {
+                    set_char(dst_cx, dst_cy, '└');
+                    set_char(src_cx, dst_cy, '┘');
+                }
+            } else {
+                // Same column, just a vertical line; ensure arrow at bottom?
+                // Use '▲' or keep '│'
+            }
+        }
+        // Convert buffer to string
+        let mut edge_text = String::new();
+        for row in buf.iter() {
+            let row_str: String = row.iter().collect();
+            edge_text.push_str(&row_str);
+            edge_text.push('\n');
+        }
+        let edge_para = Paragraph::new(edge_text).style(Style::default().fg(Color::DarkGray));
+        f.render_widget(edge_para, area);
     }
 
     /// Render the detail panel (right side)
@@ -1002,7 +1001,7 @@ mod tests {
     fn test_refresh_tasks_no_bridge() {
         let mut ui = create_populated_ui();
         let initial_len = ui.tasks.len();
-        ui.refresh_tasks(&None);
+        ui.refresh_tasks(None);
         // Without a bridge, tasks should remain unchanged
         assert_eq!(ui.tasks.len(), initial_len);
     }
@@ -1014,7 +1013,7 @@ mod tests {
 
         // With a bridge that's locked, should keep stale snapshot
         let bridge: Option<Arc<RwLock<Vec<Task>>>> = None;
-        ui.refresh_tasks(&bridge);
+        ui.refresh_tasks(bridge.as_ref());
         assert_eq!(ui.stats.total, initial_count);
     }
 

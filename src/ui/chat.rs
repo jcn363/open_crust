@@ -85,7 +85,7 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
     f.render_widget(messages_list, area);
 }
 
-pub fn draw_input_area(f: &mut Frame, app: &mut App, area: Rect, theme: &ThemeContext) {
+pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
     let input = Paragraph::new({
         let mut line = Line::from(app.input.clone());
         if let Some(ref ghost) = app.ghost_text {

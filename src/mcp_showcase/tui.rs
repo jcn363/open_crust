@@ -117,7 +117,6 @@ impl McpShowcaseUI {
             .block(Block::default().borders(Borders::ALL).title("Servers"))
             .highlight_style(Style::default().bg(Color::DarkGray));
         let mut state = ListState::default().with_selected(Some(self.selected_index));
-        state.select(Some(self.selected_index));
         f.render_stateful_widget(list, chunks[1], &mut state);
 
         // Help
