@@ -44,7 +44,6 @@ pub struct FileFilter {
 
 impl FileFilter {
     /// Create a new filter
-    #[allow(dead_code)]
     pub fn new(name: impl Into<String>, patterns: impl Into<Vec<String>>) -> Self {
         Self {
             name: name.into(),
@@ -53,7 +52,7 @@ impl FileFilter {
     }
 
     /// Common filter: source code
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "convenience preset for file filtering")]
     pub fn source_code() -> Self {
         Self::new(
             "Source Code",
@@ -79,7 +78,13 @@ pub struct FilePickerResult {
 
 impl FilePickerResult {
     /// Single file result (convenience)
-    #[allow(dead_code)]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "convenience accessor for single-file selection, used in tests"
+        )
+    )]
     pub fn single(self) -> Option<PathBuf> {
         if self.cancelled {
             None

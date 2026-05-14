@@ -86,20 +86,11 @@ impl VectorStore {
     }
 
     /// Clear all embeddings
-    ///
-    /// Public API for cache invalidation and reset. Used by applications that
-    /// need to flush the RAG vector store. Marked dead_code as feature flags
-    /// control RAG availability, but kept for completeness of public API.
-    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.embeddings.clear();
     }
 
     /// Get statistics
-    ///
-    /// Public API for monitoring RAG store state (number of embeddings and dimensions).
-    /// Used by diagnostic and telemetry systems. Kept for API completeness.
-    #[allow(dead_code)]
     pub fn stats(&self) -> (usize, usize) {
         let num_embeddings = self.embeddings.len();
         let dim = self

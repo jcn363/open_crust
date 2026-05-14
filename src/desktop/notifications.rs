@@ -301,7 +301,10 @@ fn simple_hash(s: &str) -> u32 {
 }
 
 /// Close a notification by ID
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "notification management API for programmatic dismissal"
+)]
 pub fn close_notification(id: u32) -> Result<(), String> {
     let output = Command::new("dbus-send")
         .args([
@@ -331,21 +334,21 @@ pub fn close_notification(id: u32) -> Result<(), String> {
 ///
 /// Attempts to use DBus for richer notification features (icons, urgency, timeouts).
 /// Falls back to notify-send if DBus is unavailable.
-/// This provides graceful degradation while maintaining maximum compatibility.
-pub fn send_notification_smart(notification: &Notification) -> Result<(), String> {
+/// Returns the notification ID for use with `close_notification`.
+pub fn send_notification_smart(notification: &Notification) -> Result<u32, String> {
     let app_name = "OpenCrust";
 
     // Try DBus first for richer features
-    if let Ok(_id) = send_notification_dbus(app_name, notification) {
-        return Ok(());
+    if let Ok(id) = send_notification_dbus(app_name, notification) {
+        return Ok(id);
     }
 
     // Fall back to notify-send if DBus fails
-    send_notification(notification)
+    send_notification(notification).map(|_| 0)
 }
 
 /// Show a transient notification with auto-dismiss
-#[allow(dead_code)]
+#[expect(dead_code, reason = "convenience API for timed notifications")]
 pub fn notify_timed(
     title: impl Into<String>,
     body: impl Into<String>,
@@ -353,13 +356,13 @@ pub fn notify_timed(
 ) -> Result<(), String> {
     let seconds = duration.as_secs() as u32;
     let notification = Notification::new(title, body).with_expire_timeout(seconds);
-    send_notification(&notification)
+    send_notification_smart(&notification).map(|_| ())
 }
 
 /// Show an error notification
 pub fn notify_error(title: impl Into<String>, body: impl Into<String>) -> Result<(), String> {
     let notification = Notification::new(title, body).with_urgency(NotificationUrgency::Critical);
-    send_notification(&notification)
+    send_notification_smart(&notification).map(|_| ())
 }
 
 /// Show a success notification
@@ -367,7 +370,7 @@ pub fn notify_success(title: impl Into<String>, body: impl Into<String>) -> Resu
     let notification = Notification::new(title, body)
         .with_urgency(NotificationUrgency::Low)
         .with_icon("dialog-information");
-    send_notification(&notification)
+    send_notification_smart(&notification).map(|_| ())
 }
 
 #[cfg(test)]

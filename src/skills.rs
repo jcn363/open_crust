@@ -162,19 +162,25 @@ impl SkillManager {
     }
 
     /// Get a specific skill by name
-    ///
-    /// Public API accessor used by external skill consumers and plugin systems.
-    /// Part of the SkillManager public interface for programmatic skill lookup.
-    #[allow(dead_code)]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "public API for programmatic skill lookup, used in tests"
+        )
+    )]
     pub fn get_skill(&self, name: &str) -> Option<&Skill> {
         self.skills.get(name)
     }
 
     /// Get mutable reference to a specific skill
-    ///
-    /// Public API accessor for skill modifications (enable/disable, metadata updates).
-    /// Kept as part of the SkillManager public interface for extensibility.
-    #[allow(dead_code)]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "public API for skill modifications, used in tests"
+        )
+    )]
     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
         self.skills.get_mut(name)
     }

@@ -22,9 +22,6 @@ pub struct AgentConfig {
     /// Maximum retry attempts on failure (actual attempts = max_retries + 1)
     pub max_retries: u32,
     /// Optional model override applied to every agent
-    /// Part of the config interface for future extensibility; reserved for programmatic
-    /// model selection when multiple providers are supported.
-    #[allow(dead_code)]
     pub model_override: Option<String>,
 }
 
