@@ -45,7 +45,7 @@ pub struct ToolExecutor {
 }
 
 impl ToolExecutor {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         config: Arc<Config>,
         mcp_manager: Arc<Mutex<McpManager>>,

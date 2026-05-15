@@ -2102,7 +2102,7 @@ async fn run_multi_agent(
 }
 
 /// Run OpenCrust in headless mode (no TUI, just prompt and response)
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 async fn run_headless(
     prompt: &str,
     file: Option<&str>,

@@ -52,7 +52,7 @@ impl FileFilter {
     }
 
     /// Common filter: source code
-    #[allow(dead_code, reason = "convenience preset for file filtering")]
+    #[expect(dead_code, reason = "convenience preset for file filtering")]
     pub fn source_code() -> Self {
         Self::new(
             "Source Code",
