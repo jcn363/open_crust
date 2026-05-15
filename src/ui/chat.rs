@@ -111,20 +111,38 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
         }
     }
 
+    // Clamp scroll offset to valid range
+    let max_scroll = all_items.len().saturating_sub(1);
+    let offset = app.message_scroll.min(max_scroll);
+
+    // Scroll indicator for when user is not at bottom
+    let scroll_indicator = if offset > 0 {
+        format!(" ↑{} ", offset)
+    } else {
+        String::new()
+    };
+
+    let title_text = format!(
+        "{}{}",
+        app.tabs
+            .get(app.active_tab)
+            .map(|t| t.name.as_str())
+            .unwrap_or("Chat"),
+        scroll_indicator,
+    );
+
+    let mut list_state = ratatui::widgets::ListState::default()
+        .with_selected(Some(0))
+        .with_offset(offset);
+
     let messages_list = List::new(all_items).block(
         Block::default()
             .borders(Borders::ALL)
-            .title(format!(
-                " {} ",
-                app.tabs
-                    .get(app.active_tab)
-                    .map(|t| t.name.as_str())
-                    .unwrap_or("Chat")
-            ))
+            .title(format!(" {} ", title_text))
             .border_style(Style::default().fg(theme.border))
             .style(Style::default().fg(theme.fg)),
     );
-    f.render_widget(messages_list, area);
+    f.render_stateful_widget(messages_list, area, &mut list_state);
 }
 
 pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
@@ -168,7 +186,7 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
             let is_dir = i.ends_with('/');
             if is_dir {
                 ListItem::new(Line::from(Span::styled(
-                    format!(" +{}", i),
+                    format!("  {}", i),
                     Style::default().fg(Color::Cyan),
                 )))
             } else {
@@ -232,11 +250,11 @@ mod tests {
         assert_eq!(formatted, "  main.rs");
     }
 
-    /// Verify sidebar dir items use + prefix.
+    /// Verify sidebar dir items use consistent indentation + trailing slash.
     #[test]
     fn test_sidebar_dir_format() {
         let item = "src/";
-        let formatted = format!(" +{}", item);
-        assert_eq!(formatted, " +src/");
+        let formatted = format!("  {}", item);
+        assert_eq!(formatted, "  src/");
     }
 }

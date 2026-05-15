@@ -1257,6 +1257,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 tab.messages.pop();
             }
             tab.messages.push(Message::new(response));
+            // Auto-scroll to bottom on new messages
+            app.message_scroll = 0;
         }
 
         // Handle background task notifications
@@ -1371,6 +1373,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                 match app.mode {
                     Mode::Normal => match key.code {
+                        KeyCode::Up => {
+                            // Scroll message list up
+                            let tab = &app.tabs[app.active_tab];
+                            let msg_count = tab.messages.len()
+                                + if app.active_tab == 1 {
+                                    app.background_tasks.len()
+                                } else {
+                                    0
+                                };
+                            if app.message_scroll < msg_count.saturating_sub(1) {
+                                app.message_scroll += 1;
+                            }
+                        }
+                        KeyCode::Down => {
+                            // Scroll message list down
+                            app.message_scroll = app.message_scroll.saturating_sub(1);
+                        }
+                        KeyCode::PageUp => {
+                            // Scroll up by 10 lines
+                            let tab = &app.tabs[app.active_tab];
+                            let msg_count = tab.messages.len()
+                                + if app.active_tab == 1 {
+                                    app.background_tasks.len()
+                                } else {
+                                    0
+                                };
+                            app.message_scroll = app
+                                .message_scroll
+                                .saturating_add(10)
+                                .min(msg_count.saturating_sub(1));
+                        }
+                        KeyCode::PageDown => {
+                            // Scroll down by 10 lines
+                            app.message_scroll = app.message_scroll.saturating_sub(10);
+                        }
+                        KeyCode::Home => {
+                            // Scroll to the very top (clamped in draw_message_list)
+                            app.message_scroll = usize::MAX;
+                        }
+                        KeyCode::End => {
+                            app.message_scroll = 0;
+                        }
                         KeyCode::Char('i') => {
                             app.enter_insert_mode();
                         }

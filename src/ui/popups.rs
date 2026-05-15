@@ -149,7 +149,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         pending_count, approved_count, denied_count
     );
     let status = Paragraph::new(status_text)
-        .style(Style::default().bg(Color::Blue).fg(Color::White))
+        .style(status_bar_style(theme))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[1]);
 }
@@ -362,7 +362,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
     // Status
     let status = Paragraph::new("[↑/↓] Navigate | [Enter] Select | [Esc] Cancel")
-        .style(Style::default().fg(Color::DarkGray))
+        .style(status_bar_style(theme))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }

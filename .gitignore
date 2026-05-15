@@ -83,6 +83,7 @@ __pycache__/
 .windsurf/
 build/
 tmp/
+/tmp
 
 # Logs and temp files
 *.log

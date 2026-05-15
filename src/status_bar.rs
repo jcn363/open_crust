@@ -5,7 +5,7 @@ use crate::config::ProviderType;
 use crate::ui::ThemeContext;
 
 pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
-    // Mode string
+    // Mode string (replaces redundant INS/VIM indicators — shown in input area title)
     let mode_str = match app.mode {
         crate::app::Mode::Normal => "NORMAL",
         crate::app::Mode::Insert => "INSERT",
@@ -16,15 +16,6 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         crate::app::Mode::McpShowcase => "MCP SHOWCASE",
         crate::app::Mode::MissionControl => "MISSION CONTROL",
     };
-
-    // Input mode indicator
-    let input_mode = match app.mode {
-        crate::app::Mode::Insert => "[INS]",
-        crate::app::Mode::CommandPalette => "[CMD]",
-        _ => "",
-    };
-
-    let vim_indicator = if app.vim_mode { " [VIM]" } else { "" };
 
     // Get current model and provider info
     let model_info = format!(" {}", app.config.model);
@@ -46,13 +37,9 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
     let task_count = app.background_tasks.len();
 
     let status_bar = Paragraph::new(format!(
-        " {} {}{} ({} tasks) {} {}  |  Ctrl+B: Sidebar  Tab: Switch  Ctrl+K: Palette  Ctrl+G: Mission",
-        mode_str, provider_info, model_info, task_count, input_mode, vim_indicator
+        " {} {}{} ({} tasks)  |  Ctrl+B: Sidebar  Tab: Switch  Ctrl+K: Palette  Ctrl+G: Mission",
+        mode_str, provider_info, model_info, task_count,
     ))
-    .style(
-        Style::default()
-            .fg(theme.fg)
-            .bg(theme.accent),
-    );
+    .style(Style::default().fg(theme.fg).bg(theme.accent));
     f.render_widget(status_bar, area);
 }

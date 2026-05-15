@@ -119,6 +119,8 @@ pub struct App {
     /// Shared task state from orchestrator for live DAG visualization
     pub orchestrator_tasks:
         Option<std::sync::Arc<tokio::sync::RwLock<Vec<crate::orchestrator::task::Task>>>>,
+    /// Scroll offset for the message list (positive = scroll up)
+    pub message_scroll: usize,
 }
 
 impl App {
@@ -152,7 +154,7 @@ impl App {
         let chat_tab = Tab {
             name: "Chat".to_string(),
             messages: vec![Message::new(String::from(
-                "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
+                "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'Ctrl+Q' to quit.",
             ))],
         };
         let tasks_tab = Tab {
@@ -279,6 +281,7 @@ impl App {
             // Mission Control state
             mission_control_ui: None,
             orchestrator_tasks: None,
+            message_scroll: 0,
         };
         app.load_history();
         app
