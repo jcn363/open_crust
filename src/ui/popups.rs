@@ -557,13 +557,13 @@ pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
         Line::from("  y               Yank (copy) input"),
     ];
 
-    let help_para = Paragraph::new(help_lines)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" Help ")
-                .border_style(Style::default().fg(theme.accent)),
-        )
-        .style(Style::default().fg(theme.fg));
-    f.render_widget(help_para, area);
-}
+     let help_para = Paragraph::new(help_lines)
+         .block(
+             Block::default()
+                 .borders(Borders::ALL)
+                 .title(" Help ")
+                 .border_style(Style::default().fg(theme.accent)),
+         )
+         .style(Style::default().fg(theme.fg));
+     f.render_widget(help_para, area);
+ }
