@@ -401,7 +401,7 @@ mod tests {
         assert_eq!(entry.timestamp, "2026-05-12T10:30:00.000Z");
         assert_eq!(entry.session_id, "abc123");
         assert_eq!(entry.tool, "bash");
-        assert_eq!(entry.approved, true);
+        assert!(entry.approved);
     }
 
     #[test]

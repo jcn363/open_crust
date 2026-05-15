@@ -366,11 +366,9 @@ mod tests {
         let _ = fs::remove_dir_all(&temp_dir);
         fs::create_dir_all(&temp_dir).unwrap();
 
-        let full_content = format!(
-            "---\nname: my-skill\ndescription: Does cool things\n---\n# My Skill\n\nThis skill does really cool stuff."
-        );
+        let full_content = "---\nname: my-skill\ndescription: Does cool things\n---\n# My Skill\n\nThis skill does really cool stuff.";
         let skill_file = temp_dir.join("SKILL.md");
-        fs::write(&skill_file, &full_content).unwrap();
+        fs::write(&skill_file, full_content).unwrap();
 
         let manager = SkillManager::new();
         let skill = manager
@@ -448,7 +446,8 @@ mod tests {
         create_skill_dir(&temp_dir, "new-skill", "A new skill", "Instructions");
 
         let mut manager = SkillManager::new();
-        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, removed, modified) =
+            manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
 
         assert_eq!(added, vec!["new-skill"]);
         assert!(removed.is_empty());
@@ -468,7 +467,7 @@ mod tests {
 
         let mut manager = SkillManager::new();
         // First discovery
-        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, _, _) = manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
         assert_eq!(added, vec!["mod-skill"]);
 
         // Deactivate before modifying on disk
@@ -484,7 +483,8 @@ mod tests {
         .unwrap();
 
         // Re-discover
-        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, removed, modified) =
+            manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
 
         assert!(added.is_empty());
         assert!(removed.is_empty());
@@ -510,14 +510,15 @@ mod tests {
 
         let mut manager = SkillManager::new();
         // First discovery
-        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, _, _) = manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
         assert_eq!(added, vec!["to-delete"]);
 
         // Remove the skill directory
         fs::remove_dir_all(temp_dir.join("to-delete")).unwrap();
 
         // Re-discover
-        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, removed, modified) =
+            manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
 
         assert!(added.is_empty());
         assert_eq!(removed, vec!["to-delete"]);
@@ -537,12 +538,13 @@ mod tests {
         create_skill_dir(&temp_dir, "persist-active", "Test", "Content");
 
         let mut manager = SkillManager::new();
-        manager.discover_changes_with_path(&[temp_dir.clone()]);
+        manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
         manager.deactivate_skill("persist-active");
         assert!(!manager.skills["persist-active"].active);
 
         // Re-discover with no changes on disk
-        let (added, removed, modified) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, removed, modified) =
+            manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
 
         assert!(added.is_empty());
         assert!(removed.is_empty());
@@ -617,7 +619,7 @@ mod tests {
         );
 
         let mut manager = SkillManager::new();
-        let (added, _, _) = manager.discover_changes_with_path(&[temp_dir.clone()]);
+        let (added, _, _) = manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
         assert_eq!(added.len(), 2);
         assert!(manager.skills.contains_key("python-skill"));
         assert!(manager.skills.contains_key("rust-skill"));
@@ -648,7 +650,7 @@ mod tests {
         );
 
         let mut manager = SkillManager::new();
-        manager.discover_changes_with_path(&[temp_dir.clone()]);
+        manager.discover_changes_with_path(std::slice::from_ref(&temp_dir));
 
         let stats = manager.list_skills_with_stats();
         assert_eq!(stats.len(), 1);
