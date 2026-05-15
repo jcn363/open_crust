@@ -4,9 +4,9 @@ mod popups;
 
 use ratatui::{
     Frame,
-    style::{Color, Style},
-    text::Line,
-    widgets::{Block, Tabs},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Tabs},
 };
 
 use crate::app::{App, Mode};
@@ -74,22 +74,29 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let tab_titles: Vec<Line> = app
         .tabs
         .iter()
-        .map(|t| Line::from(t.name.as_str()))
+        .enumerate()
+        .map(|(i, t)| {
+            let is_active = i == app.active_tab;
+            let style = if is_active {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(theme.accent)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(theme.fg)
+            };
+            Line::from(Span::styled(format!(" {} ", t.name), style))
+        })
         .collect();
     let tabs_widget = Tabs::new(tab_titles)
         .block(
             Block::default()
-                .borders(ratatui::widgets::Borders::ALL)
+                .borders(Borders::ALL)
                 .title(" Views ")
-                .border_style(Style::default().fg(theme.border)),
+                .border_style(Style::default().fg(theme.accent)),
         )
         .select(app.active_tab)
-        .highlight_style(
-            Style::default()
-                .bg(theme.accent)
-                .fg(Color::Black)
-                .add_modifier(ratatui::style::Modifier::BOLD),
-        );
+        .highlight_style(Style::default().bg(theme.accent).fg(Color::Black));
     f.render_widget(tabs_widget, chunks[0]);
 
     let (sidebar_area, main_content_area) = layout::sidebar_layout(chunks[1], app.show_sidebar);

@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
@@ -12,11 +12,14 @@ use crate::ui::ThemeContext;
 /// Determine message style based on message content
 fn message_style(content: &str) -> Style {
     if content.starts_with("You: ") {
-        // User message - green
-        Style::default().fg(Color::Green)
+        // User message - bright green
+        Style::default().fg(Color::LightGreen)
     } else if content.starts_with("opencrust: ") {
         // System message - gray
         Style::default().fg(Color::DarkGray)
+    } else if content.starts_with("System: ") {
+        // System notification - yellow
+        Style::default().fg(Color::Yellow)
     } else {
         // LLM response - cyan
         Style::default().fg(Color::Cyan)
@@ -39,16 +42,14 @@ fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
     }
 }
 
-/// Render a single message into a ListItem with stored timestamp
+/// Render a single message into a ListItem with stored timestamp.
+/// The entire message body is styled uniformly based on sender type.
 fn render_message(m: &Message) -> ListItem<'_> {
     let ts = m.timestamp.format("%H:%M").to_string();
-    let parts: Vec<&str> = m.content.splitn(2, ':').collect();
-    let prefix = parts.first().unwrap_or(&"");
-    let body = parts.get(1).unwrap_or(&"");
+    let style = message_style(&m.content);
     ListItem::new(Line::from(vec![
         Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
-        Span::styled(format!("{}: ", prefix), message_style(&m.content)),
-        Span::styled(*body, Style::default().fg(Color::DarkGray)),
+        Span::styled(&m.content, style),
     ]))
 }
 
@@ -90,10 +91,16 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
             .get(app.active_tab)
             .filter(|tab| !tab.messages.is_empty())
         {
-            let sep_line = Line::from(vec![Span::styled(
-                "--- Chat Messages ---",
-                Style::default().fg(Color::DarkGray),
-            )]);
+            let sep_line = Line::from(vec![
+                Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+                Span::styled(
+                    "Chat Messages",
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+            ]);
             all_items.push(ListItem::new(sep_line));
             all_items.extend(tab.messages.iter().map(render_message));
         }
@@ -132,18 +139,24 @@ pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         line
     })
     .style(input_style_for_mode(app.mode, theme))
-    .block(
+    .block({
+        let mode_hint = match app.mode {
+            Mode::Insert if app.vim_mode => " Input [VIM] ",
+            Mode::Insert => " Input [INS] ",
+            _ => " Input ",
+        };
         Block::default()
             .borders(Borders::ALL)
-            .title(" Input ")
-            .border_style(input_border_style_for_mode(app.mode, theme)),
-    );
+            .title(mode_hint)
+            .border_style(input_border_style_for_mode(app.mode, theme))
+    });
     f.render_widget(input, area);
 
-    // Cursor
+    // Cursor — account for border (Borders::ALL = 1-char offset)
     if let Mode::Insert = app.mode {
         let input_len = app.input.len() as u16;
-        f.set_cursor_position((area.x + input_len + 1, area.y + 1));
+        let border_offset: u16 = 1;
+        f.set_cursor_position((area.x + border_offset + input_len, area.y + border_offset));
     }
 }
 
@@ -163,13 +176,28 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
             }
         })
         .collect();
-    let sidebar_list = List::new(sidebar_items).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" Files ")
-            .border_style(Style::default().fg(theme.border)),
-    );
+    let sidebar_list = List::new(sidebar_items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Files ")
+                .border_style(Style::default().fg(theme.accent)),
+        )
+        .style(Style::default().bg(dim_color(theme.bg)));
     f.render_widget(sidebar_list, area);
+}
+
+/// Return a slightly dimmed version of the given color for subtle backgrounds.
+fn dim_color(c: Color) -> Color {
+    match c {
+        Color::Rgb(r, g, b) => {
+            let r = (r as u16 * 3 / 4).min(255) as u8;
+            let g = (g as u16 * 3 / 4).min(255) as u8;
+            let b = (b as u16 * 3 / 4).min(255) as u8;
+            Color::Rgb(r, g, b)
+        }
+        _ => Color::Reset,
+    }
 }
 
 #[cfg(test)]

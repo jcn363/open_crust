@@ -26,12 +26,34 @@ fn themed_block_with_color<'a>(title: &str, border_color: Color) -> Block<'a> {
         .border_style(Style::default().fg(border_color))
 }
 
+/// Render a faint shadow behind a popup for visual depth
+fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect) {
+    if area.width > 2 && area.height > 1 {
+        let shadow = ratatui::layout::Rect {
+            x: area.x + 2,
+            y: area.y + 1,
+            width: area.width.saturating_sub(2),
+            height: area.height.saturating_sub(1),
+        };
+        f.render_widget(
+            Block::default().style(Style::default().bg(Color::Rgb(10, 10, 10))),
+            shadow,
+        );
+    }
+}
+
+/// Status bar shared styling helper
+fn status_bar_style(theme: &ThemeContext) -> Style {
+    Style::default().bg(theme.accent).fg(Color::Black)
+}
+
 pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     if app.proposed_changes.is_empty() {
         return;
     }
 
     let area = centered_rect(90, 90, f.area());
+    render_popup_shadow(f, area);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -134,6 +156,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(90, 80, f.area());
+    render_popup_shadow(f, area);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -257,7 +280,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         f.render_widget(details_para, content_chunks[1]);
     }
 
-    // Status bar
+    // Unified status bar
     let status_text =
         if let Some((name, _, _)) = app.mcp_browser_items.get(app.mcp_browser_selected) {
             if app.config.mcp.contains_key(name) {
@@ -269,13 +292,14 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
             " [↑/↓] Navigate | [Esc] Close "
         };
     let status = Paragraph::new(status_text)
-        .style(Style::default().bg(theme.accent).fg(Color::Black))
+        .style(status_bar_style(theme))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }
 
 pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
-    let area = centered_rect(60, 30, f.area());
+    let area = centered_rect(60, 35, f.area());
+    render_popup_shadow(f, area);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -345,6 +369,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(70, 60, f.area());
+    render_popup_shadow(f, area);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -456,10 +481,10 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
         f.render_widget(details_para, content_chunks[1]);
     }
 
-    // Status bar
+    // Unified status bar
     let status_text = "[↑/↓] Navigate | [Enter] Toggle Active | [Esc/q] Close";
     let status = Paragraph::new(status_text)
-        .style(Style::default().bg(theme.accent).fg(Color::Black))
+        .style(status_bar_style(theme))
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }

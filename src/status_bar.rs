@@ -46,9 +46,13 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
     let task_count = app.background_tasks.len();
 
     let status_bar = Paragraph::new(format!(
-        "-- {} {}{} ({}) {} {} | Ctrl+B: Sidebar | Tab: Switch view",
+        " {} {}{} ({} tasks) {} {}  |  Ctrl+B: Sidebar  Tab: Switch  Ctrl+K: Palette  Ctrl+G: Mission",
         mode_str, provider_info, model_info, task_count, input_mode, vim_indicator
     ))
-    .style(Style::default().fg(theme.accent));
+    .style(
+        Style::default()
+            .fg(theme.fg)
+            .bg(theme.accent),
+    );
     f.render_widget(status_bar, area);
 }
