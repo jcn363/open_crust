@@ -85,7 +85,7 @@ No custom linter configs exist—rely on `cargo clippy` for style guidance.
 
 ## Rust Best Practices (Mandatory)
 
-Follow Apollo GraphQL's [Rust Best Practices Handbook](https://github.com/apollographql/rust-best-practices) for all code. Key mandatory rules:
+Follow Apollo GraphQL's [Rust Best Practices Handbook](https://github.com/apollographql/rust-best-practices) for all code, and consult [`docs/RBP.md`](./docs/RBP.md) for the full reference with detailed guidelines, examples, and ecosystem best practices. Key mandatory rules:
 
 ### Performance
 - Always benchmark with `--release` flag; avoid drawing conclusions from debug builds
@@ -115,6 +115,90 @@ Follow Apollo GraphQL's [Rust Best Practices Handbook](https://github.com/apollo
 - `///` doc comments explain public API *what* and *how*
 - Every `TODO` must reference a linked issue: `// TODO(#42): description`
 - Enable `#![deny(missing_docs)]` for library crates
+
+### Borrowing & Ownership
+- Prefer `&T` over `.clone()` unless ownership transfer is required
+- Use `&str` over `String`, `&[T]` over `Vec<T>` in function parameters
+- Small `Copy` types (≤24 bytes) may be passed by value
+- Use `Cow<'_, T>` when ownership is ambiguous
+
+### Generics & Dispatch
+- Prefer generics (static dispatch) for performance-critical code
+- Use `dyn Trait` only when heterogeneous collections are needed
+- Box at API boundaries, not internally
+
+### Type State Pattern
+Encode valid states in the type system to catch invalid operations at compile time:
+```rust
+struct Connection<State> { /* ... */ _state: PhantomData<State> }
+struct Disconnected;
+struct Connected;
+
+impl Connection<Connected> {
+    fn send(&self, data: &[u8]) { /* only connected can send */ }
+}
+```
+
+### Rust API Guidelines (Official)
+Follow the Rust API Guidelines for naming, interoperability, and type safety:
+- Conversion methods: `as_` (borrowed→borrowed), `to_` (borrowed→owned), `into_` (owned→owned)
+- Getters omit `get_` prefix: `len()` not `get_len()`
+- Implement common traits eagerly: `Clone`, `Debug`, `PartialEq`, `Eq`, `Ord`, `Hash`, `Default`
+- Error types must implement `std::error::Error` and be `Send + Sync + 'static`
+- Use newtypes for static distinctions between interpretations of the same underlying type
+- Use the builder pattern for complex construction
+- Make traits sealed (`#[doc(hidden)]` + private supertrait) to prevent downstream implementations
+
+### Cargo & Workspace Management
+- Declare shared dependencies in `[workspace.dependencies]` for version consistency
+- Use `[workspace.lints]` to unify lint configuration
+- Features must be **additive** — never use mutually exclusive features
+- Name features after what they enable, not what they depend on
+- Use `dep:` syntax (Rust 1.60+) to prevent optional deps from creating implicit features
+- Use `lto = "thin"` for most release builds; `lto = "fat"` for final distribution
+
+### Module Organization & Visibility
+- One module per file; directories for submodules
+- Default to private; widen visibility incrementally
+- Use `pub(crate)` for internal utilities, `pub(super)` for parent helpers
+- Use `pub use` (re-exports) to decouple file structure from logical namespace
+- Never glob-import (`use foo::*`) from external crates
+
+### Async & Concurrency (Tokio)
+- Never block the async runtime: CPU-bound work → `tokio::task::spawn_blocking`
+- No `std::thread::sleep` (use `tokio::time::sleep`); no `std::sync::Mutex` across `.await`
+- Use `JoinSet` for structured concurrency; `CancellationToken` for graceful shutdown
+- Prefer the actor pattern (task + channel) over shared `Arc<Mutex<T>>`
+- Use bounded channels (`mpsc::channel(N)`) to prevent OOM under load
+
+### Unsafe Code & FFI
+- Valid reasons only: novel abstractions, proven performance, FFI/platform calls
+- Every `// SAFETY:` comment must explain why the operation is valid
+- Unsafe lives inside a safe API; callers cannot trigger UB through safe code
+- Allocate and free on the same side of the FFI boundary
+- Prevent panics from crossing FFI boundaries (`catch_unwind`)
+
+### Testing Ecosystem
+- Multi-layer strategy: unit tests, integration tests (`tests/`), doc tests, property-based (`proptest`), snapshot (`insta`), fuzzing (`cargo-fuzz`)
+- Use **Criterion** for statistically rigorous benchmarks with `--release` and `black_box`
+- Name tests: `describe_should_expected_behavior()`; one assertion per test
+- Use `rstest` for fixtures and parameterized tests
+- Use `#[ignore]` for slow tests; run them separately
+
+### Dependency Management
+- Prefer `"1.2.3"` caret notation for SemVer-compatible updates
+- Avoid exact pinning (`"=1.2.3"`) — blocks security fixes
+- Use `cargo-semver-checks` in CI to detect breaking changes
+- Use `cargo deny` for license compliance, `cargo udeps` for unused deps
+- Keep `Cargo.lock` committed for applications (reproducible builds)
+- Set `package.rust-version` in `Cargo.toml` for MSRV
+
+### Documentation & Metadata
+- Every public item needs a doc comment; crate-level docs (`//!` in `lib.rs`)
+- Examples in docs use `?` (not `unwrap()`) so users can copy verbatim
+- Document `Errors`, `Panics`, and `Safety` sections where applicable
+- Use `#[doc(hidden)]` to hide implementation details from rustdoc
+- `Cargo.toml` must include: `description`, `license`, `repository`, `keywords`, `categories`
 
 ## Testing Guidelines
 
