@@ -307,28 +307,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if let Some(ref auto_refresh) = config.model_auto_refresh
         && auto_refresh.enabled
     {
-        let refresh_config = config.clone();
+            let refresh_config = config.clone();
         tokio::spawn(async move {
             let fetcher = models::ModelFetcher::new();
-            let provider_str = match refresh_config.provider {
-                config::ProviderType::Ollama => "ollama",
-                config::ProviderType::OpenRouter => "openrouter",
-                config::ProviderType::OpenAI => "openai",
-                config::ProviderType::Gemini => "gemini",
-                config::ProviderType::Mistral => "mistral",
-                config::ProviderType::Anthropic => "anthropic",
-                config::ProviderType::Groq => "groq",
-                config::ProviderType::TogetherAi => "togetherai",
-                config::ProviderType::Replicate => "replicate",
-                config::ProviderType::DeepSeek => "deepseek",
-                config::ProviderType::LocalAi => "localai",
-            };
+            let provider_str = refresh_config.provider.to_string();
             // Fetch model list on startup (non-blocking background task)
-            let models = fetcher.fetch(provider_str, None, None).await;
+            let models = fetcher.fetch(&provider_str, None, None).await;
             if models.is_empty() {
                 // Use bundled defaults as fallback
                 let defaults = models::bundled_default_models();
-                if defaults.contains_key(provider_str) {
+                if defaults.contains_key(&provider_str) {
                     eprintln!(
                         "[Models] Using bundled default model list for {}",
                         provider_str
@@ -1991,26 +1979,10 @@ fn parse_agent_spec(
 ) -> Result<(config::ProviderType, String), Box<dyn std::error::Error + Send + Sync>> {
     if spec.contains(':') {
         let parts: Vec<&str> = spec.splitn(2, ':').collect();
-        let provider = match parts[0].to_lowercase().as_str() {
-            "ollama" => config::ProviderType::Ollama,
-            "openrouter" => config::ProviderType::OpenRouter,
-            "openai" => config::ProviderType::OpenAI,
-            "gemini" => config::ProviderType::Gemini,
-            "mistral" => config::ProviderType::Mistral,
-            "anthropic" => config::ProviderType::Anthropic,
-            _ => return Err(format!("Unknown provider: {}", parts[0]).into()),
-        };
+        let provider = parts[0].parse::<config::ProviderType>()?;
         Ok((provider, parts[1].to_string()))
     } else {
-        let provider = match spec.to_lowercase().as_str() {
-            "ollama" => config::ProviderType::Ollama,
-            "openrouter" => config::ProviderType::OpenRouter,
-            "openai" => config::ProviderType::OpenAI,
-            "gemini" => config::ProviderType::Gemini,
-            "mistral" => config::ProviderType::Mistral,
-            "anthropic" => config::ProviderType::Anthropic,
-            _ => return Err(format!("Unknown provider: {}", spec).into()),
-        };
+        let provider = spec.parse::<config::ProviderType>()?;
         let model = match provider {
             config::ProviderType::Ollama => "deepseek-r1".to_string(),
             config::ProviderType::OpenRouter => "openrouter/free-gpt-4o-mini".to_string(),
@@ -2163,15 +2135,7 @@ async fn run_headless(
 
     // Override provider if specified
     if let Some(provider_str) = provider {
-        config.provider = match provider_str.to_lowercase().as_str() {
-            "ollama" => config::ProviderType::Ollama,
-            "openrouter" => config::ProviderType::OpenRouter,
-            "openai" => config::ProviderType::OpenAI,
-            "gemini" => config::ProviderType::Gemini,
-            "mistral" => config::ProviderType::Mistral,
-            "anthropic" => config::ProviderType::Anthropic,
-            _ => return Err(format!("Unknown provider: {}", provider_str).into()),
-        };
+        config.provider = provider_str.parse()?;
     }
 
     // Override model if specified

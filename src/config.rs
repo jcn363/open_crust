@@ -7,8 +7,10 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 /// Default OpenRouter free model (no API key required)
 pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free-gpt-4o-mini";
@@ -27,6 +29,47 @@ pub enum ProviderType {
     Replicate,
     DeepSeek,
     LocalAi,
+}
+
+impl fmt::Display for ProviderType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProviderType::Ollama => write!(f, "ollama"),
+            ProviderType::OpenRouter => write!(f, "openrouter"),
+            ProviderType::OpenAI => write!(f, "openai"),
+            ProviderType::Gemini => write!(f, "gemini"),
+            ProviderType::Mistral => write!(f, "mistral"),
+            ProviderType::Anthropic => write!(f, "anthropic"),
+            ProviderType::Groq => write!(f, "groq"),
+            ProviderType::TogetherAi => write!(f, "togetherai"),
+            ProviderType::Replicate => write!(f, "replicate"),
+            ProviderType::DeepSeek => write!(f, "deepseek"),
+            ProviderType::LocalAi => write!(f, "localai"),
+        }
+    }
+}
+
+impl FromStr for ProviderType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "ollama" => Ok(ProviderType::Ollama),
+            "openrouter" => Ok(ProviderType::OpenRouter),
+            "openai" => Ok(ProviderType::OpenAI),
+            "gemini" => Ok(ProviderType::Gemini),
+            "mistral" => Ok(ProviderType::Mistral),
+            "anthropic" => Ok(ProviderType::Anthropic),
+            "groq" => Ok(ProviderType::Groq),
+            "togetherai" | "together_ai" | "together-ai" => {
+                Ok(ProviderType::TogetherAi)
+            }
+            "replicate" => Ok(ProviderType::Replicate),
+            "deepseek" => Ok(ProviderType::DeepSeek),
+            "localai" | "local_ai" | "local-ai" => Ok(ProviderType::LocalAi),
+            _ => Err(format!("Unknown provider: {}", s)),
+        }
+    }
 }
 
 /// DAN (Do Anything Now) response modes for uncensored operation
@@ -700,15 +743,7 @@ impl Config {
 
         // Check "provider/model" format
         if let Some((provider_str, model_id)) = model_str.split_once('/') {
-            let provider = match provider_str {
-                "ollama" => ProviderType::Ollama,
-                "openrouter" => ProviderType::OpenRouter,
-                "openai" => ProviderType::OpenAI,
-                "gemini" => ProviderType::Gemini,
-                "mistral" => ProviderType::Mistral,
-                "anthropic" => ProviderType::Anthropic,
-                _ => self.provider.clone(),
-            };
+            let provider = provider_str.parse().unwrap_or_else(|_| self.provider.clone());
             return (provider, model_id.to_string());
         }
 
