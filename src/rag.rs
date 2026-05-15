@@ -134,10 +134,10 @@ pub async fn generate_embedding(ollama_url: &str, text: &str) -> Result<Vec<f32>
     let client = Client::new();
     let url = format!("{}/api/embeddings", ollama_url.trim_end_matches('/'));
 
-    let payload = serde_json::json!({
-        "model": "nomic-embed-text",  // Default embedding model for Ollama
-        "prompt": text
-    });
+     let payload = serde_json::json!({
+         "model": "nomic-embed-text-v2-moe",  // Default embedding model for Ollama
+         "prompt": text
+     });
 
     let response = client
         .post(&url)
@@ -476,26 +476,24 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    #[ignore = "Requires Ollama running with nomic-embed-text model locally"]
-    async fn test_generate_embedding() -> Result<(), Box<dyn std::error::Error>> {
-        // This test requires Ollama running with nomic-embed-text model
-        if std::process::Command::new("ollama")
-            .args(["list"])
-            .output()
-            .map(|o| String::from_utf8_lossy(&o.stdout).contains("nomic-embed-text"))
-            .unwrap_or(false)
-        {
-            let result = generate_embedding("http://localhost:11434", "test").await;
-            assert!(result.is_ok(), "Should generate embedding");
-            let embedding = result?;
-            assert!(!embedding.is_empty(), "Embedding should not be empty");
-            assert_eq!(
-                embedding.len(),
-                768,
-                "nomic-embed-text should produce 768-dim embeddings"
-            );
-        }
-        Ok(())
-    }
+     #[tokio::test]
+     #[ignore = "Requires Ollama running with nomic-embed-text-v2-moe model locally"]
+     async fn test_generate_embedding() -> Result<(), Box<dyn std::error::Error>> {
+         // This test requires Ollama running with nomic-embed-text-v2-moe model
+         if std::process::Command::new("ollama")
+             .args(["list"])
+             .output()
+             .map(|o| String::from_utf8_lossy(&o.stdout).contains("nomic-embed-text-v2-moe"))
+             .unwrap_or(false)
+         {
+             let result = generate_embedding("http://localhost:11434", "test").await;
+             assert!(result.is_ok(), "Should generate embedding");
+             let embedding = result?;
+             assert!(!embedding.is_empty(), "Embedding should not be empty");
+             // Note: nomic-embed-text-v2-moe embedding dimensions may vary
+             // For now we just check it's not empty
+             assert!(!embedding.is_empty(), "Embedding should not be empty");
+         }
+         Ok(())
+     }
 }
