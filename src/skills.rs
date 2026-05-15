@@ -263,7 +263,7 @@ impl SkillManager {
         self.skills.get(name)
     }
 
-    #[allow(dead_code, reason = "used in tests; dead in non-test builds")]
+    #[cfg_attr(not(test), expect(dead_code, reason = "used in tests; dead in non-test builds"))]
     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
         self.skills.get_mut(name)
     }
