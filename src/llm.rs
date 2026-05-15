@@ -44,7 +44,7 @@ impl LlmClient {
         lsp_manager: Arc<Mutex<LspManager>>,
         skill_manager: Arc<Mutex<SkillManager>>,
         custom_tool_manager: Arc<Mutex<CustomToolManager>>,
-    ) -> Self {
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let permission_manager = Arc::new(PermissionManager::new(config.clone()));
         let audit_logger = Arc::new(AuditLogger::new());
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
@@ -59,14 +59,14 @@ impl LlmClient {
             skill_manager.clone(),
             custom_tool_manager.clone(),
             permission_manager.clone(),
-            Arc::new(WebManager::new().expect("Failed to create web manager")),
+            Arc::new(WebManager::new()?),
             Arc::new(Mutex::new(Planner::new())),
             Arc::new(Mutex::new(RagManager::new(&config))),
             pinned_files.clone(),
             orchestrator.clone(),
         ));
 
-        Self {
+        Ok(Self {
             client: Client::new(),
             config,
             mcp_manager,
@@ -76,7 +76,7 @@ impl LlmClient {
             audit_logger,
             pinned_files,
             tool_executor,
-        }
+        })
     }
 
     #[async_recursion]

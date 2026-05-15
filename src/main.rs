@@ -370,7 +370,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         lsp_manager.clone(),
         skill_manager.clone(),
         custom_tool_manager.clone(),
-    );
+    )?;
 
     if let Some(Commands::Acp) = args.command {
         return acp::run_acp_loop(llm_client).await;
@@ -2067,10 +2067,24 @@ async fn run_multi_agent(
         let prompt = prompt.to_string();
 
         let handle = tokio::spawn(async move {
-            let llm_client =
-                llm::LlmClient::new(Arc::new(config), mcp_mgr, lsp_mgr, skill_mgr, custom_mgr);
-
             let provider_name = format!("{:?}", provider);
+            let llm_client = match llm::LlmClient::new(
+                Arc::new(config),
+                mcp_mgr,
+                lsp_mgr,
+                skill_mgr,
+                custom_mgr,
+            ) {
+                Ok(client) => client,
+                Err(e) => {
+                    eprintln!(
+                        "Failed to create LLM client for {} ({}): {}",
+                        provider_name, model, e
+                    );
+                    return (provider_name, model, Err(e.to_string()));
+                }
+            };
+
             println!("Agent {} ({}) thinking...", provider_name, model);
 
             match llm_client.query_simple(&prompt, None).await {
@@ -2157,7 +2171,7 @@ async fn run_headless(
         lsp_manager,
         skill_manager,
         custom_tool_manager,
-    );
+    )?;
 
     // Send prompt and get response
     eprintln!("Sending prompt to LLM...");

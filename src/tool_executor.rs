@@ -317,13 +317,15 @@ impl ToolExecutor {
         let mut orchestrator = self.orchestrator.lock().await;
         let llm_client = {
             // Create a minimal LlmClient for the orchestrator to use
-            Arc::new(crate::llm::LlmClient::new(
+            let client = crate::llm::LlmClient::new(
                 self.config.clone(),
                 self.mcp_manager.clone(),
                 self.lsp_manager.clone(),
                 self.skill_manager.clone(),
                 self.custom_tool_manager.clone(),
-            ))
+            )
+            .map_err(|e| format!("Failed to create LLM client: {}", e))?;
+            Arc::new(client)
         };
 
         let result = orchestrator.execute_request(&sub_prompt, llm_client).await;
