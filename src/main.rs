@@ -307,7 +307,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if let Some(ref auto_refresh) = config.model_auto_refresh
         && auto_refresh.enabled
     {
-            let refresh_config = config.clone();
+        let refresh_config = config.clone();
         tokio::spawn(async move {
             let fetcher = models::ModelFetcher::new();
             let provider_str = refresh_config.provider.to_string();
@@ -1163,7 +1163,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             } else if prompt_str.starts_with("/goal ") {
                 let goal_desc = prompt_str.trim_start_matches("/goal ").trim();
                 if goal_desc.is_empty() {
-                    let _ = response_tx.send("opencrust: Usage: /goal <description>".to_string()).await;
+                    let _ = response_tx
+                        .send("opencrust: Usage: /goal <description>".to_string())
+                        .await;
                 } else {
                     client_clone.set_goal(goal_desc.to_string());
                     let _ = response_tx.send(format!(
@@ -1174,18 +1176,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 continue;
             } else if prompt_str == "/goal-clear" || prompt_str == "/goal clear" {
                 client_clone.clear_goal();
-                let _ = response_tx.send("opencrust: Goal cleared.".to_string()).await;
+                let _ = response_tx
+                    .send("opencrust: Goal cleared.".to_string())
+                    .await;
                 continue;
             } else if prompt_str == "/goal-status" || prompt_str == "/goal status" {
                 match client_clone.get_goal() {
                     Some(goal) => {
-                        let _ = response_tx.send(format!(
-                            "opencrust: Active goal: '{}' (set {})",
-                            goal.description, goal.created_at.format("%Y-%m-%d %H:%M")
-                        )).await;
+                        let _ = response_tx
+                            .send(format!(
+                                "opencrust: Active goal: '{}' (set {})",
+                                goal.description,
+                                goal.created_at.format("%Y-%m-%d %H:%M")
+                            ))
+                            .await;
                     }
                     None => {
-                        let _ = response_tx.send("opencrust: No active goal.".to_string()).await;
+                        let _ = response_tx
+                            .send("opencrust: No active goal.".to_string())
+                            .await;
                     }
                 }
                 continue;
@@ -1480,17 +1489,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             match app.plan_mode {
                                 crate::app::PlanMode::Disabled => {
                                     app.plan_mode = crate::app::PlanMode::Planning;
-                                    app.llm_client.set_plan_mode(crate::llm::PlanModeState::Planning);
+                                    app.llm_client
+                                        .set_plan_mode(crate::llm::PlanModeState::Planning);
                                     app.tabs[0]
                                         .messages
                                         .push(Message::new(String::from("Entering plan mode — write tools blocked. Press Ctrl+P to exit.")));
                                 }
                                 crate::app::PlanMode::Planning => {
                                     app.plan_mode = crate::app::PlanMode::Disabled;
-                                    app.llm_client.set_plan_mode(crate::llm::PlanModeState::Disabled);
-                                    app.tabs[0]
-                                        .messages
-                                        .push(Message::new(String::from("Exiting plan mode — write tools enabled.")));
+                                    app.llm_client
+                                        .set_plan_mode(crate::llm::PlanModeState::Disabled);
+                                    app.tabs[0].messages.push(Message::new(String::from(
+                                        "Exiting plan mode — write tools enabled.",
+                                    )));
                                 }
                             }
                         }

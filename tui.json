@@ -1,4 +1,16 @@
 {
   "$schema": "https://opencode.ai/tui.json",
-  "theme": "opencode"
+  "theme": {
+    "background": "#1e1e1e",
+    "foreground": "#ffffff",
+    "accent": "#1e90ff",
+    "border": "#333333"
+  },
+  "keybinds": {
+    "leader": "ctrl+x",
+    "app_exit": "ctrl+q",
+    "input_submit": "return",
+    "paste": "ctrl+v",
+    "copy": "ctrl+c"
+  }
 }

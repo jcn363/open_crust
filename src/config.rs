@@ -61,9 +61,7 @@ impl FromStr for ProviderType {
             "mistral" => Ok(ProviderType::Mistral),
             "anthropic" => Ok(ProviderType::Anthropic),
             "groq" => Ok(ProviderType::Groq),
-            "togetherai" | "together_ai" | "together-ai" => {
-                Ok(ProviderType::TogetherAi)
-            }
+            "togetherai" | "together_ai" | "together-ai" => Ok(ProviderType::TogetherAi),
             "replicate" => Ok(ProviderType::Replicate),
             "deepseek" => Ok(ProviderType::DeepSeek),
             "localai" | "local_ai" | "local-ai" => Ok(ProviderType::LocalAi),
@@ -743,7 +741,9 @@ impl Config {
 
         // Check "provider/model" format
         if let Some((provider_str, model_id)) = model_str.split_once('/') {
-            let provider = provider_str.parse().unwrap_or_else(|_| self.provider.clone());
+            let provider = provider_str
+                .parse()
+                .unwrap_or_else(|_| self.provider.clone());
             return (provider, model_id.to_string());
         }
 

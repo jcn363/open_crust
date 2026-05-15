@@ -130,7 +130,10 @@ impl LlmClient {
 
     /// Get current plan mode state
     pub fn get_plan_mode(&self) -> PlanModeState {
-        self.plan_mode.lock().map(|g| *g).unwrap_or(PlanModeState::Disabled)
+        self.plan_mode
+            .lock()
+            .map(|g| *g)
+            .unwrap_or(PlanModeState::Disabled)
     }
 
     /// Check if a tool is blocked in plan mode

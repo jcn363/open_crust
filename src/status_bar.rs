@@ -59,7 +59,9 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
 
     // Show keybinding hints based on mode
     let hints = match app.mode {
-        crate::app::Mode::Normal => " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette  Ctrl+P:PlanMode",
+        crate::app::Mode::Normal => {
+            " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette  Ctrl+P:PlanMode"
+        }
         crate::app::Mode::Insert => " Esc:Normal  Enter:Send  ↑↓:History",
         crate::app::Mode::Review => " ↑↓:Navigate  A:Approve  D:Deny  Enter:Execute",
         crate::app::Mode::Servers => " ↑↓:Navigate  Enter:Install  Esc:Close",
@@ -67,7 +69,10 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         _ => "",
     };
 
-    let status_bar = Paragraph::new(format!("{}{}{}{}{}", mode_tag, plan_tag, provider_tag, task_tag, hints,))
-        .style(Style::default().fg(theme.fg).bg(theme.accent));
+    let status_bar = Paragraph::new(format!(
+        "{}{}{}{}{}",
+        mode_tag, plan_tag, provider_tag, task_tag, hints,
+    ))
+    .style(Style::default().fg(theme.fg).bg(theme.accent));
     f.render_widget(status_bar, area);
 }
