@@ -22,7 +22,7 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Recursive Subagents**: Spawns and manages specialized sub-agents for complex, multi-step problems
 - **Multi-Agent Orchestration**: Dedicated `orchestrator/` module for coordinating agent pools with task delegation
 - **Task Planner**: Generates multi-step execution plans with progress tracking in `plan.md`
-- **Semantic Search**: Vector-based code search using Ollama embeddings (`nomic-embed-text`). Index with `index_codebase`, then search with `semantic_search`
+- **Semantic Search**: Vector-based code search using Ollama embeddings (`nomic-embed-text-v2-moe`). Index with `index_codebase`, then search with `semantic_search`
 - **Web Intelligence**: Integrated search and automated Markdown conversion for live research
 - **Global Refactoring**: Codebase-wide regex search & replace with file-glob scoping
 - **Skill System**: Load specialized behavior profiles (skills) that reshape the agent's capabilities per-task
