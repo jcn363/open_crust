@@ -1,3 +1,9 @@
+//! Git integration: checkpoint, undo, and redo
+//!
+//! Provides git-based checkpointing for safe experimentation. `checkpoint()`
+//! creates an automatic commit of all changes; `undo()` / `redo()` walk
+//! through the checkpoint history.
+
 use std::process::Command;
 
 pub fn checkpoint() -> Result<String, String> {

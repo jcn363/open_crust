@@ -1,3 +1,8 @@
+//! Project rules loading and parsing
+//!
+//! Loads .clinerules files from the project directory and global config.
+//! Rules are injected into the LLM system prompt to guide agent behavior.
+
 use std::env;
 use std::fs;
 use std::path::Path;

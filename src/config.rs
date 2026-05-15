@@ -1,3 +1,10 @@
+//! Configuration system: loading, serialization, and type definitions
+//!
+//! Defines all configuration types including provider settings, model aliases,
+//! MCP/LSP server configs, keybindings, theme, subagent configuration, and
+//! permission rules. Loads from and saves to a TOML file. Central to every
+//! subsystem's initialization.
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -6,6 +13,7 @@ use std::path::PathBuf;
 /// Default OpenRouter free model (no API key required)
 pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free-gpt-4o-mini";
 
+/// Supported LLM provider backends
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ProviderType {
     Ollama,
@@ -260,6 +268,11 @@ fn default_color_border() -> String {
     "#333333".to_string()
 }
 
+/// Top-level configuration for OpenCrust
+///
+/// Loaded from a TOML file. Contains provider settings, model aliases,
+/// MCP/LSP server configs, UI theme, keybindings, permission rules,
+/// auto-refresh settings, and subagent/`dan` configuration.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub provider: ProviderType,

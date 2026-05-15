@@ -1,3 +1,9 @@
+//! Custom tool scripts — user-extendable tool system
+//!
+//! Discovers and executes executable scripts from `.opencrust/tools/`.
+//! Each script is auto-discovered at startup and made available as a tool
+//! to the LLM. Parses script headers for name/description metadata.
+
 use crate::security;
 use serde_json::{Value, json};
 use std::collections::HashMap;

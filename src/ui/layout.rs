@@ -1,3 +1,9 @@
+//! Layout helpers for the TUI
+//!
+//! Provides reusable layout functions: centered popup rectangles, main
+//! 4-panel layout (sidebar, chat, input, status), and sidebar show/hide
+//! logic.
+
 use std::rc::Rc;
 
 use ratatui::layout::{Constraint, Direction, Layout, Rect};

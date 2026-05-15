@@ -1,3 +1,9 @@
+//! LLM provider model management and caching
+//!
+//! Fetches available models from providers (OpenRouter, Ollama, etc.),
+//! caches them for fast access, and provides bundled defaults as fallback.
+//! Supports automatic periodic refresh for up-to-date model lists.
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;

@@ -1,7 +1,18 @@
+//! Security permission system for tool execution
+//!
+//! Controls which tools and inputs are allowed, denied, or require user
+//! confirmation. Supports glob-pattern matching on inputs, per-tool rules,
+//! and global defaults. Used by the LLM loop to gate all tool calls.
+
 use crate::config::{Config, PermissionAction, PermissionRule};
 use glob::Pattern;
 use std::sync::Arc;
 
+/// Security gate for all tool execution
+///
+/// Checks tool names and inputs against configurable rules. Returns
+/// Allow/Deny/Ask decisions based on glob-pattern matching and
+/// per-tool or global permission rules.
 pub struct PermissionManager {
     config: Arc<Config>,
 }

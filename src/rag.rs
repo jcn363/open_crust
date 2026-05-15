@@ -1,3 +1,9 @@
+//! RAG (Retrieval-Augmented Generation) — vector store and semantic search
+//!
+//! Manages document embeddings and cosine-similarity search over the project
+//! codebase. Indexes files via configurable chunking, stores embeddings with
+//! metadata, and retrieves relevant context for LLM prompts.
+
 use crate::config::Config;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -191,6 +197,11 @@ pub fn chunk_text(text: &str, max_chars: usize) -> Vec<(String, usize, usize)> {
     chunks
 }
 
+/// RAG manager — document indexing and semantic search
+///
+/// Indexes project files into a vector store with configurable chunking.
+/// Provides cosine-similarity search to retrieve relevant context for
+/// LLM prompts. Persists embeddings across restarts.
 pub struct RagManager {
     vector_store: VectorStore,
     config_dir: std::path::PathBuf,

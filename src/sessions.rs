@@ -1,3 +1,9 @@
+//! Session persistence and management
+//!
+//! Saves, loads, lists, and deletes chat sessions as JSON files. Supports
+//! forking a session into a new named variant for experimentation, tracking
+//! message history across restarts.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -15,6 +21,10 @@ pub struct Session {
     pub messages: Vec<Value>,
 }
 
+/// Manages session persistence — save, load, list, delete, fork
+///
+/// Stores chat sessions as JSON files in the user's cache directory.
+/// Supports forking sessions for experimentation branches.
 pub struct SessionManager {
     cache_dir: PathBuf,
 }

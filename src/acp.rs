@@ -1,3 +1,9 @@
+//! ACP (Agent Communication Protocol) stdio interface
+//!
+//! Provides a JSON-RPC 2.0 loop over stdin/stdout for external process
+//! communication. Receives agent requests, dispatches to the LLM client,
+//! and streams responses back as structured JSON.
+
 use crate::llm::LlmClient;
 use serde_json::{Value, json};
 use std::io::{self, BufRead};

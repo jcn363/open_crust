@@ -1,3 +1,8 @@
+//! Auto-formatter integration
+//!
+//! Detects file type by extension and runs the appropriate formatter
+//! (`cargo fmt` for Rust, `prettier` for JS/TS, etc.) on save.
+
 use std::path::Path;
 use std::process::{Command, Output};
 

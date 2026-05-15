@@ -1,3 +1,9 @@
+//! Compliance reporting and evidence packaging
+//!
+//! Builds compliance evidence packages with SHA256 manifests and generates
+//! structured compliance reports from audit log entries. Designed for
+//! regulated environments requiring audit trails.
+
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Write;

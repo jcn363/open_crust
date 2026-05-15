@@ -1,3 +1,10 @@
+//! Application state and TUI orchestration
+//!
+//! Central state management for the terminal UI: holds all application
+//! state (chat messages, tabs, input buffer, mode, sidebar, background
+//! tasks). Handles event dispatch between UI layers, clipboard integration,
+//! message history, and cursor movement within the input prompt.
+
 use crate::config::Config;
 use tokio::sync::mpsc;
 
@@ -73,6 +80,11 @@ pub struct Tab {
     pub messages: Vec<Message>,
 }
 
+/// Central application state for the TUI
+///
+/// Holds all UI state: tabs, messages, input buffer, cursor, mode,
+/// sidebar state, background tasks, and clipboard. Methods handle
+/// key events, message submission, history navigation, and more.
 pub struct App {
     pub config: Config,
     pub mode: Mode,

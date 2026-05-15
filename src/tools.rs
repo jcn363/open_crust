@@ -1,3 +1,10 @@
+//! Tool definitions and execution dispatch
+//!
+//! Defines the built-in tool schema and executes tools by name (bash, file read/write,
+//! glob, grep, web search, notifications, etc.). Each tool is a function that receives
+//! JSON arguments and returns a string result. Integrates with MCP and LSP for
+//! extended tool sets.
+
 use serde_json::Value;
 use std::fs;
 use std::process::Command;

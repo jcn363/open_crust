@@ -1,3 +1,9 @@
+//! Task planning and decomposition
+//!
+//! Breaks complex requests into multi-step plans with sequential dependencies.
+//! Generates structured Plan/PlanStep objects from LLM responses to enable
+//! systematic multi-step execution with rollback.
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -13,6 +19,10 @@ pub struct PlanStep {
     pub completed: bool,
 }
 
+/// Task planner for multi-step request decomposition
+///
+/// Breaks complex user requests into structured plans with sequential
+/// steps and dependencies. Tracks the current plan state.
 pub struct Planner {
     pub current_plan: Option<Plan>,
 }

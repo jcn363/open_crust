@@ -1,3 +1,8 @@
+//! System clipboard integration via `arboard`
+//!
+//! Provides cross-platform clipboard copy/paste for the TUI. Used by
+//! yank/paste operations in the input prompt and for test utilities.
+
 use arboard::Clipboard;
 
 pub struct ClipboardManager {

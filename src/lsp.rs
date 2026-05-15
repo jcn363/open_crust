@@ -1,3 +1,9 @@
+//! LSP (Language Server Protocol) integration
+//!
+//! Manages LSP server child processes over JSON-RPC 2.0. Provides
+//! language-aware code intelligence: diagnostics, completions, and
+//! hover information for supported languages.
+
 use crate::config::LspConfig;
 use crate::jsonrpc::JsonRpcClient;
 use serde_json::{Value, json};

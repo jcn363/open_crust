@@ -1,3 +1,9 @@
+//! Popup rendering for the TUI
+//!
+//! Draws modal overlays: review confirmation, MCP server browser, command
+//! palette, skill browser, and help popup. Each popup is a self-contained
+//! rendering function with keyboard navigation.
+
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout},

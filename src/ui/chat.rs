@@ -1,3 +1,9 @@
+//! Chat view rendering: messages, input area, and sidebar
+//!
+//! Renders the main chat panel with message history, the text input area,
+//! and the file tree sidebar. Handles text wrapping, ghost text display,
+//! and selection highlighting.
+
 use ratatui::{
     Frame,
     layout::Rect,

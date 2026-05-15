@@ -1,9 +1,20 @@
+//! Audit logging and query system
+//!
+//! Provides structured audit logging of tool executions with timestamps,
+//! session IDs, and approval status. Supports CSV/JSON export, log rotation,
+//! retention-based cleanup, and filtering queries for compliance use cases.
+
 use chrono::{Local, NaiveDate, Utc};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 
+/// Structured audit logger for tool executions
+///
+/// Writes timestamped log entries with session ID, agent type, tool name,
+/// input, duration, and approval status. Supports log rotation, retention
+/// cleanup, and compliance mode for regulated environments.
 pub struct AuditLogger {
     log_path: PathBuf,
     session_id: String,

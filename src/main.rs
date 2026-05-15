@@ -1,3 +1,18 @@
+//! OpenCrust — Production TUI platform for AI-powered coding
+//!
+//! Entry point for the OpenCrust application. Parses CLI arguments via
+//! clap, sets up shared subsystem managers (MCP, LSP, skills, custom tools),
+//! dispatches to subcommand handlers or launches the interactive TUI.
+//!
+//! ## CLI Subcommands
+//! - `acp` — JSON-RPC stdio mode for external process integration
+//! - `run <command>` — Execute a shell command and exit
+//! - `mcp` — MCP server management (list, install, browse, test, tools)
+//! - `desktop` — Desktop integration (file picker, notifications, detection)
+//! - `session` — Session management (list, show, delete, save, fork)
+//! - `skills` — Skill management (list, activate, deactivate)
+//! - `audit` — Audit log export, query, evidence, and compliance
+
 #![deny(warnings)]
 mod acp;
 mod app;

@@ -1,3 +1,8 @@
+//! Status bar rendering for the TUI
+//!
+//! Draws the bottom status bar showing mode (insert/normal), provider,
+//! model, token count, and active agent/background task count.
+
 use ratatui::{Frame, layout::Rect, style::Style, widgets::Paragraph};
 
 use crate::app::App;

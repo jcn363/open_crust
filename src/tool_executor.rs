@@ -28,6 +28,11 @@ use tokio::sync::Mutex;
 pub type ToolResult = Result<String, Box<dyn Error + Send + Sync>>;
 
 /// Main tool executor that coordinates all tool types
+/// Central tool execution engine: MCP, LSP, custom, and built-in tools
+///
+/// Aggregates all tool sources under a unified interface. Dispatches tool
+/// calls to the appropriate backend, enforces permissions, records audit
+/// logs, and manages subtask delegation via the orchestrator.
 pub struct ToolExecutor {
     pub config: Arc<Config>,
     pub mcp_manager: Arc<Mutex<McpManager>>,

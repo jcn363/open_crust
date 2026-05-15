@@ -1,3 +1,8 @@
+//! Event polling loop for the TUI
+//!
+//! Thin wrapper around crossterm's event polling to provide an async-compatible
+//! interface. Polls for keyboard and mouse events at ~60 Hz frame rate.
+
 use crossterm::event::{self, Event};
 use std::time::Duration;
 

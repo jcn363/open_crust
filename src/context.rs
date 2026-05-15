@@ -1,3 +1,8 @@
+//! File context injection for prompts
+//!
+//! Reads file contents into the current prompt using `@file` references.
+//! Supports glob patterns and validates paths through the security layer.
+
 use crate::security::validate_path;
 use std::fs;
 

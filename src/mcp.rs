@@ -1,3 +1,9 @@
+//! MCP (Model Context Protocol) server management
+//!
+//! Manages external MCP servers: spawning child processes, establishing
+//! JSON-RPC 2.0 communication, listing available tools, and calling tools
+//! on remote servers. Supports dynamic discovery via an MCP registry.
+
 use tokio::process::Command;
 
 use crate::config::McpConfig;

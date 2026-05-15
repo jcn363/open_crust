@@ -1,3 +1,8 @@
+//! TUI (Terminal UI) rendering — Ratatui-based interface
+//!
+//! Root UI module. Provides the main `draw()` entry point and shared
+//! theme/color utilities. Sub-modules handle chat, layout, and popups.
+
 mod chat;
 mod layout;
 mod popups;

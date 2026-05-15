@@ -1,3 +1,10 @@
+//! Skill system: file-based skill discovery, activation, and XML generation
+//!
+//! Skills are Markdown files with YAML frontmatter stored on disk. This module
+//! discovers skills from multiple search paths, parses them, tracks active/
+//! inactive state, generates XML for LLM system prompts, and supports hot-reload
+//! without restart via periodic change detection.
+
 use directories::ProjectDirs;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -28,6 +35,11 @@ impl Skill {
     }
 }
 
+/// Manages skill discovery, activation, and XML generation
+///
+/// Discovers skills from multiple search paths, parses YAML frontmatter,
+/// tracks active/inactive state, detects disk changes for hot-reload,
+/// and generates XML for LLM system prompts.
 pub struct SkillManager {
     pub skills: HashMap<String, Skill>,
     pub active_skills: Vec<String>,

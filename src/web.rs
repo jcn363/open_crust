@@ -1,3 +1,8 @@
+//! Web search and URL content fetching
+//!
+//! Provides Brave Search API integration for web searches and HTML-to-Markdown
+//! content extraction from URLs. Used by the LLM as a web research tool.
+
 use ::html2md;
 use reqwest::Client;
 use std::error::Error;

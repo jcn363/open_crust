@@ -1,3 +1,10 @@
+//! LLM client core — provider abstraction and tool-calling loop
+//!
+//! Wraps multiple LLM providers (OpenAI, Anthropic, Gemini, Ollama, OpenRouter,
+//! Mistral, etc.) behind a unified interface. Manages the agentic loop: sends
+//! messages, handles tool calls, enforces permissions, records audit logs, and
+//! supports streaming responses. Central orchestrator for all LLM interactions.
+
 use crate::config::{Config, PermissionAction, ProviderType, ResponseMode};
 use crate::orchestrator::Orchestrator;
 use crate::rules;
@@ -24,6 +31,11 @@ use async_recursion::async_recursion;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+/// Unified LLM client: provider abstraction and tool-calling loop
+///
+/// Wraps all supported providers behind a single interface. Manages the
+/// agentic conversation loop: send messages, process tool calls, enforce
+/// permissions, stream responses, and audit every interaction.
 #[derive(Clone)]
 pub struct LlmClient {
     client: Client,
