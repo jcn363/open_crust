@@ -112,31 +112,31 @@ impl SkillManager {
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.flatten() {
                     let skill_dir = entry.path();
-                    if skill_dir.is_dir() {
-                        if let Some(skill) = self.parse_skill_file(&skill_dir) {
-                            let name = skill.metadata.name.clone();
-                            if let Some(existing) = self.skills.get(&name) {
-                                // Check if content or description changed
-                                if existing.content != skill.content
-                                    || existing.metadata.description != skill.metadata.description
-                                {
-                                    let was_active = existing.active;
-                                    self.skills.insert(
-                                        name.clone(),
-                                        Skill {
-                                            metadata: skill.metadata,
-                                            content: skill.content,
-                                            active: was_active,
-                                        },
-                                    );
-                                    modified.push(name.clone());
-                                }
-                            } else {
-                                self.skills.insert(name.clone(), skill);
-                                added.push(name.clone());
+                    if skill_dir.is_dir()
+                        && let Some(skill) = self.parse_skill_file(&skill_dir)
+                    {
+                        let name = skill.metadata.name.clone();
+                        if let Some(existing) = self.skills.get(&name) {
+                            // Check if content or description changed
+                            if existing.content != skill.content
+                                || existing.metadata.description != skill.metadata.description
+                            {
+                                let was_active = existing.active;
+                                self.skills.insert(
+                                    name.clone(),
+                                    Skill {
+                                        metadata: skill.metadata,
+                                        content: skill.content,
+                                        active: was_active,
+                                    },
+                                );
+                                modified.push(name.clone());
                             }
-                            seen_names.insert(name.clone(), self.skills[&name].clone());
+                        } else {
+                            self.skills.insert(name.clone(), skill);
+                            added.push(name.clone());
                         }
+                        seen_names.insert(name.clone(), self.skills[&name].clone());
                     }
                 }
             }

@@ -466,6 +466,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "Requires Ollama running with nomic-embed-text model locally"]
     async fn test_generate_embedding() -> Result<(), Box<dyn std::error::Error>> {
         // This test requires Ollama running with nomic-embed-text model
         if std::process::Command::new("ollama")

@@ -3,19 +3,18 @@ use ratatui::{
     layout::Rect,
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Padding},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
 };
 
-use crate::app::{App, Mode};
+use crate::app::{App, Message, Mode};
 use crate::ui::ThemeContext;
-use chrono::Utc;
 
 /// Determine message style based on message content
-fn message_style(message: &str) -> Style {
-    if message.starts_with("You: ") {
+fn message_style(content: &str) -> Style {
+    if content.starts_with("You: ") {
         // User message - green
         Style::default().fg(Color::Green)
-    } else if message.starts_with("opencrust: ") {
+    } else if content.starts_with("opencrust: ") {
         // System message - gray
         Style::default().fg(Color::DarkGray)
     } else {
@@ -38,6 +37,19 @@ fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
         Mode::Insert => Style::default().fg(theme.accent),
         _ => Style::default().fg(theme.border),
     }
+}
+
+/// Render a single message into a ListItem with stored timestamp
+fn render_message(m: &Message) -> ListItem<'_> {
+    let ts = m.timestamp.format("%H:%M").to_string();
+    let parts: Vec<&str> = m.content.splitn(2, ':').collect();
+    let prefix = parts.first().unwrap_or(&"");
+    let body = parts.get(1).unwrap_or(&"");
+    ListItem::new(Line::from(vec![
+        Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
+        Span::styled(format!("{}: ", prefix), message_style(&m.content)),
+        Span::styled(*body, Style::default().fg(Color::DarkGray)),
+    ]))
 }
 
 pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
@@ -83,32 +95,12 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
                 Style::default().fg(Color::DarkGray),
             )]);
             all_items.push(ListItem::new(sep_line));
-            all_items.extend(tab.messages.iter().map(|m| {
-                let ts = Utc::now().format("%H:%M").to_string();
-                let parts: Vec<&str> = m.splitn(2, ':').collect();
-                let prefix = parts.get(0).unwrap_or(&"");
-                let body = parts.get(1).unwrap_or(&"");
-                ListItem::new(Line::from(vec![
-                    Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
-                    Span::styled(format!("{}: ", prefix), message_style(m)),
-                    Span::styled(*body, Style::default().fg(Color::DarkGray)),
-                ]))
-            }));
+            all_items.extend(tab.messages.iter().map(render_message));
         }
     } else {
         // Chat tab: just show messages
         if let Some(tab) = app.tabs.get(app.active_tab) {
-            all_items.extend(tab.messages.iter().map(|m| {
-                let ts = Utc::now().format("%H:%M").to_string();
-                let parts: Vec<&str> = m.splitn(2, ':').collect();
-                let prefix = parts.get(0).unwrap_or(&"");
-                let body = parts.get(1).unwrap_or(&"");
-                ListItem::new(Line::from(vec![
-                    Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
-                    Span::styled(format!("{}: ", prefix), message_style(m)),
-                    Span::styled(*body, Style::default().fg(Color::DarkGray)),
-                ]))
-            }));
+            all_items.extend(tab.messages.iter().map(render_message));
         }
     }
 
@@ -159,7 +151,17 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
     let sidebar_items: Vec<ListItem> = app
         .sidebar_items
         .iter()
-        .map(|i| ListItem::new(Line::from(Span::raw(format!(" {} ", i)))))
+        .map(|i| {
+            let is_dir = i.ends_with('/');
+            if is_dir {
+                ListItem::new(Line::from(Span::styled(
+                    format!(" +{}", i),
+                    Style::default().fg(Color::Cyan),
+                )))
+            } else {
+                ListItem::new(Line::from(Span::raw(format!("  {}", i))))
+            }
+        })
         .collect();
     let sidebar_list = List::new(sidebar_items).block(
         Block::default()
@@ -194,11 +196,19 @@ mod tests {
         assert_eq!(theme.border, Color::DarkGray);
     }
 
-    /// Verify sidebar items render correctly.
+    /// Verify sidebar items render correctly — non-dir items use two-space prefix.
     #[test]
     fn test_sidebar_item_format() {
         let item = "main.rs";
-        let formatted = format!(" {} ", item);
-        assert_eq!(formatted, " main.rs ");
+        let formatted = format!("  {}", item);
+        assert_eq!(formatted, "  main.rs");
+    }
+
+    /// Verify sidebar dir items use + prefix.
+    #[test]
+    fn test_sidebar_dir_format() {
+        let item = "src/";
+        let formatted = format!(" +{}", item);
+        assert_eq!(formatted, " +src/");
     }
 }

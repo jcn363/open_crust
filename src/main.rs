@@ -36,7 +36,7 @@ mod web;
 
 use desktop::detection::get_cinnamon_info;
 
-use app::{App, Mode};
+use app::{App, Message, Mode};
 use clap::{Parser, Subcommand};
 use clipboard::ClipboardManager;
 use crossterm::{
@@ -1251,12 +1251,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let tab_idx = app.active_tab.min(app.tabs.len().saturating_sub(1));
             let tab = &mut app.tabs[tab_idx];
             if let Some(last) = tab.messages.last()
-                && (last == "opencrust: Thinking..."
-                    || last.starts_with("opencrust: Executing tool"))
+                && (last.content == "opencrust: Thinking..."
+                    || last.content.starts_with("opencrust: Executing tool"))
             {
                 tab.messages.pop();
             }
-            tab.messages.push(response);
+            tab.messages.push(Message::new(response));
         }
 
         // Handle background task notifications
@@ -1318,7 +1318,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 if !app.input.is_empty() && clipboard.copy(&app.input) {
                     app.tabs[0]
                         .messages
-                        .push(String::from("Copied to clipboard"));
+                        .push(Message::new(String::from("Copied to clipboard")));
                 }
                 continue;
             }
@@ -1340,14 +1340,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         if let Some(tx) = &app.approval_tx {
                             let _ = tx.try_send(true);
                         }
-                        app.tabs[0].messages.push(String::from("You: y (Approved)"));
+                        app.tabs[0]
+                            .messages
+                            .push(Message::new(String::from("You: y (Approved)")));
                     }
                     KeyCode::Char('n') | KeyCode::Char('N') => {
                         app.waiting_for_approval = false;
                         if let Some(tx) = &app.approval_tx {
                             let _ = tx.try_send(false);
                         }
-                        app.tabs[0].messages.push(String::from("You: n (Denied)"));
+                        app.tabs[0]
+                            .messages
+                            .push(Message::new(String::from("You: n (Denied)")));
                     }
                     _ => {}
                 }
@@ -1379,7 +1383,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.plan_mode = crate::app::PlanMode::Planning;
                             app.tabs[0]
                                 .messages
-                                .push(String::from("Entering plan mode..."));
+                                .push(Message::new(String::from("Entering plan mode...")));
                         }
                         KeyCode::Char('k')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
@@ -1404,13 +1408,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 let prompt = app.input.clone();
                                 app.spawn_background_task(prompt);
                                 app.input.clear();
-                                app.tabs[0]
-                                    .messages
-                                    .push(String::from("Spawning background task..."));
+                                app.tabs[0].messages.push(Message::new(String::from(
+                                    "Spawning background task...",
+                                )));
                             } else {
-                                app.tabs[0]
-                                    .messages
-                                    .push(String::from("No input to spawn as background task"));
+                                app.tabs[0].messages.push(Message::new(String::from(
+                                    "No input to spawn as background task",
+                                )));
                             }
                         }
                         KeyCode::Tab => {
@@ -1421,7 +1425,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         {
                             app.vim_mode = !app.vim_mode;
                             let mode_str = if app.vim_mode { "enabled" } else { "disabled" };
-                            app.tabs[0].messages.push(format!("Vim Mode {}", mode_str));
+                            app.tabs[0]
+                                .messages
+                                .push(Message::new(format!("Vim Mode {}", mode_str)));
                         }
                         KeyCode::Char('m')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
@@ -1593,13 +1599,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             for change in &approved {
                                 // Write approved changes to files
                                 if let Err(e) = std::fs::write(&change.path, &change.proposed) {
-                                    app.tabs[0]
-                                        .messages
-                                        .push(format!("Error writing {}: {}", change.path, e));
+                                    app.tabs[0].messages.push(Message::new(format!(
+                                        "Error writing {}: {}",
+                                        change.path, e
+                                    )));
                                 } else {
                                     app.tabs[0]
                                         .messages
-                                        .push(format!("Applied: {}", change.path));
+                                        .push(Message::new(format!("Applied: {}", change.path)));
                                 }
                             }
 
@@ -1607,16 +1614,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             app.proposed_changes.clear();
                             app.plan_review_index = 0;
                             app.mode = Mode::Normal;
-                            app.tabs[0]
-                                .messages
-                                .push(format!("Executed {} approved changes", approved.len()));
+                            app.tabs[0].messages.push(Message::new(format!(
+                                "Executed {} approved changes",
+                                approved.len()
+                            )));
                         }
                         // Cancel (Esc)
                         KeyCode::Esc => {
                             app.proposed_changes.clear();
                             app.plan_review_index = 0;
                             app.mode = Mode::Normal;
-                            app.tabs[0].messages.push(String::from("Plan cancelled"));
+                            app.tabs[0]
+                                .messages
+                                .push(Message::new(String::from("Plan cancelled")));
                         }
                         _ => {}
                     },
@@ -1655,7 +1665,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 };
                                 app.config.mcp.insert(name.clone(), mcp_config);
                                 app.config.save();
-                                app.tabs[0].messages.push(format!("System: Installed MCP server '{}'. Restart opencrust to use it.", name));
+                                app.tabs[0].messages.push(Message::new(format!("System: Installed MCP server '{}'. Restart opencrust to use it.", name)));
                             }
                         }
                         KeyCode::Char(c) => {
@@ -1713,9 +1723,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 } else {
                                     "deactivated"
                                 };
-                                app.tabs[0]
-                                    .messages
-                                    .push(format!("System: Skill '{}' {}", name, status));
+                                app.tabs[0].messages.push(Message::new(format!(
+                                    "System: Skill '{}' {}",
+                                    name, status
+                                )));
                             }
                         }
                         _ => {}
@@ -1757,25 +1768,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     let next_idx = (current_idx + 1) % providers.len();
                                     app.config.provider = providers[next_idx].clone();
                                     app.config.save();
-                                    app.tabs[0].messages.push(format!(
+                                    app.tabs[0].messages.push(Message::new(format!(
                                         "Provider switched to {:?}",
                                         app.config.provider
-                                    ));
+                                    )));
                                     app.mode = Mode::Normal;
                                 }
                                 1 => {
                                     // Switch Model
                                     // For simplicity, just show a message - in a real implementation this would open a model selector
-                                    app.tabs[0].messages.push(format!("Model switching not fully implemented yet. Current model: {}", app.config.model));
+                                    app.tabs[0].messages.push(Message::new(format!("Model switching not fully implemented yet. Current model: {}", app.config.model)));
                                     app.mode = Mode::Normal;
                                 }
                                 2 => {
                                     // Clear Context
                                     app.tabs[0].messages.clear();
-                                    app.tabs[0].messages.push(String::from("Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit."));
+                                    app.tabs[0].messages.push(Message::new(String::from("Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.")));
                                     app.history.clear();
                                     app.save_history();
-                                    app.tabs[0].messages.push("Context cleared.".to_string());
+                                    app.tabs[0]
+                                        .messages
+                                        .push(Message::new("Context cleared.".to_string()));
                                     app.mode = Mode::Normal;
                                 }
                                 4 => {

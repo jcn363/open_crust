@@ -52,9 +52,24 @@ pub struct BackgroundTask {
 }
 
 #[derive(Clone, Debug)]
+pub struct Message {
+    pub content: String,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+impl Message {
+    pub fn new(content: String) -> Self {
+        Self {
+            content,
+            timestamp: chrono::Utc::now(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Tab {
     pub name: String,
-    pub messages: Vec<String>,
+    pub messages: Vec<Message>,
 }
 
 pub struct App {
@@ -136,13 +151,13 @@ impl App {
     ) -> Self {
         let chat_tab = Tab {
             name: "Chat".to_string(),
-            messages: vec![String::from(
+            messages: vec![Message::new(String::from(
                 "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
-            )],
+            ))],
         };
         let tasks_tab = Tab {
             name: "Tasks".to_string(),
-            messages: vec![String::from("No tasks yet.")],
+            messages: vec![Message::new(String::from("No tasks yet."))],
         };
 
         let mut app = Self {
@@ -323,9 +338,10 @@ impl App {
                     task.result = Some(result.clone());
                 }
                 let tab_idx = self.active_tab.min(self.tabs.len().saturating_sub(1));
-                self.tabs[tab_idx]
-                    .messages
-                    .push(format!("Task {} completed: {}", task_id, result));
+                self.tabs[tab_idx].messages.push(Message::new(format!(
+                    "Task {} completed: {}",
+                    task_id, result
+                )));
                 return Some(tab_idx);
             }
         } else if notification.starts_with("[TASK_FAILED]") {
@@ -343,7 +359,7 @@ impl App {
                 let tab_idx = self.active_tab.min(self.tabs.len().saturating_sub(1));
                 self.tabs[tab_idx]
                     .messages
-                    .push(format!("Task {} failed: {}", task_id, error));
+                    .push(Message::new(format!("Task {} failed: {}", task_id, error)));
                 return Some(tab_idx);
             }
         }
@@ -356,7 +372,7 @@ impl App {
             let tab_idx = self.active_tab.min(self.tabs.len().saturating_sub(1));
             self.tabs[tab_idx]
                 .messages
-                .push(format!("You: {}", user_msg));
+                .push(Message::new(format!("You: {}", user_msg)));
 
             // Save to history
             if self.history.last().map(|s| s.as_str()) != Some(&user_msg) {
