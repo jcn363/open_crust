@@ -488,3 +488,76 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(status, chunks[2]);
 }
+
+pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
+    let area = centered_rect(65, 65, f.area());
+    render_popup_shadow(f, area);
+    f.render_widget(Clear, area);
+
+    let help_lines = vec![
+        Line::from(vec![Span::styled(
+            " OpenCrust Keyboard Help ",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── Movement ──",
+            Style::default()
+                .fg(theme.border)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from("  Tab             Switch between Chat/Tasks tabs"),
+        Line::from("  ↑/↓             Scroll message list"),
+        Line::from("  PgUp/PgDn       Scroll by 10 lines"),
+        Line::from("  Home/End        Jump to top/bottom"),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── Modes ──",
+            Style::default()
+                .fg(theme.border)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from("  i               Enter Insert mode (type)"),
+        Line::from("  Esc             Return to Normal mode"),
+        Line::from("  ?               Toggle this help screen"),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── Actions ──",
+            Style::default()
+                .fg(theme.border)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from("  Enter           Send message (in Insert mode)"),
+        Line::from("  Ctrl+B          Toggle file sidebar"),
+        Line::from("  Ctrl+K          Command palette"),
+        Line::from("  Ctrl+Shift+K    Skill browser"),
+        Line::from("  Ctrl+M          MCP server showcase"),
+        Line::from("  Ctrl+G          Mission Control (task DAG)"),
+        Line::from("  Alt+V           Toggle Vim mode (insert)"),
+        Line::from("  Ctrl+Q          Quit OpenCrust"),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── Vim Mode (Insert) ──",
+            Style::default()
+                .fg(theme.border)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from("  h/l             Move cursor left/right"),
+        Line::from("  w/b             Next/previous word"),
+        Line::from("  0/$             Line start/end"),
+        Line::from("  d/c             Delete line"),
+        Line::from("  y               Yank (copy) input"),
+    ];
+
+    let help_para = Paragraph::new(help_lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Help ")
+                .border_style(Style::default().fg(theme.accent)),
+        )
+        .style(Style::default().fg(theme.fg));
+    f.render_widget(help_para, area);
+}

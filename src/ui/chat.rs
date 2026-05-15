@@ -9,20 +9,24 @@ use ratatui::{
 use crate::app::{App, Message, Mode};
 use crate::ui::ThemeContext;
 
-/// Determine message style based on message content
-fn message_style(content: &str) -> Style {
+/// Determine message style based on message content.
+/// Uses theme colors where possible, with semantic overrides for sender distinction.
+fn message_style(content: &str, theme: &ThemeContext) -> Style {
     if content.starts_with("You: ") {
-        // User message - bright green
+        // User message - bright green (semantic, not themed)
         Style::default().fg(Color::LightGreen)
     } else if content.starts_with("opencrust: ") {
-        // System message - gray
-        Style::default().fg(Color::DarkGray)
+        // System message - use theme border for subtle appearance
+        Style::default().fg(theme.border)
     } else if content.starts_with("System: ") {
-        // System notification - yellow
+        // System notification - yellow (semantic)
         Style::default().fg(Color::Yellow)
+    } else if content.starts_with("Error: ") {
+        // Error messages - red
+        Style::default().fg(Color::Red)
     } else {
-        // LLM response - cyan
-        Style::default().fg(Color::Cyan)
+        // LLM response - use theme accent
+        Style::default().fg(theme.accent)
     }
 }
 
@@ -44,11 +48,11 @@ fn input_border_style_for_mode(mode: Mode, theme: &ThemeContext) -> Style {
 
 /// Render a single message into a ListItem with stored timestamp.
 /// The entire message body is styled uniformly based on sender type.
-fn render_message(m: &Message) -> ListItem<'_> {
+fn render_message<'a>(m: &'a Message, theme: &ThemeContext) -> ListItem<'a> {
     let ts = m.timestamp.format("%H:%M").to_string();
-    let style = message_style(&m.content);
+    let style = message_style(&m.content, theme);
     ListItem::new(Line::from(vec![
-        Span::styled(format!("[{}] ", ts), Style::default().fg(Color::DarkGray)),
+        Span::styled(format!("[{}] ", ts), Style::default().fg(theme.border)),
         Span::styled(&m.content, style),
     ]))
 }
@@ -102,12 +106,12 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
                 Span::styled(" ───", Style::default().fg(Color::DarkGray)),
             ]);
             all_items.push(ListItem::new(sep_line));
-            all_items.extend(tab.messages.iter().map(render_message));
+            all_items.extend(tab.messages.iter().map(|m| render_message(m, theme)));
         }
     } else {
         // Chat tab: just show messages
         if let Some(tab) = app.tabs.get(app.active_tab) {
-            all_items.extend(tab.messages.iter().map(render_message));
+            all_items.extend(tab.messages.iter().map(|m| render_message(m, theme)));
         }
     }
 
@@ -182,16 +186,19 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
     let sidebar_items: Vec<ListItem> = app
         .sidebar_items
         .iter()
-        .map(|i| {
+        .enumerate()
+        .map(|(idx, i)| {
             let is_dir = i.ends_with('/');
-            if is_dir {
-                ListItem::new(Line::from(Span::styled(
-                    format!("  {}", i),
-                    Style::default().fg(Color::Cyan),
-                )))
+            let is_selected = idx == app.sidebar_selected;
+            let style = if is_selected {
+                Style::default().fg(Color::Black).bg(theme.accent)
+            } else if is_dir {
+                Style::default().fg(Color::Cyan)
             } else {
-                ListItem::new(Line::from(Span::raw(format!("  {}", i))))
-            }
+                Style::default().fg(theme.fg)
+            };
+            let prefix = if is_selected { "▸ " } else { "  " };
+            ListItem::new(Line::from(Span::styled(format!("{}{}", prefix, i), style)))
         })
         .collect();
     let sidebar_list = List::new(sidebar_items)

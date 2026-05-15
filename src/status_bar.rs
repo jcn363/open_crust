@@ -4,22 +4,22 @@ use crate::app::App;
 use crate::config::ProviderType;
 use crate::ui::ThemeContext;
 
-pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
-    // Mode string (replaces redundant INS/VIM indicators — shown in input area title)
-    let mode_str = match app.mode {
+fn mode_str(mode: crate::app::Mode) -> &'static str {
+    match mode {
         crate::app::Mode::Normal => "NORMAL",
         crate::app::Mode::Insert => "INSERT",
         crate::app::Mode::Review => "REVIEW",
         crate::app::Mode::Servers => "SERVERS",
         crate::app::Mode::SkillBrowser => "SKILLS",
         crate::app::Mode::CommandPalette => "PALETTE",
+        crate::app::Mode::Help => "HELP",
         crate::app::Mode::McpShowcase => "MCP SHOWCASE",
         crate::app::Mode::MissionControl => "MISSION CONTROL",
-    };
+    }
+}
 
-    // Get current model and provider info
-    let model_info = format!(" {}", app.config.model);
-    let provider_info = match app.config.provider {
+fn provider_str(provider: &ProviderType) -> &'static str {
+    match provider {
         ProviderType::OpenRouter => "OpenRouter",
         ProviderType::Ollama => "Ollama",
         ProviderType::OpenAI => "OpenAI",
@@ -31,15 +31,30 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         ProviderType::Replicate => "Replicate",
         ProviderType::DeepSeek => "DeepSeek",
         ProviderType::LocalAi => "LocalAI",
+    }
+}
+
+pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
+    // Structure: [MODE] [Provider:Model] tasks:N | keybind hints
+    let mode_tag = format!(" {} ", mode_str(app.mode));
+    let provider_tag = format!(
+        " {}:{} ",
+        provider_str(&app.config.provider),
+        app.config.model
+    );
+    let task_tag = format!(" tasks:{} ", app.background_tasks.len());
+
+    // Show keybinding hints based on mode
+    let hints = match app.mode {
+        crate::app::Mode::Normal => " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette",
+        crate::app::Mode::Insert => " Esc:Normal  Enter:Send  ↑↓:History",
+        crate::app::Mode::Review => " ↑↓:Navigate  A:Approve  D:Deny  Enter:Execute",
+        crate::app::Mode::Servers => " ↑↓:Navigate  Enter:Install  Esc:Close",
+        crate::app::Mode::Help => " Esc:Close",
+        _ => "",
     };
 
-    // Count background tasks
-    let task_count = app.background_tasks.len();
-
-    let status_bar = Paragraph::new(format!(
-        " {} {}{} ({} tasks)  |  Ctrl+B: Sidebar  Tab: Switch  Ctrl+K: Palette  Ctrl+G: Mission",
-        mode_str, provider_info, model_info, task_count,
-    ))
-    .style(Style::default().fg(theme.fg).bg(theme.accent));
+    let status_bar = Paragraph::new(format!("{}{}{}{}", mode_tag, provider_tag, task_tag, hints,))
+        .style(Style::default().fg(theme.fg).bg(theme.accent));
     f.render_widget(status_bar, area);
 }

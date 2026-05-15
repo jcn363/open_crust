@@ -73,13 +73,48 @@ OpenCrust provides terminal-native CLI subcommands:
 
 The codebase enforces **Rust 2024 edition** semantics and **strict warnings-as-errors** mode via Cargo. This means:
 
-- All compiler warnings must be resolved or explicitly allowed (`#[allow(...)]` with justification)
+- All compiler warnings must be resolved or explicitly allowed (`#[expect(...)]` with justification; prefer `#[expect]` over `#[allow]` as it warns when the lint no longer applies)
 - Follow standard Rust naming: `snake_case` for functions/variables, `PascalCase` for types/traits
 - Modules are single files organized by subsystem; avoid nested module hierarchies
-- Error handling: Use `Result<T, Box<dyn std::error::Error>>` for fallible operations; prefer explicit error context over generic `.unwrap()`
+- Error handling: Use `Result<T, Box<dyn std::error::Error>>` for fallible operations; use `thiserror` for library error types and `anyhow` for binaries only. **Never use `.unwrap()`/`.expect()` outside tests** — prefer `?` operator for error propagation
 - Async code: Use `tokio::spawn` for independent tasks; avoid blocking ops in async contexts
+- Borrowing & ownership: Prefer `&T` over `.clone()` unless ownership is required; use `&str` over `&String`, `&[T]` over `&Vec<T>` in function parameters; small `Copy` types (≤24 bytes) may be passed by value
+- Documentation: `//` comments explain *why* (safety, workarounds, design rationale); `///` doc comments explain public API *what* and *how*; every `TODO` needs a linked issue (`// TODO(#42): ...`)
 
 No custom linter configs exist—rely on `cargo clippy` for style guidance.
+
+## Rust Best Practices (Mandatory)
+
+Follow Apollo GraphQL's [Rust Best Practices Handbook](https://github.com/apollographql/rust-best-practices) for all code. Key mandatory rules:
+
+### Performance
+- Always benchmark with `--release` flag; avoid drawing conclusions from debug builds
+- Prefer iterators over manual loops; avoid intermediate `.collect()` calls
+- Avoid cloning in loops; use `.iter()` instead of `.into_iter()` for `Copy` types
+- Prefer generics (static dispatch) for performance-critical code; use `dyn Trait` only when heterogeneous collections are needed; box at API boundaries, not internally
+
+### Linting
+- Run regularly: `cargo clippy --all-targets --all-features --locked -- -D warnings`
+- Watch key lints: `redundant_clone`, `large_enum_variant`, `needless_collect`
+- Use `#[expect(clippy::lint)]` over `#[allow(clippy::lint)]` (warns when the lint is no longer triggered)
+
+### Error Handling
+- Return `Result<T, E>` for fallible operations; avoid `panic!` in production
+- **Never use `unwrap()`/`expect()` outside tests** (this is a hard rule)
+- Use `thiserror` for library error types, `anyhow` for binaries only
+- Prefer `?` operator over match chains for error propagation
+
+### Testing
+- Name tests descriptively using the pattern `describe_should_expected_behavior`: e.g., `process_should_return_error_when_input_empty()`
+- Prefer one assertion per test for clear failure messages
+- Use doc tests (`///` with code blocks) for public API examples
+- Consider `cargo insta` for snapshot testing generated output
+
+### Documentation
+- `//` comments explain *why* (safety rationale, workarounds, design decisions)
+- `///` doc comments explain public API *what* and *how*
+- Every `TODO` must reference a linked issue: `// TODO(#42): description`
+- Enable `#![deny(missing_docs)]` for library crates
 
 ## Testing Guidelines
 
@@ -92,6 +127,20 @@ Tests are written inline using Rust's built-in `#[cfg(test)]` modules. Test cove
 **Run with output:** `cargo test -- --nocapture`
 
 The project treats integration testing as lower priority than runtime observability (logging, telemetry); prefer runtime correctness checks over comprehensive test coverage.
+
+## Issue Remediation (Mandatory)
+
+When working on any task, **fix all issues you encounter** — including unrelated problems, pre-existing bugs, compiler warnings, linter errors, dead code, or any other defects discovered during development. Do not ignore or defer them with "that's out of scope" unless the issue is genuinely massive and would prevent the primary task from completing within a reasonable time. For every issue found, either fix it immediately or document it explicitly with a justification for deferral.
+
+This applies to:
+- **Compiler warnings**: Resolve or explicitly allow with justification
+- **Clippy lints**: Fix any violations encountered
+- **Pre-existing bugs**: If you see it and it's small, fix it
+- **Dead code / unused imports**: Clean up as you go
+- **Formatting inconsistencies**: Fix when you touch the surrounding code
+- **Logic errors in unrelated code**: If you spot a clear bug in passing, fix it
+
+The project's quality is a shared responsibility — leave every file you touch in better shape than you found it.
 
 ## Commit & Pull Request Guidelines
 

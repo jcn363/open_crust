@@ -1415,6 +1415,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::End => {
                             app.message_scroll = 0;
                         }
+                        KeyCode::Char('?') => {
+                            app.mode = Mode::Help;
+                        }
+                        // Sidebar navigation: [ = up, ] = down
+                        KeyCode::Char('[')
+                            if app.show_sidebar
+                                && app.sidebar_selected > 0
+                                && !app.sidebar_items.is_empty() =>
+                        {
+                            app.sidebar_selected -= 1;
+                        }
+                        KeyCode::Char(']')
+                            if app.show_sidebar
+                                && app.sidebar_selected + 1 < app.sidebar_items.len()
+                                && !app.sidebar_items.is_empty() =>
+                        {
+                            app.sidebar_selected += 1;
+                        }
                         KeyCode::Char('i') => {
                             app.enter_insert_mode();
                         }
@@ -1841,6 +1859,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 }
                                 _ => {}
                             }
+                        }
+                        _ => {}
+                    },
+                    Mode::Help => match key.code {
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            app.mode = Mode::Normal;
                         }
                         _ => {}
                     },

@@ -9,6 +9,7 @@ pub enum Mode {
     Servers,
     SkillBrowser,   // Ctrl+Shift+K skill browser
     CommandPalette, // Ctrl+K command palette
+    Help,           // ? key help
     McpShowcase,    // Ctrl+M MCP Showcase
     MissionControl, // Ctrl+G Mission Control
 }
@@ -89,6 +90,7 @@ pub struct App {
     pub background_tasks: Vec<BackgroundTask>, // Track background agent tasks
     pub background_task_tx: Option<tokio::sync::mpsc::Sender<String>>, // Send notifications for background task completion
     pub sidebar_items: Vec<String>,
+    pub sidebar_selected: usize,
     pub history: Vec<String>,
     pub history_index: Option<usize>,
     // MCP Browser state
@@ -177,6 +179,7 @@ impl App {
             mcp_input: String::new(),
             show_sidebar: true,
             sidebar_items: Vec::new(),
+            sidebar_selected: 0,
             history: Vec::new(),
             history_index: None,
             // Input Prediction fields
