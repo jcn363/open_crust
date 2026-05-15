@@ -54,6 +54,15 @@ impl Orchestrator {
         }
     }
 
+    /// Attach a shared state bridge for live TUI visualization
+    pub fn with_shared_state(
+        mut self,
+        state: std::sync::Arc<tokio::sync::RwLock<Vec<Task>>>,
+    ) -> Self {
+        self.coordinator = self.coordinator.with_shared_state(state);
+        self
+    }
+
     /// Execute a natural-language request by decomposing it into subtasks
     /// and running them through the coordinator.
     ///

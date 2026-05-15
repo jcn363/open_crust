@@ -1160,6 +1160,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     }
                 }
                 continue;
+            } else if prompt_str.starts_with("/goal ") {
+                let goal_desc = prompt_str.trim_start_matches("/goal ").trim();
+                if goal_desc.is_empty() {
+                    let _ = response_tx.send("opencrust: Usage: /goal <description>".to_string()).await;
+                } else {
+                    client_clone.set_goal(goal_desc.to_string());
+                    let _ = response_tx.send(format!(
+                        "opencrust: Goal set: '{}'. Agent will work autonomously until completed. Use /goal-clear to reset.",
+                        goal_desc
+                    )).await;
+                }
+                continue;
+            } else if prompt_str == "/goal-clear" || prompt_str == "/goal clear" {
+                client_clone.clear_goal();
+                let _ = response_tx.send("opencrust: Goal cleared.".to_string()).await;
+                continue;
+            } else if prompt_str == "/goal-status" || prompt_str == "/goal status" {
+                match client_clone.get_goal() {
+                    Some(goal) => {
+                        let _ = response_tx.send(format!(
+                            "opencrust: Active goal: '{}' (set {})",
+                            goal.description, goal.created_at.format("%Y-%m-%d %H:%M")
+                        )).await;
+                    }
+                    None => {
+                        let _ = response_tx.send("opencrust: No active goal.".to_string()).await;
+                    }
+                }
+                continue;
             }
 
             let _ = git::checkpoint();
@@ -1198,6 +1227,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         background_task_tx,
         llm_client.clone(),
     );
+    // Wire Mission Control bridge to orchestrator shared task state
+    app.orchestrator_tasks = Some(llm_client.orchestrator_tasks.clone());
     app.refresh_sidebar();
 
     // Frame rate limiting for smoother UI
@@ -1445,10 +1476,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         KeyCode::Char('p')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
                         {
-                            app.plan_mode = crate::app::PlanMode::Planning;
-                            app.tabs[0]
-                                .messages
-                                .push(Message::new(String::from("Entering plan mode...")));
+                            // Toggle plan mode
+                            match app.plan_mode {
+                                crate::app::PlanMode::Disabled => {
+                                    app.plan_mode = crate::app::PlanMode::Planning;
+                                    app.llm_client.set_plan_mode(crate::llm::PlanModeState::Planning);
+                                    app.tabs[0]
+                                        .messages
+                                        .push(Message::new(String::from("Entering plan mode — write tools blocked. Press Ctrl+P to exit.")));
+                                }
+                                crate::app::PlanMode::Planning => {
+                                    app.plan_mode = crate::app::PlanMode::Disabled;
+                                    app.llm_client.set_plan_mode(crate::llm::PlanModeState::Disabled);
+                                    app.tabs[0]
+                                        .messages
+                                        .push(Message::new(String::from("Exiting plan mode — write tools enabled.")));
+                                }
+                            }
                         }
                         KeyCode::Char('k')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>

@@ -117,6 +117,9 @@ pub struct App {
     pub plan_review_index: usize, // Which file in the plan being reviewed
     // Plan mode state
     pub plan_mode: PlanMode,
+    // Persistent goal for autonomous execution (mirrored from LlmClient for UI display)
+    #[expect(dead_code, reason = "Reserved for future UI display of active goal")]
+    pub active_goal: Option<crate::llm::Goal>,
     // Command palette state
     pub command_palette_selected: usize,
     // Input Prediction (Ghost Text)
@@ -283,6 +286,8 @@ impl App {
             plan_review_index: 0,
             // Plan mode state
             plan_mode: PlanMode::Disabled,
+            // Persistent goal for autonomous execution
+            active_goal: None,
             // Command palette state
             command_palette_selected: 0,
             // Background tasks initialization
