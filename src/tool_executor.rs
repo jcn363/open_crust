@@ -86,7 +86,7 @@ impl ToolExecutor {
             // Built-in tools
             "bash" => self.execute_bash(args).await,
             "read" => self.execute_read(args).await,
-            "write" => self.execute_write(args).await,
+            "write" => self.execute_write(args),
 
             // LSP tools
             "lsp_goto_definition" => self.execute_lsp_goto_definition(args).await,
@@ -124,7 +124,7 @@ impl ToolExecutor {
             _ => {
                 let custom_result = {
                     let custom = self.custom_tool_manager.lock().await;
-                    custom.call_tool(name, args).await
+                    custom.call_tool(name, args)
                 };
 
                 match custom_result {
@@ -207,7 +207,7 @@ impl ToolExecutor {
         Ok(content)
     }
 
-    async fn execute_write(&self, args: &Value) -> ToolResult {
+    fn execute_write(&self, args: &Value) -> ToolResult {
         let path_str = args.get("path").and_then(|v| v.as_str()).unwrap_or("");
         let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
 
@@ -456,15 +456,9 @@ impl ToolExecutor {
 
         // Use Rust-native implementation instead of shell commands
         self.search_replace_rust(pattern, replacement, include)
-            .await
     }
 
-    async fn search_replace_rust(
-        &self,
-        pattern: &str,
-        replacement: &str,
-        include: &str,
-    ) -> ToolResult {
+    fn search_replace_rust(&self, pattern: &str, replacement: &str, include: &str) -> ToolResult {
         use std::fs;
         use walkdir::WalkDir;
 

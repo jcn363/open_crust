@@ -15,7 +15,7 @@ pub struct McpServer {
 }
 
 impl McpServer {
-    pub async fn spawn(name: &str, config: &McpConfig) -> Result<Self, String> {
+    pub fn spawn(name: &str, config: &McpConfig) -> Result<Self, String> {
         if config.command.is_empty() {
             return Err("Empty MCP command".into());
         }
@@ -62,7 +62,7 @@ impl McpManager {
             if !mcp_config.enabled {
                 continue;
             }
-            match McpServer::spawn(name, mcp_config).await {
+            match McpServer::spawn(name, mcp_config) {
                 Ok(server) => {
                     self.servers.push(server);
                     println!("opencrust: MCP server '{}' connected.", name);

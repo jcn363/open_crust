@@ -188,25 +188,6 @@ impl Default for SubagentConfig {
     }
 }
 
-impl ProviderType {
-    #[expect(dead_code, reason = "serialization helper")]
-    pub fn as_str(&self) -> &str {
-        match self {
-            ProviderType::Ollama => "ollama",
-            ProviderType::OpenRouter => "openrouter",
-            ProviderType::OpenAI => "openai",
-            ProviderType::Gemini => "gemini",
-            ProviderType::Mistral => "mistral",
-            ProviderType::Anthropic => "anthropic",
-            ProviderType::Groq => "groq",
-            ProviderType::TogetherAi => "togetherai",
-            ProviderType::Replicate => "replicate",
-            ProviderType::DeepSeek => "deepseek",
-            ProviderType::LocalAi => "localai",
-        }
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct McpConfig {
     pub command: Vec<String>,

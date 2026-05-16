@@ -118,7 +118,7 @@ impl CustomToolManager {
             .collect()
     }
 
-    pub async fn call_tool(&self, name: &str, args: &Value) -> Result<String, String> {
+    pub fn call_tool(&self, name: &str, args: &Value) -> Result<String, String> {
         let tool = self
             .tools
             .get(name)

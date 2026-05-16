@@ -1357,7 +1357,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         last_frame = std::time::Instant::now();
         terminal.draw(|f| ui::draw(f, &mut app))?;
 
-        if let Some(Event::Key(key)) = events::next_event().await? {
+        if let Some(Event::Key(key)) = events::next_event()? {
             // Check for Copy (Ctrl+C) - copy current input to clipboard
             if check_key_match(&key, &copy_key) {
                 if !app.input.is_empty() && clipboard.copy(&app.input) {
