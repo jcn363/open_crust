@@ -1,7 +1,8 @@
-//! Cinnamon desktop integration module
+//! Desktop integration module
 //!
-//! Provides desktop environment detection, system notifications, and native file pickers
-//! for Linux Mint Cinnamon while keeping the core TUI unchanged.
+//! Provides desktop environment detection, system notifications (Linux via notify-send/DBus,
+//! macOS via osascript), and native file pickers for Linux Mint Cinnamon while keeping the
+//! core TUI unchanged.
 
 pub mod detection;
 pub mod file_picker;

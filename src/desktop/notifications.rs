@@ -118,53 +118,11 @@ pub struct NotificationDaemon {
     pub supports_inline_reply: bool,
 }
 
-/// Check if notification daemon is available
+/// Check if notification daemon is available.
+///
+/// Uses macOS `osascript` detection on macOS, Linux DBus/notify-send on other Unix.
 pub fn check_notification_daemon() -> NotificationDaemon {
-    // Try to get info from dbus-send
-    let output = Command::new("dbus-send")
-        .args([
-            "--session",
-            "--dest=org.freedesktop.Notifications",
-            "--type=method_call",
-            "--print-reply",
-            "/org/freedesktop/Notifications",
-            "org.freedesktop.Notifications.GetServerInformation",
-        ])
-        .output();
-
-    if let Ok(output) = output
-        && output.status.success()
-    {
-        let info = String::from_utf8_lossy(&output.stdout);
-        // Parse response like: string "notify-osd" string "MATE" string "1.0" string "1.0"
-        let parts: Vec<&str> = info.lines().filter(|l| !l.is_empty()).collect();
-        if parts.len() >= 4 {
-            return NotificationDaemon {
-                available: true,
-                name: parts[0].trim_matches('"').to_string(),
-                supports_actions: false,
-                supports_inline_reply: false,
-            };
-        }
-    };
-
-    // Fallback: check if notify-send exists
-    let has_notify_send = Command::new("which")
-        .arg("notify-send")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false);
-
-    NotificationDaemon {
-        available: has_notify_send,
-        name: if has_notify_send {
-            "notify-send".to_string()
-        } else {
-            "none".to_string()
-        },
-        supports_actions: false,
-        supports_inline_reply: false,
-    }
+    check_notification_daemon_inner()
 }
 
 /// Check if notifications require a running daemon
@@ -330,12 +288,22 @@ pub fn close_notification(id: u32) -> Result<(), String> {
     }
 }
 
-/// Send a notification using the best available backend (DBus > notify-send)
+/// Send a notification using the best available backend.
 ///
-/// Attempts to use DBus for richer notification features (icons, urgency, timeouts).
-/// Falls back to notify-send if DBus is unavailable.
+/// Platform dispatch:
+/// - **macOS**: uses `osascript` (AppleScript `display notification`)
+/// - **Linux/Unix**: tries DBus for rich features, falls back to notify-send
+///
 /// Returns the notification ID for use with `close_notification`.
 pub fn send_notification_smart(notification: &Notification) -> Result<u32, String> {
+    // On macOS, use osascript
+    #[cfg(target_os = "macos")]
+    {
+        if is_macos_notifications_available() {
+            return send_notification_macos(notification);
+        }
+    }
+
     let app_name = "OpenCrust";
 
     // Try DBus first for richer features
@@ -371,6 +339,129 @@ pub fn notify_success(title: impl Into<String>, body: impl Into<String>) -> Resu
         .with_urgency(NotificationUrgency::Low)
         .with_icon("dialog-information");
     send_notification_smart(&notification).map(|_| ())
+}
+
+// ── macOS Notification Backend ──
+
+/// Send a notification using macOS `osascript` (AppleScript).
+///
+/// Uses `display notification` via osascript, which is the standard way
+/// to show user-facing notifications on macOS without external dependencies.
+#[cfg(target_os = "macos")]
+fn send_notification_macos(notification: &Notification) -> Result<u32, String> {
+    let mut script = String::from("display notification \"");
+    // Escape double quotes in body
+    let body = notification.body.replace('"', "\\\"");
+    script.push_str(&body);
+    script.push('"');
+
+    // Title is optional in osascript
+    if !notification.title.is_empty() {
+        let title = notification.title.replace('"', "\\\"");
+        script.push_str(" with title \"");
+        script.push_str(&title);
+        script.push('"');
+    }
+
+    // Add subtitle for urgency: Critical → high priority hint
+    if notification.options.urgency == NotificationUrgency::Critical {
+        script.push_str(" subtitle \"Urgent\"");
+    }
+
+    let output = Command::new("osascript").arg("-e").arg(&script).output();
+
+    match output {
+        Ok(output) if output.status.success() => {
+            // osascript doesn't return a notification ID, so hash the content
+            let id = simple_hash(&format!("{}{}", notification.title, notification.body));
+            Ok(id)
+        }
+        Ok(output) => {
+            let error = String::from_utf8_lossy(&output.stderr);
+            Err(format!("osascript failed: {}", error))
+        }
+        Err(e) => Err(format!("Failed to run osascript: {}", e)),
+    }
+}
+
+/// Check if `osascript` is available on macOS.
+#[cfg(target_os = "macos")]
+fn is_macos_notifications_available() -> bool {
+    Command::new("which")
+        .arg("osascript")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// Update `check_notification_daemon` to try macOS backend first on macOS.
+fn check_notification_daemon_inner() -> NotificationDaemon {
+    // On macOS, check for osascript availability
+    #[cfg(target_os = "macos")]
+    {
+        let has_osascript = is_macos_notifications_available();
+        return NotificationDaemon {
+            available: has_osascript,
+            name: if has_osascript {
+                "osascript".to_string()
+            } else {
+                "none".to_string()
+            },
+            supports_actions: false,
+            supports_inline_reply: false,
+        };
+    }
+
+    // On Linux (and other Unix), use DBus / notify-send
+    check_notification_daemon_linux()
+}
+
+/// Original check logic, renamed for clarity
+fn check_notification_daemon_linux() -> NotificationDaemon {
+    // Try to get info from dbus-send
+    let output = Command::new("dbus-send")
+        .args([
+            "--session",
+            "--dest=org.freedesktop.Notifications",
+            "--type=method_call",
+            "--print-reply",
+            "/org/freedesktop/Notifications",
+            "org.freedesktop.Notifications.GetServerInformation",
+        ])
+        .output();
+
+    if let Ok(output) = output
+        && output.status.success()
+    {
+        let info = String::from_utf8_lossy(&output.stdout);
+        let parts: Vec<&str> = info.lines().filter(|l| !l.is_empty()).collect();
+        if parts.len() >= 4 {
+            return NotificationDaemon {
+                available: true,
+                name: parts[0].trim_matches('"').to_string(),
+                supports_actions: false,
+                supports_inline_reply: false,
+            };
+        }
+    };
+
+    // Fallback: check if notify-send exists
+    let has_notify_send = Command::new("which")
+        .arg("notify-send")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    NotificationDaemon {
+        available: has_notify_send,
+        name: if has_notify_send {
+            "notify-send".to_string()
+        } else {
+            "none".to_string()
+        },
+        supports_actions: false,
+        supports_inline_reply: false,
+    }
 }
 
 #[cfg(test)]
