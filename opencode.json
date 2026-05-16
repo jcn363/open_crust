@@ -29,9 +29,6 @@
         "baseURL": "http://127.0.0.1:11434/v1"
       },
       "models": {
-        "coder11v/mycode1": {
-          "_launch": true
-        },
         "deepseek-r1": {
           "_launch": true
         }

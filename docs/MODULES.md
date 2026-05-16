@@ -138,6 +138,25 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ---
 
+### plugins.rs
+
+**Purpose:** Plugin/Extension system — discover, load, and manage OpenCrust plugins
+
+**Key types:** `Plugin`, `Citation`, `PluginManager`, `PluginError`, `PluginStats`
+
+**Key functions:** `discover()`, `load_plugin()`, `enable()`, `disable()`, `execute_hook()`, `execute_tool()`
+
+**When to modify:**
+  - Changing plugin manifest format
+  - Modifying plugin loading logic
+  - Adding new plugin hook points
+  - Changing plugin execution sandboxing
+
+**Related modules:** `tools.rs`, `llm.rs`, `config.rs`, `permissions.rs`
+
+**Lines of code:** ~627
+
+---
 ### acp.rs
 **Purpose:** Agent Communication Protocol (ACP) stdio interface for multi-agent interop  
 **Key types:** `ACPMessage`, `ACPServer`, `ACPClient`  
