@@ -1047,3 +1047,124 @@ pub(crate) fn new_test_client(
     let custom = Arc::new(Mutex::new(crate::custom_tools::CustomToolManager::new()));
     LlmClient::new(config, mcp, lsp, skills, custom)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── PlanModeState ──
+
+    #[test]
+    fn plan_mode_state_default_is_disabled() {
+        assert_eq!(PlanModeState::default(), PlanModeState::Disabled);
+    }
+
+    #[test]
+    fn plan_mode_state_partial_eq() {
+        assert_eq!(PlanModeState::Disabled, PlanModeState::Disabled);
+        assert_eq!(PlanModeState::Planning, PlanModeState::Planning);
+        assert_ne!(PlanModeState::Disabled, PlanModeState::Planning);
+    }
+
+    #[test]
+    fn plan_mode_state_debug() {
+        let _ = format!("{:?}", PlanModeState::Disabled);
+        let _ = format!("{:?}", PlanModeState::Planning);
+    }
+
+    // ── LlmClient: plan mode ──
+
+    #[test]
+    fn plan_mode_roundtrip() {
+        let client = test_client();
+        assert_eq!(client.get_plan_mode(), PlanModeState::Disabled);
+        client.set_plan_mode(PlanModeState::Planning);
+        assert_eq!(client.get_plan_mode(), PlanModeState::Planning);
+        client.set_plan_mode(PlanModeState::Disabled);
+        assert_eq!(client.get_plan_mode(), PlanModeState::Disabled);
+    }
+
+    #[test]
+    fn tool_blocked_in_plan_mode_blocks_write_tools() {
+        let client = test_client();
+        client.set_plan_mode(PlanModeState::Planning);
+        assert!(client.is_tool_blocked_in_plan_mode("write"));
+        assert!(client.is_tool_blocked_in_plan_mode("edit"));
+        assert!(client.is_tool_blocked_in_plan_mode("bash"));
+        assert!(client.is_tool_blocked_in_plan_mode("global_search_replace"));
+        assert!(client.is_tool_blocked_in_plan_mode("create_plan"));
+    }
+
+    #[test]
+    fn tool_not_blocked_in_plan_mode_allows_read_tools() {
+        let client = test_client();
+        client.set_plan_mode(PlanModeState::Planning);
+        assert!(!client.is_tool_blocked_in_plan_mode("read"));
+        assert!(!client.is_tool_blocked_in_plan_mode("grep"));
+        assert!(!client.is_tool_blocked_in_plan_mode("glob"));
+        assert!(!client.is_tool_blocked_in_plan_mode("web_search"));
+    }
+
+    #[test]
+    fn tool_not_blocked_when_disabled() {
+        let client = test_client();
+        client.set_plan_mode(PlanModeState::Disabled);
+        assert!(!client.is_tool_blocked_in_plan_mode("write"));
+        assert!(!client.is_tool_blocked_in_plan_mode("bash"));
+    }
+
+    // ── LlmClient: goal state ──
+
+    #[test]
+    fn goal_default_is_none() {
+        let client = test_client();
+        assert!(client.get_goal().is_none());
+        assert!(client.get_goal_prompt().is_none());
+    }
+
+    #[test]
+    fn goal_set_and_clear() {
+        let client = test_client();
+        client.set_goal("test goal".into());
+        let goal = client.get_goal();
+        assert!(goal.is_some());
+        assert_eq!(goal.unwrap().description, "test goal");
+        client.clear_goal();
+        assert!(client.get_goal().is_none());
+    }
+
+    #[test]
+    fn goal_get_prompt_contains_description() {
+        let client = test_client();
+        client.set_goal("fix the bug".into());
+        let prompt = client.get_goal_prompt();
+        assert!(prompt.is_some());
+        let prompt_text = prompt.unwrap();
+        assert!(prompt_text.contains("fix the bug"));
+        assert!(prompt_text.contains("Active Goal"));
+    }
+
+    #[test]
+    fn goal_no_prompt_when_not_set() {
+        let client = test_client();
+        assert!(client.get_goal_prompt().is_none());
+    }
+
+    // ── Goal struct ──
+
+    #[test]
+    fn goal_creation() {
+        let goal = Goal {
+            description: "hello".into(),
+            created_at: chrono::Utc::now(),
+        };
+        assert_eq!(goal.description, "hello");
+    }
+
+    // ── helper ──
+
+    fn test_client() -> LlmClient {
+        let config = Arc::new(Config::default());
+        new_test_client(config).expect("test client creation")
+    }
+}
