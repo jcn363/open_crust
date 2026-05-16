@@ -1,139 +1,286 @@
 # OpenCrust Roadmap
 
-> Consolidated plan generated 2026-05-16.
-> Replaces: `.uncensored/FINAL_REPORT.md`, `MARKET.md` action items (superseded).
-> Status: ✅ Phase 1-17 complete. ✅ Phase 3 extraction complete. ✅ Phase 4 test coverage complete. ✅ Phase 5.4 macOS notifications. 307 tests pass, 0 fail. Build/clippy/fmt: clean.
+> **Version:** v0.1.3 | **Last updated:** 2026-05-16
+> **Status:** 307 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
+> **Supersedes:** Previous ROADMAP.md, `MARKET.md` action items (now pure research),
+> `.uncensored/FINAL_REPORT.md`.
 
 ---
 
-## ✅ Completed Work (v0.1.3)
+## Vision
 
-### Core Platform (Phases 1-8)
-- Rust TUI with Ratatui (terminal UI, chat/tasks views, file tree sidebar)
-- LLM client loop with 11 provider integrations
-- Tool system: MCP servers, LSP integration, custom script tools
-- RAG (semantic search), skills system (11 built-in), task planner
-- Security: granular permissions, network gating, audit logging, compliance
-- Desktop: Cinnamon/GNOME/Plasma detection, notifications, file pickers
-- Utilities: git integration, web search, formatters, sessions, JSON utils
+OpenCrust is the **security-first, terminal-native AI coding agent** — built in Rust
+for developers who care about performance, safety, and enterprise compliance.
 
-### Quality & Compliance (Phases 9-12)
-- **#[allow] → #[expect] migration** — 33 instances across 14 files (Phase 9)
-- **Market analysis** — competitive deep-dive vs Claude Code, Cursor, Cline, OpenCode, OpenDev (Phase 11)
-- **Performance benchmarks** — startup 7-10ms, binary 16MB, memory ~18MB (Phase 12)
-- **Zero-compromise audit** — 0 unsafe, 0 prod unwraps, 0 TODOs, 0 unused deps (Phase 16)
-
-### Market-Driven Features (Phases 13-17)
-- **Plan Mode enforcement** — Ctrl+P toggles Planning mode, blocks write/edit/bash tools (Phase 13)
-- **`/goal` command** — persistent objective with system prompt injection (Phase 14)
-- **Mission Control wiring** — live orchestrator tasks bridge, real-time DAG visualization (Phase 15)
-- **Codebase cleanup** — removed 5 unnecessary async functions, deleted dead `ProviderType::as_str()` duplicate (Phase 17)
+Unlike agents bolted onto IDEs or Node.js runtimes, OpenCrust is a single static
+binary with zero runtime dependencies, granular permissions, persistent audit, and
+multi-agent orchestration — designed from the ground up for professional software
+engineering teams.
 
 ---
 
-## Phase 3: Code Organization (✅ Complete)
+## Current State (v0.1.3 — May 16, 2026)
+
+### Core Platform (Phases 1-2 — ✅ Complete)
+- Rust TUI with Ratatui: tabbed chat/tasks views, file tree sidebar, command palette
+- LLM client loop with 11 provider integrations (Ollama, OpenRouter, OpenAI, Gemini,
+  Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI)
+- Tool system: MCP servers (JSON-RPC), LSP integration (code completion + diagnostics),
+  custom script tools (auto-discovered from `.opencrust/tools/`)
+- RAG semantic search (vector-based, Ollama embeddings)
+- Skills system (11 built-in, custom `SKILL.md` discovery)
+- Task planner (multi-step plan generation with progress tracking)
+- Git integration, web search, auto-formatters, session persistence
+
+### Quality & Compliance Improvements (Phases 9-12 — ✅ Complete)
+- **Phase 9:** 33 `#[allow]→#[expect]` conversions across 14 files
+- **Phase 11:** Competitive market deep-dive (Claude Code, Cursor, Cline, OpenCode, OpenDev)
+- **Phase 12:** Performance baselines measured:
+  - Startup: **7-10ms** (average 7.8ms)
+  - Binary: **16MB** (release, stripped)
+  - Memory: **~18MB** idle
+- **Phase 16:** Zero-compromise codebase audit — 0 unsafe blocks, 0 production unwraps,
+  0 TODOs, 0 unused deps, 0 `#[allow(dead_code)]` without justification
+
+### Market-Driven Features (Phases 13-17 — ✅ Complete)
+- **Phase 13:** Plan Mode enforcement — Ctrl+P toggles Planning, blocks write/edit/bash tools
+- **Phase 14:** `/goal` command — persistent objective with system prompt injection
+- **Phase 15:** Mission Control wired to live orchestrator tasks — real-time DAG visualization
+- **Phase 17:** Removed 5 unnecessary async functions, deleted dead `ProviderType::as_str()`
+- **Phase 5.4:** macOS notification support via osascript backend
+
+### Code Organization (Phase 3 — ✅ Complete)
+- `main.rs` reduced from 2,222 → 1,021 lines (54% reduction)
+- Three modules extracted: `cli.rs` (201 lines), `startup.rs` (99 lines),
+  `event_loop.rs` (985 lines)
+- Subcommand handlers (~820 lines) intentionally remain in `main.rs` — stable match arms
+
+### Test Coverage (Phase 4 — ✅ Complete)
+- 307 tests passing (1 ignored — requires local Ollama)
+- Previously empty modules now covered: `app.rs` (42), `tools.rs` (27),
+  `permissions.rs` (15), `llm.rs` (12), `planner.rs` (7)
+
+### Market Positioning (Phase 5 — 🔶 In Progress)
+- ✅ Item 1 — Publish performance benchmarks: **DONE** (`benches/benchmark.rs`,
+  `docs/PERFORMANCE.md` Criterion section)
+- ⏳ Item 2 — Publish to crates.io: **Not started**
+- ✅ Item 3 — Strengthen README: **DONE** (TOC, updated keybinds, enhanced feature descriptions)
+- ✅ Item 4 — macOS notification support: **DONE** (osascript backend)
+- ⏳ Item 5 — Token budget / cost dashboard: **Not started**
+- ✅ Item 6 — Visual diff / plan review UX: **DONE** (unified diff toggle `u`,
+  line diff highlighting, scroll `j/k`)
+- ⏳ Item 7 — Cross-platform desktop: **Not started**
+
+---
+
+## Phase 6: Enterprise Readiness (30-60 Days)
 
 ### Goal
-Refactor `main.rs` (2,222 lines) into manageable modules.
+Double down on OpenCrust's unique moat: enterprise security, compliance, and cost
+governance — features no other open-source agent provides.
 
-### Result
-`main.rs` reduced from 2,222 → 1,021 lines (54% reduction). Three new modules extracted:
+### Rationale
+78% of Fortune 500 companies have AI-assisted development in production. As they
+consolidate around 1-2 approved agents, security and governance matter more than
+GitHub stars. OpenCrust's compliance.rs, audit logging, and network gating are
+already enterprise-ready — the gap is in cost visibility and agent management UX.
 
-| Module | Lines | Responsibility |
-|--------|-------|---------------|
-| `cli.rs` | 201 | CLI argument parsing with clap derive macros |
-| `startup.rs` | 99 | Manager init, cinnamon detection, model refresh |
-| `event_loop.rs` | 985 | Interactive TUI rendering and key handling |
+### Deliverables
 
-### Key Decisions
-- `use cli::*` re-export preserves existing match-dispatch pattern without touching handler code
-- `crate::` prefixed paths used in extracted modules to avoid circular imports
-- Subcommand handlers (Mcp/Desktop/Session/Audit/Skills, ~820 lines) intentionally left in `main.rs` — each is a stable, self-contained match arm with different dependencies
+| # | Item | Effort | Priority | Status |
+|---|------|--------|----------|--------|
+| 1 | **Token budget & cost dashboard** | Medium (3-4h) | 🔥 High | ⏳ |
+| 2 | **Background agent dashboard** | Medium (4-6h) | 🔥 High | ⏳ |
+| 3 | **Enterprise compliance packaging** | Medium (4-6h) | 🟡 Medium | ⏳ |
 
-### Acceptance Criteria
-- [x] `main.rs` < 200 lines **(partially — 1,021 lines; handlers remain)**
-- [x] `cargo build` clean
-- [x] `cargo clippy -D warnings` clean
-- [x] `cargo test` — 307 tests pass
-- [x] All CLI subcommands functional (unchanged match-dispatch)
-- [x] Ctrl+P plan mode toggle works (in event_loop.rs)
-- [x] Ctrl+G mission control opens (in event_loop.rs)
+#### 1. Token Budget & Cost Dashboard
+
+Track usage per session, per agent, per provider. Show real-time cost in status bar.
+
+**Acceptance criteria:**
+- [ ] Token count + estimated cost visible in status bar
+- [ ] Per-session token budget with warning (75%) and hard stop (90%)
+- [ ] Cost estimation for each LLM provider (tokenizer × provider pricing)
+- [ ] `/cost` command shows session breakdown
+- [ ] All tests pass, clippy clean
+
+**Reference:** CruxCLI token budgets, Claude Code `/cost`, Cursor usage dashboard.
+
+#### 2. Background Agent Dashboard
+
+Surface all running agents (parallel, background, scheduled) in a visual panel.
+
+**Acceptance criteria:**
+- [ ] Mission Control shows per-agent status, token count, elapsed time
+- [ ] Start/stop/cancel agents from TUI
+- [ ] Agent fleets — spawn N agents on N tasks with progress aggregation
+- [ ] Background task completion notifications
+- [ ] All tests pass, clippy clean
+
+**Reference:** Claude Code Agent View (`claude agents`), Cursor 3 Agents Window,
+Cline Kanban.
+
+#### 3. Enterprise Compliance Packaging
+
+Package OpenCrust's existing compliance infrastructure for procurement processes.
+
+**Acceptance criteria:**
+- [ ] SOC 2-style report generation from `compliance.rs` evidence packages
+- [ ] Audit export wizard: CSV, JSON, Syslog formats
+- [ ] Role-based permission templates (admin, developer, reviewer)
+- [ ] Private model deployment guide (Ollama + air-gapped)
+- [ ] All tests pass, clippy clean
+
+### Risks
+- Cost dashboard requires accurate per-provider tokenizer pricing — providers
+  change pricing without notice
+- Background agent TUI may need async architecture changes if agents block the
+  event loop
 
 ---
 
-## Phase 4: Test Coverage (✅ Complete)
+## Phase 7: Cross-Platform Desktop (60-90 Days)
 
 ### Goal
-Expand test coverage from current levels to >40% of non-trivial modules.
+Deliver native desktop integration on macOS and Windows, matching the Linux
+experience (notifications, file pickers, environment detection).
 
-### Result
-308 tests total (307 pass, 1 ignored — Ollama). All previously empty modules now covered:
+### Rationale
+OpenCrust is currently Linux-only for desktop features. macOS support was
+started (Phase 5.4: osascript notifications) but has no file picker, no
+environment detection, and no menu bar integration. Windows has zero support.
+This is the #1 blocker for wider adoption — 75% of developers use macOS or Windows.
 
-| Module | Tests | Change |
-|--------|-------|--------|
-| `app.rs` | 42 | ✅ New (PlanMode, mode transitions, history, vim, background tasks) |
-| `tools.rs` | 27 | ✅ New (schema validation, pure wrappers, error handling) |
-| `permissions.rs` | 15 | ✅ New (glob patterns, network rules, allow/deny/ask) |
-| `llm.rs` | 12 | ✅ New (PlanModeState, goal set/clear/get, tool blocking in plan mode) |
-| `planner.rs` | 7 | ✅ New (plan creation, step marking, plan.md I/O) |
+### Deliverables
 
-### Sub-Phases
-- **Phase 4a** (commit `a342850`): 42 tests for `app.rs`
-- **Phase 4b** (commit `0288e9e`): 27 tests for `tools.rs`
-- **Phase 4c** (commit `7d18a9f`): 15 tests for `permissions.rs`
-- **Phase 4d** (commit `376e600`): 12 tests for `llm.rs`
+| # | Item | Effort | Priority | Status |
+|---|------|--------|----------|--------|
+| 1 | **macOS: File picker + environment detection** | Medium (2-3h) | 🔥 High | ⏳ |
+| 2 | **macOS: System notifications (full)** | Low (1-2h) | 🟡 Medium | 🔶 Partial |
+| 3 | **Windows: Toast notifications** | Medium (3-4h) | 🔥 High | ⏳ |
+| 4 | **Windows: File picker** | Medium (2-3h) | 🟡 Medium | ⏳ |
+| 5 | **macOS: Menu bar agent** | High (4-6h) | 🟢 Low | ⏳ |
 
-### Key Decisions
-- `#[cfg(test)] pub(crate) fn new_test_client()` in `llm.rs` creates minimal LlmClient without HTTP/managers
-- `#[derive(PartialEq)]` added to `Mode` enum in `app.rs` for test assertions
-- Test naming follows RBP convention: `describe_should_expected_behavior`
+#### 1. macOS: File Picker + Environment Detection
+- Detect macOS desktop environment
+- Native file picker (NSOpenPanel via `osascript` or `dialog`)
+- Match Linux feature parity
 
-### Acceptance Criteria
-- [x] Every previously-empty module has tests
-- [x] `llm.rs` has plan mode tool filtering tests
-- [x] `app.rs` has PlanMode state transition tests
-- [x] `permissions.rs` has comprehensive access pattern tests
-- [x] `cargo test` — 307 pass, 0 fail, 1 ignored
-- [x] No test-only `#[allow]` violations
+#### 2. macOS: Full Notifications
+- Notification Center integration (beyond bare osascript)
+- Notification actions (e.g., "Open in OpenCrust")
+- Status bar agent
+
+#### 3. Windows Support
+- Toast notifications via `powershell` or WinRT
+- Windows file picker via `System.Windows.Forms`
+- Environment detection (Windows 10/11, WSL awareness)
+
+### Acceptance Criteria (Phase 7)
+- [ ] macOS notifications + file picker working (matching Linux)
+- [ ] Windows toast notifications + file picker working
+- [ ] No new platform-specific dependencies in core modules
+- [ ] All tests pass, clippy clean
+
+### Risks
+- Windows TUI requires different terminal handling (WinRT console APIs)
+- macOS code signing needed for menu bar agent distribution
+- Cross-platform abstractions can leak platform-specific complexity into core
 
 ---
 
-## Phase 5: Market Positioning (0-60 Days)
+## Phase 8: Ecosystem & Community (90+ Days)
 
 ### Goal
-Convert OpenCrust's technical advantages into community presence and adoption.
+Build the developer ecosystem around OpenCrust: plugins, multi-repo support,
+and community growth.
 
-### Action Items (from MARKET.md analysis)
+### Rationale
+OpenCrust has zero community presence. Cline (60K stars), OpenCode (95K+), and
+Aider (44K) all have vibrant ecosystems. A public repo with credible benchmarks
+and a plugin system could bootstrap adoption — but only after the enterprise
+and cross-platform foundations are solid.
 
-| # | Action | Effort | Priority | Status |
-| 1 | **Publish performance benchmarks** | Low (1-2h) | 🔥 High | ⏳ Not started |
-| 2 | **Publish to crates.io** | Low (1h) | 🔥 High | ⏳ Not started |
-| 3 | **Strengthen README** | Medium (3-4h) | 🔥 High | ⏳ Not started |
-| 4 | **macOS notification support** | Medium (2-3h) | 🟡 Medium | ✅ Done |
-| 5 | **Token budget/cost dashboard** | Medium (3-4h) | 🟡 Medium | ⏳ Not started |
-| 6 | **Visual diff / plan review UX** | Medium (3-4h) | 🟡 Medium | ⏳ Not started |
-| 7 | **Cross-platform desktop** | High (1-2w) | 🔵 Low | ⏳ Not started |
+### Deliverables
 
-### Key Insight
-OpenDev proved "publish Rust benchmarks → massive growth" works. OpenCrust has similar performance characteristics (7-10ms startup, 16MB binary, 18MB memory) and should publish immediately.
+| # | Item | Effort | Priority | Status |
+|---|------|--------|----------|--------|
+| 1 | **Plugin/extension system** | High (1-2w) | 🟡 Medium | ⏳ |
+| 2 | **Multi-repo support** | High (1-2w) | 🟡 Medium | ⏳ |
+| 3 | **Publish to crates.io** | Low (1h) | 🔥 High | ⏳ |
+| 4 | **Community growth (GitHub presence)** | Ongoing | 🔥 High | ⏳ |
 
-### Quick Wins (This Week)
-1. Restructure README with hero benchmarks, demo GIF, feature comparison table
-2. `cargo publish` to crates.io
-3. ~~Add macOS notification backend~~ ✅ Done (osascript, `send_notification_smart`)
-4. Publish benchmark comparison blog post / GitHub discussion
+#### 1. Plugin System
+- Extend `.opencrust/tools/` with metadata, dependencies, versioning
+- Plugin manifest format
+- Discovery and installation from remote sources
+- OpenCrust SDK for third-party development
+
+#### 2. Multi-Repo Support
+- SSH/remote workspace agents
+- Cross-repository orchestration (reference: Cursor 3 cross-repo agents)
+- Multi-root workspace configuration
+
+#### 3. Community
+- Publish to crates.io (blocked until Phase 7 polish complete)
+- GitHub Discussions for Q&A
+- Contributing guide (exists but needs ecosystem section)
+- Benchmark comparison blog post
+
+### Acceptance Criteria (Phase 8)
+- [ ] Plugin system with at least 3 third-party tools working
+- [ ] Multi-repo orchestration functional
+- [ ] Published on crates.io
+- [ ] Any community contribution merged
+
+### Risks
+- Plugin API design is irreversible — get it wrong and ecosystem fragments
+- Multi-repo adds significant complexity to permission model
+- Community growth is unpredictable — cannot force organic adoption
 
 ---
 
-## Appendix: Cross-References
+## Risk Register
 
-| Document | Staleness | Action Taken |
-|----------|-----------|-------------|
-| `.uncensored/FINAL_REPORT.md` | Very stale (May 12, duplicate content, stale metrics) | Superseded by this ROADMAP.md. Archived. |
-| `MARKET.md` | Partially stale (action items superseded) | Keep as market reference. Action items migrated here. |
-| `.uncensored/state.json` | Fresh | Update pending items to reference this ROADMAP. |
-| `docs/ARCHITECTURE.md` | Fresh | No changes needed. |
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| OpenDev (Rust) gains critical mass first | Medium | High | Publish benchmarks + crates.io ASAP |
+| Claude Code/Cursor add security features | Medium | Medium | OpenCrust has 3-6 month lead in compliance |
+| Token pricing changes break cost dashboard | High | Low | Abstract pricing into external config |
+| Windows TUI has poor terminal compatibility | Medium | Medium | Test early against Windows Terminal, ConEmu |
+| Plugin API design limits future extensibility | Medium | High | Design with open-closed principle, start minimal |
+| Community growth never materializes | Low | Medium | Enterprise features are the primary value prop |
 
 ---
 
-*Next update trigger: when any Phase 3-5 item is completed or market conditions shift significantly.*
+## Cross-Reference Map
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| `ROADMAP.md` | **← YOU ARE HERE** — authoritative plan | Fresh (May 16) |
+| `MARKET.md` | Competitive intelligence (no action items) | Refreshed (May 16) |
+| `AGENTS.md` | Coding standards for contributors | Fresh |
+| `docs/PERFORMANCE.md` | Benchmarks + optimization guide | Updated (May 16) |
+| `docs/ARCHITECTURE.md` | System design reference | Fresh |
+| `docs/SECURITY.md` | Permissions + audit reference | Fresh |
+| `docs/CONFIGURATION.md` | All configuration options | Fresh |
+| `docs/DEVELOPMENT.md` | How-to guides (tools, skills, MCP) | Fresh |
+| `docs/TROUBLESHOOTING.md` | Common issues | Fresh |
+| `.uncensored/FINAL_REPORT.md` | Historical (superseded) | Archived with `.stale` |
+
+---
+
+## Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Complete |
+| 🔶 | In progress |
+| ⏳ | Not started |
+| 🔥 High | Must do before next release |
+| 🟡 Medium | Important but not blocking |
+| 🟢 Low | Nice to have |
+
+---
+
+*Next update: when any Phase item is completed or market conditions shift significantly.*

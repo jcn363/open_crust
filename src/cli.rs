@@ -71,6 +71,21 @@ pub enum Commands {
         #[command(subcommand)]
         cmd: AuditCommands,
     },
+    /// Background agent management and dashboard
+    Background {
+        #[command(subcommand)]
+        cmd: BackgroundCommands,
+    },
+    /// Plugin/extension management
+    Plugin {
+        #[command(subcommand)]
+        cmd: PluginCommands,
+    },
+    /// Multi-repository management
+    Repo {
+        #[command(subcommand)]
+        cmd: RepoCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -198,4 +213,124 @@ pub enum AuditCommands {
         #[arg(long)]
         to: Option<String>,
     },
+    /// Run enterprise compliance policy check
+    Policy {
+        #[arg(long)]
+        output_dir: Option<String>,
+    },
+    /// Verify an existing evidence package integrity
+    Verify {
+        /// Path to the evidence package directory
+        path: String,
+    },
+    /// Run a full compliance check (policy + evidence + report)
+    Check {
+        #[arg(long, default_value = ".")]
+        output_dir: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum BackgroundCommands {
+    /// List all background agents
+    List,
+    /// Show details for a specific agent
+    Show {
+        /// Agent UUID
+        id: String,
+    },
+    /// Start a new background agent
+    Start {
+        /// Human-readable name for the agent
+        name: String,
+        /// Prompt for the agent to execute
+        prompt: String,
+    },
+    /// Cancel a running agent
+    Cancel {
+        /// Agent UUID to cancel
+        id: String,
+    },
+    /// Show agent statistics
+    Stats,
+    /// Tail logs from a specific agent
+    Logs {
+        /// Agent UUID
+        id: String,
+        #[arg(long, default_value_t = 50)]
+        lines: usize,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum PluginCommands {
+    /// List all discovered plugins
+    List,
+    /// Show details for a specific plugin
+    Show {
+        /// Plugin name
+        name: String,
+    },
+    /// Install a plugin from a directory or manifest path
+    Install {
+        /// Path to plugin directory or plugin.json
+        path: String,
+    },
+    /// Remove an installed plugin
+    Remove {
+        /// Plugin name to remove
+        name: String,
+    },
+    /// Enable a plugin
+    Enable {
+        /// Plugin name to enable
+        name: String,
+    },
+    /// Disable a plugin
+    Disable {
+        /// Plugin name to disable
+        name: String,
+    },
+    /// Show plugin statistics
+    Stats,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum RepoCommands {
+    /// List all registered repositories
+    List,
+    /// Show details for a specific repository
+    Show {
+        /// Repository name
+        name: String,
+    },
+    /// Register a new repository
+    Add {
+        /// Short name/alias for the repo
+        name: String,
+        /// Local path to the repository
+        path: String,
+        /// Optional tags (comma-separated)
+        #[arg(long)]
+        tags: Option<String>,
+    },
+    /// Remove a registered repository
+    Remove {
+        /// Repository name to remove
+        name: String,
+    },
+    /// Show repository statistics
+    Stats,
+    /// Run a git command across all repos
+    Git {
+        /// Git arguments (e.g., "status --short")
+        args: Vec<String>,
+    },
+    /// Search file names across all repos
+    Search {
+        /// File name pattern to search for
+        pattern: String,
+    },
+    /// Refresh all repository metadata
+    Refresh,
 }
