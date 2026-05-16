@@ -13,6 +13,21 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **🔒 Security First**: Granular permissions, network gating, persistent auditing — baked into the architecture, not bolted on
 - **📦 Minimal Footprint**: Single static binary, ideal for remote servers, containers, and resource-constrained environments
 
+### Benchmarks (vs Competitors)
+
+| Metric | OpenCrust 🦀 | OpenCode (Go) | Cline (TS) | Claude Code (TS) |
+|--------|------------|---------------|------------|-------------------|
+| Startup time | **7–10ms** | ~50ms | ~500ms | ~300ms |
+| Memory (idle) | **~18MB** | ~30MB | ~80MB | ~100MB |
+| Binary size | **16MB** | ~30MB | ~50MB+ | ~50MB+ |
+| Terminal-native | ✅ | ✅ | ❌ (VS Code) | ✅ |
+| Security-first | ✅ | ❌ | ⚠️ | ❌ |
+| Compliance/audit | ✅ | ❌ | ❌ | ❌ |
+| MCP Showcase TUI | ✅ | ❌ | ❌ | ❌ |
+| Multi-agent orchestration | ✅ | ❌ | ⚠️ | ✅ |
+
+*OpenCrust is 10-50x faster and 3-5x more memory-efficient than TypeScript/Node.js alternatives. [Full benchmarks →](./docs/PERFORMANCE.md)*
+
 ---
 
 ## 🚀 Key Features
