@@ -1,4 +1,3 @@
-
 //! MCP Showcase module for browsing, installing, and managing MCP servers
 //! Provides TUI (ratatui) interface;
 

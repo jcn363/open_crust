@@ -1,4 +1,3 @@
-
 //! Cinnamon desktop integration module
 //!
 //! Provides desktop environment detection, system notifications, and native file pickers
