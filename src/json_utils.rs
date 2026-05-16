@@ -305,12 +305,13 @@ mod tests {
 
     #[test]
     fn compact_should_remove_whitespace() {
-        let result =
-            compact_json(r#"{
+        let result = compact_json(
+            r#"{
             "a": 1,
             "b": 2
-        }"#)
-            .unwrap();
+        }"#,
+        )
+        .unwrap();
         assert!(!result.contains('\n'));
         assert!(result.contains(r#"{"a":1,"b":2}"#) || result.contains(r#"{"b":2,"a":1}"#));
     }

@@ -86,8 +86,8 @@ impl Planner {
 mod tests {
     use super::*;
     use std::fs;
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     /// Serializes tests that write to plan.md (shared file between parallel tests)
     static PLAN_MD_LOCK: Mutex<()> = Mutex::new(());
@@ -194,7 +194,10 @@ mod tests {
     #[test]
     fn create_plan_return_message_should_include_title_and_count() {
         run_test(|planner| {
-            let result = planner.create_plan(&unique_title(), vec!["A".to_string(), "B".to_string(), "C".to_string()]);
+            let result = planner.create_plan(
+                &unique_title(),
+                vec!["A".to_string(), "B".to_string(), "C".to_string()],
+            );
             assert!(result.contains("3 steps"));
         });
     }
