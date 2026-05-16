@@ -5,21 +5,32 @@
 //! `~/.config/opencrust/plugins/<name>/` containing a `plugin.json` manifest
 //! and optionally scripts, WASM modules, or configuration files.
 //!
-//! ## Manifest format (`plugin.json`)
-//!
-//! ```json
-//! {
-//!   "name": "my-plugin",
-//!   "version": "1.0.0",
-//!   "description": "Integrates with FooBar API",
-//!   "author": "You",
-//!   "entry": "main.sh",
-//!   "hooks": ["on_tool_execute", "on_message"],
-//!   "tools": ["my_custom_tool"],
-//!   "dependencies": [],
-//!   "enabled": true
-//! }
-//! ```
+    //! ## Manifest format (`plugin.json`)
+    //!
+    //! ```json
+    //! {
+    //!   "name": "my-plugin",
+    //!   "version": "1.0.0",
+    //!   "description": "Integrates with FooBar API",
+    //!   "author": "You",
+    //!   "entry": "main.sh",
+    //!   "hooks": ["on_tool_execute", "on_message"],
+    //!   "tools": ["my_custom_tool"],
+    //!   "dependencies": [],
+    //!   "citations": [
+    //!     {
+    //!       "id": "ref1",
+    //!       "title": "OpenAI GPT-4 Technical Report",
+    //!       "author": "OpenAI",
+    //!       "source": "https://cdn.openai.com/papers/gpt-4.pdf",
+    //!       "date": "2023-03-14",
+    //!       "context": "Language model capabilities",
+    //!       "verified": true
+    //!     }
+    //!   ],
+    //!   "enabled": true
+    //! }
+    //! ```
 //!
 //! ## Hook System
 //!
@@ -38,6 +49,25 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/// A citation reference for tracking sources and attributions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Citation {
+    /// Unique identifier for the citation
+    pub id: String,
+    /// Title of the cited work
+    pub title: String,
+    /// Author or creator
+    pub author: String,
+    /// Source URL or location
+    pub source: String,
+    /// Date accessed or published
+    pub date: Option<String>,
+    /// Context or quote from the source
+    pub context: Option<String>,
+    /// Whether this citation has been verified
+    pub verified: bool,
+}
 
 /// A loaded plugin instance with parsed manifest and runtime state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,6 +94,9 @@ pub struct Plugin {
     /// Whether the plugin is active
     #[serde(default = "default_true")]
     pub enabled: bool,
+    /// Citations managed by this plugin
+    #[serde(default)]
+    pub citations: Vec<Citation>,
     /// Absolute path to plugin directory (set at load time)
     #[serde(skip)]
     pub path: PathBuf,
@@ -374,12 +407,14 @@ impl PluginManager {
         let enabled = self.plugins.values().filter(|p| p.enabled).count();
         let hook_count: usize = self.plugins.values().map(|p| p.hooks.len()).sum();
         let tool_count: usize = self.plugins.values().map(|p| p.tools.len()).sum();
+        let citation_count: usize = self.plugins.values().map(|p| p.citations.len()).sum();
         PluginStats {
             total,
             enabled,
             disabled: total - enabled,
             hook_count,
             tool_count,
+            citation_count,
         }
     }
 }
@@ -398,14 +433,15 @@ pub struct PluginStats {
     pub disabled: usize,
     pub hook_count: usize,
     pub tool_count: usize,
+    pub citation_count: usize,
 }
 
 impl std::fmt::Display for PluginStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Plugins: {} total, {} enabled, {} disabled | {} hooks, {} tools",
-            self.total, self.enabled, self.disabled, self.hook_count, self.tool_count
+            "Plugins: {} total, {} enabled, {} disabled | {} hooks, {} tools, {} citations",
+            self.total, self.enabled, self.disabled, self.hook_count, self.tool_count, self.citation_count
         )
     }
 }
@@ -479,20 +515,19 @@ mod tests {
     use super::*;
     use uuid::Uuid;
 
-    fn create_test_manifest(dir: &Path, name: &str, enabled: bool) -> PathBuf {
-        fs::create_dir_all(dir).unwrap();
-        let manifest = dir.join("plugin.json");
-        let content = serde_json::json!({
-            "name": name,
-            "version": "1.0.0",
-            "description": "test plugin",
-            "author": "test",
-            "hooks": ["on_startup"],
-            "enabled": enabled
-        });
-        fs::write(&manifest, serde_json::to_string_pretty(&content).unwrap()).unwrap();
-        manifest
-    }
+fn create_test_manifest(dir: &Path, name: &str, enabled: bool) -> PathBuf {
+    fs::create_dir_all(dir).unwrap();
+    let manifest = dir.join("plugin.json");
+    let content = serde_json::json!({
+        "name": name,
+        "version": "1.0.0",
+        "description": "test plugin",
+        "author": "test",
+        "enabled": enabled
+    });
+    fs::write(&manifest, serde_json::to_string_pretty(&content).unwrap()).unwrap();
+    manifest
+}
 
     #[test]
     fn test_discover_plugins() {
@@ -557,6 +592,9 @@ mod tests {
         assert_eq!(stats.total, 2);
         assert_eq!(stats.enabled, 1);
         assert_eq!(stats.disabled, 1);
+        assert_eq!(stats.hook_count, 0);
+        assert_eq!(stats.tool_count, 0);
+        assert_eq!(stats.citation_count, 0);
 
         let _ = fs::remove_dir_all(&dir);
     }
