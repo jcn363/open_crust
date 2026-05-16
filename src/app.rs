@@ -115,6 +115,10 @@ pub struct App {
     pub skill_browser_scroll: usize,
     // Plan review index (for diff viewer)
     pub plan_review_index: usize, // Which file in the plan being reviewed
+    // Scroll offset for diff panels in review mode
+    pub plan_review_scroll: usize,
+    // View mode toggle: false = side-by-side, true = unified diff
+    pub review_show_unified: bool,
     // Plan mode state
     pub plan_mode: PlanMode,
     // Persistent goal for autonomous execution (mirrored from LlmClient for UI display)
@@ -284,6 +288,8 @@ impl App {
             skill_browser_scroll: 0,
             // Plan review index (for diff viewer)
             plan_review_index: 0,
+            plan_review_scroll: 0,
+            review_show_unified: false,
             // Plan mode state
             plan_mode: PlanMode::Disabled,
             // Persistent goal for autonomous execution

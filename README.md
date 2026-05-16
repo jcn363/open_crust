@@ -4,6 +4,21 @@
 
 **The fastest, most secure AI coding agent** — built in Rust for terminal-native development.
 
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Keybinds](#keybinds)
+- [Architecture](#architecture)
+- [MCP Ecosystem](#mcp-ecosystem-integration)
+- [Built-in Skills](#built-in-skills)
+- [Custom Tools & Linters](#custom-tools--linters)
+- [CLI Reference](#cli-reference)
+- [Documentation Structure](#documentation-structure)
+- [License](#license)
+
 OpenCrust is a high-intelligence AI partner for complex software engineering. Unlike Python or Node.js-based alternatives, it leverages Rust's zero-cost abstractions and memory safety to deliver instant startup and minimal resource footprint. Every feature — from subagent orchestration to LSP integration to network gating — is compiled into a single static binary with no runtime dependencies.
 
 ### Why Rust?
@@ -71,7 +86,7 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Background Agents**: Async task execution with dedicated `Tasks` tab (`Ctrl+T`)
 - **Skill Browser**: Toggle skills active/inactive (`Ctrl+Shift+K` or `S` in normal mode)
 - **Input Prediction**: Ghost text suggestions — `Tab` to accept, `Esc` to dismiss
-- **Interactive Diff Viewer**: Approval-gate code modifications with a side-by-side TUI viewer
+- **Interactive Diff Viewer**: Side-by-side line-diff with unified view toggle (`u`) and scroll support (`j`/`k`)
 - **Context Pinning**: Permanently lock critical files into the agent's context
 - **Context Budget Display**: Real-time token count, budget %, model name, and cost in status bar
 - **Command History**: Persistent history across sessions; navigate with `↑` / `↓`
@@ -185,6 +200,8 @@ Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via
 | `a`                 | Approve proposed change                   |
 | `d`                 | Deny proposed change                      |
 | `Shift+A`           | Approve all proposed changes              |
+| `j` / `k`           | Scroll diff view in review mode           |
+| `u`                 | Toggle unified / side-by-side diff view   |
 | `↑` / `↓`           | Navigate command history / lists          |
 | `Enter`             | Submit message / confirm                  |
 | `Ctrl+Q`            | Quit                                      |

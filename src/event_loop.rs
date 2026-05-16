@@ -621,12 +621,26 @@ pub async fn run_tui(
                         }
                     }
                     Mode::Review => match key.code {
-                        // Navigation
+                        // Navigation between files
                         KeyCode::Up if app.plan_review_index > 0 => {
                             app.plan_review_index -= 1;
+                            app.plan_review_scroll = 0;
                         }
                         KeyCode::Down if app.plan_review_index + 1 < app.proposed_changes.len() => {
                             app.plan_review_index += 1;
+                            app.plan_review_scroll = 0;
+                        }
+                        // Scroll diff view (j/k)
+                        KeyCode::Char('j') => {
+                            app.plan_review_scroll = app.plan_review_scroll.saturating_add(1);
+                        }
+                        KeyCode::Char('k') => {
+                            app.plan_review_scroll = app.plan_review_scroll.saturating_sub(1);
+                        }
+                        // Toggle unified / side-by-side view ('u')
+                        KeyCode::Char('u') => {
+                            app.review_show_unified = !app.review_show_unified;
+                            app.plan_review_scroll = 0;
                         }
                         // Approve current file
                         KeyCode::Char('a') => {

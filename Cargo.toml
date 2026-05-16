@@ -34,6 +34,7 @@ html2md = "0.2.15"
 uuid = { version = "1.8", features = ["v4"] }
 sha2 = "0.10"
 hex = "0.4"
+similar = "2.6"
 
 [[bin]]
 name = "opencrust"
@@ -86,3 +87,8 @@ mode = "644"
 
 [dev-dependencies]
 tempfile = "3.20.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "benchmark"
+harness = false

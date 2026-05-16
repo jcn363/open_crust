@@ -12,6 +12,8 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
 
+use similar::{ChangeTag, TextDiff};
+
 use super::ThemeContext;
 use super::layout::centered_rect;
 use crate::app::{App, ChangeStatus};
@@ -51,6 +53,121 @@ fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect) {
 /// Status bar shared styling helper
 fn status_bar_style(theme: &ThemeContext) -> Style {
     Style::default().bg(theme.accent).fg(Color::Black)
+}
+
+/// Compute candidate height for the diff view based on available area,
+/// clamping to the maximum number of diff lines available.
+fn diff_view_height(total_lines: usize, area_height: usize) -> usize {
+    if total_lines == 0 {
+        return area_height.saturating_sub(2);
+    }
+    area_height.saturating_sub(2).min(total_lines).max(1)
+}
+
+/// Build side-by-side diff paragraphs from original and proposed text.
+/// Each side shows lines with diff highlighting (red bg for deletions, green
+/// bg for insertions) and respects the shared scroll offset.
+fn side_by_side_diff<'a>(
+    original: &'a str,
+    proposed: &'a str,
+    scroll: usize,
+    area_height: usize,
+) -> (Paragraph<'a>, Paragraph<'a>) {
+    let diff = TextDiff::from_lines(original, proposed);
+    let mut left_lines: Vec<Line<'a>> = Vec::new();
+    let mut right_lines: Vec<Line<'a>> = Vec::new();
+
+    for change in diff.iter_all_changes() {
+        let value = change.value().trim_end_matches('\n');
+        let empty = Line::from(vec![]);
+        match change.tag() {
+            ChangeTag::Equal => {
+                left_lines.push(Line::from(Span::raw(value)));
+                right_lines.push(Line::from(Span::raw(value)));
+            }
+            ChangeTag::Delete => {
+                left_lines.push(Line::from(Span::styled(
+                    value,
+                    Style::default()
+                        .bg(Color::Rgb(80, 20, 20))
+                        .fg(Color::Rgb(255, 150, 150)),
+                )));
+                right_lines.push(empty);
+            }
+            ChangeTag::Insert => {
+                left_lines.push(empty);
+                right_lines.push(Line::from(Span::styled(
+                    value,
+                    Style::default()
+                        .bg(Color::Rgb(20, 80, 20))
+                        .fg(Color::Rgb(150, 255, 150)),
+                )));
+            }
+        }
+    }
+
+    let height = diff_view_height(left_lines.len().max(right_lines.len()), area_height);
+    let (scroll_adj, _extra) = if scroll > height.saturating_sub(1) {
+        (height.saturating_sub(1), 0)
+    } else {
+        (scroll, 0)
+    };
+
+    let left = Paragraph::new(left_lines)
+        .block(themed_block_with_color("Original", Color::Red))
+        .scroll((scroll_adj as u16, 0));
+    let right = Paragraph::new(right_lines)
+        .block(themed_block_with_color("Proposed", Color::Green))
+        .scroll((scroll_adj as u16, 0));
+
+    (left, right)
+}
+
+/// Build a unified-diff paragraph from original and proposed text.
+/// Lines are prefixed with `+`/`-`/` ` and coloured accordingly.
+fn unified_diff<'a>(
+    original: &'a str,
+    proposed: &'a str,
+    scroll: usize,
+    area_height: usize,
+) -> Paragraph<'a> {
+    let diff = TextDiff::from_lines(original, proposed);
+    let mut lines: Vec<Line<'a>> = Vec::new();
+
+    for change in diff.iter_all_changes() {
+        let value = change.value().trim_end_matches('\n');
+        match change.tag() {
+            ChangeTag::Equal => {
+                lines.push(Line::from(Span::raw(format!(" {}", value))));
+            }
+            ChangeTag::Delete => {
+                lines.push(Line::from(Span::styled(
+                    format!("-{}", value),
+                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                )));
+            }
+            ChangeTag::Insert => {
+                lines.push(Line::from(Span::styled(
+                    format!("+{}", value),
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                )));
+            }
+        }
+    }
+
+    let height = diff_view_height(lines.len(), area_height);
+    let scroll_adj = scroll.min(height.saturating_sub(1));
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(" Unified Diff ")
+        .border_style(Style::default().fg(Color::Cyan));
+
+    Paragraph::new(lines)
+        .block(block)
+        .scroll((scroll_adj as u16, 0))
 }
 
 pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
@@ -118,19 +235,23 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     f.render_widget(file_list_widget, main_chunks[0]);
 
     // Diff view (right panel)
+    let area_height = main_chunks[1].height as usize;
+    let scroll = app.plan_review_scroll;
+
     if let Some(change) = app.proposed_changes.get(app.plan_review_index) {
-        let diff_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(main_chunks[1]);
-
-        let original = Paragraph::new(change.original.as_str())
-            .block(themed_block_with_color("Original", Color::Red));
-        let proposed = Paragraph::new(change.proposed.as_str())
-            .block(themed_block_with_color("Proposed", Color::Green));
-
-        f.render_widget(original, diff_chunks[0]);
-        f.render_widget(proposed, diff_chunks[1]);
+        if app.review_show_unified {
+            let unified = unified_diff(&change.original, &change.proposed, scroll, area_height);
+            f.render_widget(unified, main_chunks[1]);
+        } else {
+            let (original, proposed) =
+                side_by_side_diff(&change.original, &change.proposed, scroll, area_height);
+            let diff_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(main_chunks[1]);
+            f.render_widget(original, diff_chunks[0]);
+            f.render_widget(proposed, diff_chunks[1]);
+        }
     }
 
     // Status bar
@@ -150,9 +271,15 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .filter(|c| c.status == ChangeStatus::Pending)
         .count();
 
+    let view_label = if app.review_show_unified {
+        "Unified"
+    } else {
+        "Side-by-Side"
+    };
+
     let status_text = format!(
-        " [↑/↓] Navigate | [A]pprove [D]eny | [Shift+A] Approve All | [Enter] Execute Approved | [Esc] Cancel | Pending: {} Approved: {} Denied: {} ",
-        pending_count, approved_count, denied_count
+        " [↑/↓] Navigate | [j/k] Scroll | [u] {} | [A]pprove [D]eny | [Shift+A] All | [Enter] Exec | [Esc] Cancel | {}P {}A {}D ",
+        view_label, pending_count, approved_count, denied_count
     );
     let status = Paragraph::new(status_text)
         .style(status_bar_style(theme))

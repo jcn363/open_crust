@@ -537,6 +537,35 @@ fi
 
 ## Benchmarking
 
+### Criterion Benchmarks (Automated)
+
+OpenCrust ships a Criterion benchmark harness at `benches/benchmark.rs` that
+measures core subsystem performance: JSON parsing, config deserialization, and
+text diffing.
+
+```bash
+# Run all benchmarks
+cargo bench
+
+# Run with HTML report generation
+cargo bench --bench benchmark -- --profile-time 30
+
+# View report
+open target/criterion/report/index.html
+```
+
+**What is measured:**
+| Benchmark | What it does |
+|-----------|-------------|
+| `config_parse` | Deserialize JSON config (~150 bytes) |
+| `json_validate` | Parse a JSON object into `serde_json::Value` |
+| `json_format` | Round-trip JSON through `to_string_pretty` |
+| `json_get_path` | JSON pointer lookup (`/features/tui`) |
+| `json_compact` | Round-trip JSON through `to_string` |
+| `json_compare` | Deep equality check on two JSON objects |
+| `json_merge` | Patch merge of two JSON objects |
+| `text_diff` | Myers diff on two ~120-line text blocks |
+
 ### Baseline Metrics (Before Optimization)
 
 ```bash

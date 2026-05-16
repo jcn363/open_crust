@@ -63,7 +63,9 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
             " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette  Ctrl+P:PlanMode"
         }
         crate::app::Mode::Insert => " Esc:Normal  Enter:Send  ↑↓:History",
-        crate::app::Mode::Review => " ↑↓:Navigate  A:Approve  D:Deny  Enter:Execute",
+        crate::app::Mode::Review => {
+            " ↑↓:Navigate  j/k:Scroll  u:ToggleView  A:Approve  D:Deny  Enter:Execute"
+        }
         crate::app::Mode::Servers => " ↑↓:Navigate  Enter:Install  Esc:Close",
         crate::app::Mode::Help => " Esc:Close",
         _ => "",
