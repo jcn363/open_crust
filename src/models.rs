@@ -420,7 +420,7 @@ pub fn bundled_default_models() -> HashMap<String, Vec<ProviderModel>> {
     map.insert(
         "openrouter".to_string(),
         vec![ProviderModel {
-            id: "openrouter/free-gpt-4o-mini".to_string(),
+            id: "openrouter/free".to_string(),
             name: "Free GPT-4o Mini".to_string(),
             provider: "openrouter".to_string(),
             description: "Free model via OpenRouter (no API key required)".to_string(),

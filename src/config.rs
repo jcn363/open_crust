@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 /// Default OpenRouter free model (no API key required)
-pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free-gpt-4o-mini";
+pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free";
 
 /// Supported LLM provider backends
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -164,12 +164,12 @@ fn default_tool_capable() -> bool {
 /// Configuration for subagent model selection
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SubagentConfig {
-    /// Default model for all subagents (e.g., "openrouter/free-gpt-4o-mini")
+    /// Default model for all subagents (e.g., "openrouter/free")
     pub default_model: Option<String>,
     /// Fall back to free models if primary model fails
     #[serde(default = "default_true")]
     pub fallback_to_free: bool,
-    /// Per-agent-type model overrides (e.g., "researcher" -> "openrouter/free-gpt-4o-mini")
+    /// Per-agent-type model overrides (e.g., "researcher" -> "openrouter/free")
     #[serde(default)]
     pub agent_overrides: HashMap<String, String>,
 }
@@ -424,7 +424,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             provider: ProviderType::OpenRouter,
-            model: "openrouter/free-gpt-4o-mini".to_string(),
+            model: "openrouter/free".to_string(),
             ollama_url: Some("http://localhost:11434".to_string()),
             openrouter_key: None,
             mcp: default_mcp_servers(),
@@ -1065,7 +1065,7 @@ mod tests {
     fn config_default_values() {
         let cfg = Config::default();
         assert_eq!(cfg.provider, ProviderType::OpenRouter);
-        assert_eq!(cfg.model, "openrouter/free-gpt-4o-mini");
+        assert_eq!(cfg.model, "openrouter/free");
         assert!(!cfg.compliance_mode);
         assert_eq!(cfg.audit_retention_days, 90);
         assert_eq!(cfg.audit_max_size_bytes, 10_485_760);

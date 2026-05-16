@@ -98,7 +98,7 @@ struct Args {
     #[arg(long, value_name = "PROVIDER")]
     provider: Option<String>,
 
-    /// Override model for this invocation (default depends on provider; for openrouter default is openrouter/free-gpt-4o-mini, no API key required)
+    /// Override model for this invocation (default depends on provider; for openrouter default is openrouter/free, no API key required)
     #[arg(long, value_name = "MODEL")]
     model: Option<String>,
 }
@@ -2040,7 +2040,7 @@ fn parse_agent_spec(
         let provider = spec.parse::<config::ProviderType>()?;
         let model = match provider {
             config::ProviderType::Ollama => "deepseek-r1".to_string(),
-            config::ProviderType::OpenRouter => "openrouter/free-gpt-4o-mini".to_string(),
+            config::ProviderType::OpenRouter => "openrouter/free".to_string(),
             config::ProviderType::OpenAI => "gpt-4o-mini".to_string(),
             config::ProviderType::Gemini => "gemini-2.0-flash".to_string(),
             config::ProviderType::Mistral => "mistral-small".to_string(),
