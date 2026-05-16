@@ -44,6 +44,7 @@ mod rules;
 mod security;
 mod sessions;
 mod skills;
+mod startup;
 mod status_bar;
 mod tool_executor;
 mod tools;
@@ -52,7 +53,7 @@ mod web;
 
 use clap::Parser;
 use cli::*;
-use desktop::detection::get_cinnamon_info;
+use startup::*;
 
 use app::{App, Message, Mode};
 use clipboard::ClipboardManager;
@@ -74,26 +75,7 @@ use tokio::sync::mpsc;
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args = Args::parse();
     let mut config = config::Config::load();
-    // Detect Cinnamon desktop environment and apply theming if available
-    let cinnamon_info = get_cinnamon_info();
-    if cinnamon_info.desktop.is_cinnamon() {
-        // Log desktop detection (silent, for debugging)
-        eprintln!(
-            "[Desktop] Detected: {} {}",
-            cinnamon_info.desktop,
-            cinnamon_info.version.as_deref().unwrap_or("")
-        );
-    }
-
-    // If no custom theme is configured, apply Cinnamon theme
-    if config.theme.is_none() && cinnamon_info.desktop.is_cinnamon() {
-        config.theme = Some(config::ThemeConfig {
-            background: cinnamon_info.theme.background.clone(),
-            foreground: cinnamon_info.theme.foreground.clone(),
-            accent: cinnamon_info.theme.accent.clone(),
-            border: cinnamon_info.theme.border.clone(),
-        });
-    }
+    apply_cinnamon_theme(&mut config);
 
     // Check for multi-agent mode early (before config is moved)
     if !args.agents.is_empty() {
@@ -111,52 +93,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     // Start background model list refresh if enabled
-    if let Some(ref auto_refresh) = config.model_auto_refresh
-        && auto_refresh.enabled
-    {
-        let refresh_config = config.clone();
-        tokio::spawn(async move {
-            let fetcher = models::ModelFetcher::new();
-            let provider_str = refresh_config.provider.to_string();
-            // Fetch model list on startup (non-blocking background task)
-            let models = fetcher.fetch(&provider_str, None, None).await;
-            if models.is_empty() {
-                // Use bundled defaults as fallback
-                let defaults = models::bundled_default_models();
-                if defaults.contains_key(&provider_str) {
-                    eprintln!(
-                        "[Models] Using bundled default model list for {}",
-                        provider_str
-                    );
-                }
-            } else {
-                eprintln!(
-                    "[Models] Refreshed {} model list ({} models)",
-                    provider_str,
-                    models.len()
-                );
-            }
-        });
-    }
+    spawn_model_refresh(&config);
 
     // Shared managers
-    let mcp_manager = Arc::new(Mutex::new(mcp::McpManager::new()));
-    mcp_manager.lock().await.load_from_config(&config.mcp).await;
-
-    let lsp_manager = Arc::new(Mutex::new(lsp::LspManager::new()));
-    lsp_manager.lock().await.load_from_config(&config.lsp).await;
-
-    let skill_manager = Arc::new(Mutex::new(skills::SkillManager::new()));
-    {
-        let mut skills = skill_manager.lock().await;
-        skills.discover();
-    }
-
-    let custom_tool_manager = Arc::new(Mutex::new(custom_tools::CustomToolManager::new()));
-    {
-        let mut custom = custom_tool_manager.lock().await;
-        custom.discover();
-    }
+    let (mcp_manager, lsp_manager, skill_manager, custom_tool_manager) =
+        init_managers(&config).await;
 
     // Handle headless mode (--prompt) - must be before other command handling
     if let Some(ref prompt) = args.prompt {
