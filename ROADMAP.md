@@ -60,7 +60,7 @@ engineering teams.
 - Previously empty modules now covered: `app.rs` (42), `tools.rs` (27),
   `permissions.rs` (15), `llm.rs` (12), `planner.rs` (7)
 
-### Market Positioning (Phase 5 — 🔶 In Progress)
+### Market Positioning (Phase 5 — ✅ Complete)
 - ✅ Item 1 — Publish performance benchmarks: **DONE** (`benches/benchmark.rs`,
   `docs/PERFORMANCE.md` Criterion section)
 - ⏳ Item 2 — Publish to crates.io: **Not started**
@@ -206,7 +206,7 @@ and cross-platform foundations are solid.
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
 | 1 | **Plugin/extension system** | High (1-2w) | 🟡 Medium | ⏳ |
-| 2 | **Multi-repo support** | High (1-2w) | 🟡 Medium | ⏳ |
+| 2 | **Multi-repo support** | High (1-2w) | 🟡 Medium | ✅ |
 | 3 | **Publish to crates.io** | Low (1h) | 🔥 High | ⏳ |
 | 4 | **Community growth (GitHub presence)** | Ongoing | 🔥 High | ⏳ |
 
