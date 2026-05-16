@@ -138,8 +138,10 @@ impl EvidencePackage {
         Ok(evidence_dir)
     }
 
+    type VerifyResult = Result<Vec<(String, bool, String)>, Box<dyn std::error::Error>>;
+    
     /// Verify an existing evidence package by re-computing hashes.
-    pub fn verify(package_dir: &Path) -> Result<Vec<(String, bool, String)>, Box<dyn std::error::Error>> {
+    pub fn verify(package_dir: &Path) -> VerifyResult {
         let manifest_path = package_dir.join("evidence-manifest.txt");
         if !manifest_path.exists() {
             return Err("evidence-manifest.txt not found".into());
@@ -161,72 +163,11 @@ impl EvidencePackage {
                     };
                     let valid = actual_hash == expected_hash;
                     results.push((filename.to_string(), valid, actual_hash));
-                }
-            }
-        }
+     }
 
-        Ok(results)
-    }
-}
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Compliance Profiles
-// ═══════════════════════════════════════════════════════════════════════════════
 
-/// Predefined compliance frameworks with control mappings.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ComplianceFramework {
-    SOC2,
-    HIPAA,
-    GDPR,
-    SOX,
-    Custom(String),
-}
-
-impl std::fmt::Display for ComplianceFramework {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ComplianceFramework::SOC2 => write!(f, "SOC2"),
-            ComplianceFramework::HIPAA => write!(f, "HIPAA"),
-            ComplianceFramework::GDPR => write!(f, "GDPR"),
-            ComplianceFramework::SOX => write!(f, "SOX"),
-            ComplianceFramework::Custom(c) => write!(f, "Custom({})", c),
-        }
-    }
-}
-
-/// A compliance profile mapping audit activity to framework controls.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ComplianceProfile {
-    pub name: String,
-    pub framework: ComplianceFramework,
-    pub description: String,
-    /// Control mappings: control_id → description
-    pub controls: HashMap<String, String>,
-    /// Which tool patterns map to which controls
-    pub tool_to_control: HashMap<String, Vec<String>>,
-}
-
-impl ComplianceProfile {
-    /// Create a new profile with the given framework.
-    pub fn new(name: String, framework: ComplianceFramework) -> Self {
-        let profile = match &framework {
-            ComplianceFramework::SOC2 => Self::soc2_defaults(name),
-            ComplianceFramework::HIPAA => Self::hipaa_defaults(name),
-            ComplianceFramework::GDPR => Self::gdpr_defaults(name),
-            ComplianceFramework::SOX => Self::sox_defaults(name),
-            ComplianceFramework::Custom(_) => Self {
-                name,
-                framework,
-                description: "Custom compliance profile".into(),
-                controls: HashMap::new(),
-                tool_to_control: HashMap::new(),
-            },
-        };
-        profile
-    }
-
-    /// Evaluate audit entries against this profile.
+     /// Evaluate audit entries against this profile.
     /// Returns a map of control_id → list of matching audit entry indices.
     pub fn evaluate(&self, entries: &[AuditEntry]) -> HashMap<String, Vec<usize>> {
         let mut results: HashMap<String, Vec<usize>> = HashMap::new();
@@ -325,7 +266,6 @@ impl ComplianceProfile {
             tool_to_control,
         }
     }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Compliance Policies

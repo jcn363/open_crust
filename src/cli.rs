@@ -72,6 +72,7 @@ pub enum Commands {
         cmd: AuditCommands,
     },
     /// Background agent management and dashboard
+    /// Agent dashboard TUI
     Background {
         #[command(subcommand)]
         cmd: BackgroundCommands,
