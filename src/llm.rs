@@ -1033,3 +1033,17 @@ impl LlmClient {
         Ok(content.to_string())
     }
 }
+
+/// Create a minimal LlmClient for testing.
+/// Uses empty/dummy managers so tests can construct App without full initialization.
+#[cfg(test)]
+pub(crate) fn new_test_client(
+    config: Arc<Config>,
+) -> Result<LlmClient, Box<dyn std::error::Error + Send + Sync>> {
+    use tokio::sync::Mutex;
+    let mcp = Arc::new(Mutex::new(crate::mcp::McpManager::new()));
+    let lsp = Arc::new(Mutex::new(crate::lsp::LspManager::new()));
+    let skills = Arc::new(Mutex::new(crate::skills::SkillManager::new()));
+    let custom = Arc::new(Mutex::new(crate::custom_tools::CustomToolManager::new()));
+    LlmClient::new(config, mcp, lsp, skills, custom)
+}
