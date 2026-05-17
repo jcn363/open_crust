@@ -54,7 +54,6 @@ use tokio::sync::Mutex;
 /// agentic conversation loop: send messages, process tool calls, enforce
 /// permissions, stream responses, and audit every interaction.
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct LlmClient {
     client: Client,
     pub config: Arc<Config>,
@@ -66,6 +65,7 @@ pub struct LlmClient {
     pub pinned_files: Arc<Mutex<Vec<String>>>,
     pub tool_executor: Arc<ToolExecutor>,
     /// Token budget manager for tracking usage and costs
+    #[expect(dead_code, reason = "wired for future per-request token cost tracking")]
     pub token_budget_manager: Arc<TokenBudgetManager>,
     /// Plugin manager for extension system
     pub plugin_manager: Arc<Mutex<PluginManager>>,
