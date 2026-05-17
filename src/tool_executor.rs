@@ -246,8 +246,8 @@ impl ToolExecutor {
 
         match fs::write(&validated_path, content) {
             Ok(_) => {
-                // Format the file if possible
-                crate::formatters::format_file(std::path::Path::new(&validated_path));
+                // Format the file if possible (silently ignore formatter errors)
+                let _ = crate::formatters::format_file(std::path::Path::new(&validated_path));
                 Ok(format!(
                     "Successfully wrote to {}",
                     validated_path.display()

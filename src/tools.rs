@@ -48,10 +48,18 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
                 .unwrap_or("");
             match fs::write(path_str, content) {
                 Ok(_) => {
-                    crate::formatters::format_file(std::path::Path::new(path_str));
+                    // Auto-format on write (silently ignore formatter errors)
+                    let _ = crate::formatters::format_file(std::path::Path::new(path_str));
                     format!("Successfully wrote to {}", path_str)
                 }
                 Err(e) => format!("Error writing file: {}", e),
+            }
+        }
+        "format_file" => {
+            let path_str = arguments.get("path").and_then(|v| v.as_str()).unwrap_or("");
+            match crate::formatters::format_file(std::path::Path::new(path_str)) {
+                Ok(_) => format!("Formatted {}", path_str),
+                Err(e) => e,
             }
         }
         "notify" => {
@@ -477,6 +485,23 @@ pub fn get_tools_schema() -> Value {
                         }
                     },
                     "required": ["path", "content"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "format_file",
+                "description": "Format a file using the appropriate formatter for its language (rustfmt for .rs, prettier for .js/.ts/.json, black for .py, etc.).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "The path to the file to format"
+                        }
+                    },
+                    "required": ["path"]
                 }
             }
         },

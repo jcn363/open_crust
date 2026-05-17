@@ -826,6 +826,7 @@ pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
         Line::from("  Ctrl+M          MCP server showcase"),
         Line::from("  Ctrl+G          Mission Control (task DAG)"),
         Line::from("  Ctrl+T          Spawn background task"),
+        Line::from("  Ctrl+F          Format selected file"),
         Line::from("  Alt+V           Toggle Vim mode (insert)"),
         Line::from("  Ctrl+Q          Quit OpenCrust"),
         Line::from(""),
@@ -853,6 +854,10 @@ pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
         Line::from("  /goal <desc>    Set autonomous goal"),
         Line::from("  /goal-clear     Clear active goal"),
         Line::from("  /undo /redo     Git undo/redo"),
+        Line::from("  /share          Share conversation to JSON"),
+        Line::from("  /format         Format selected sidebar file"),
+        Line::from("  /format <path>  Format specific file"),
+        Line::from("  @               Open file fuzzy search picker"),
     ];
 
     let help_para = Paragraph::new(help_lines)

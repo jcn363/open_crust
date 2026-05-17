@@ -552,12 +552,20 @@ pub async fn run_tui(
                                 ui.refresh_tasks(Some(tasks_arc));
                             }
                         }
+                        KeyCode::Char('f')
+                            if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
+                        {
+                            // Format current file from sidebar selection
+                            let msg = app.format_current_file();
+                            app.tabs[0].messages.push(Message::new(msg));
+                        }
                         _ => {}
                     },
                     Mode::Insert => {
                         if check_key_match(&key, &submit_keys) {
-                            // Handle /share command before submitting
-                            if app.input.trim() == "/share" {
+                            // Handle slash commands before submitting
+                            let input_trimmed = app.input.trim();
+                            if input_trimmed == "/share" {
                                 let share_path = share_conversation(&app);
                                 if let Some(path) = share_path {
                                     let _ = clipboard.copy(&path);
@@ -569,6 +577,23 @@ pub async fn run_tui(
                                     app.tabs[0].messages.push(Message::new(
                                         "Error: Failed to share conversation.".to_string(),
                                     ));
+                                }
+                                app.input.clear();
+                            } else if input_trimmed == "/format" {
+                                let msg = app.format_current_file();
+                                app.tabs[0].messages.push(Message::new(msg));
+                                app.input.clear();
+                            } else if input_trimmed.starts_with("/format ") {
+                                let path = input_trimmed.trim_start_matches("/format ").trim();
+                                match crate::formatters::format_file(std::path::Path::new(path)) {
+                                    Ok(_) => {
+                                        app.tabs[0]
+                                            .messages
+                                            .push(Message::new(format!("Formatted {}", path)));
+                                    }
+                                    Err(e) => {
+                                        app.tabs[0].messages.push(Message::new(e));
+                                    }
                                 }
                                 app.input.clear();
                             } else {

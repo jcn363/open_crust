@@ -203,6 +203,19 @@ impl App {
         }
     }
 
+    /// Format the currently selected file in the sidebar.
+    /// Returns a message describing the result.
+    pub fn format_current_file(&mut self) -> String {
+        if self.sidebar_items.is_empty() || self.sidebar_selected >= self.sidebar_items.len() {
+            return "No file selected in sidebar".to_string();
+        }
+        let path = &self.sidebar_items[self.sidebar_selected];
+        match crate::formatters::format_file(std::path::Path::new(path)) {
+            Ok(_) => format!("Formatted {}", path),
+            Err(e) => e,
+        }
+    }
+
     /// Collect all files in the project, filtered by query (fuzzy match).
     pub(crate) fn collect_project_files(&self, query: &str) -> Vec<String> {
         let mut files = Vec::new();
