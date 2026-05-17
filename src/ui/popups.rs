@@ -297,6 +297,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .constraints(
             [
                 Constraint::Length(3), // Title
+                Constraint::Length(3), // Filter bar
                 Constraint::Min(1),    // Content
                 Constraint::Length(3), // Status bar
             ]
@@ -314,26 +315,56 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         .block(themed_block("MCP Server Browser", theme));
     f.render_widget(title, chunks[0]);
 
+    // Filter bar
+    let filter_text = if app.mcp_input.is_empty() {
+        "Type to filter servers..."
+    } else {
+        &app.mcp_input
+    };
+    let filter_style = if app.mcp_input.is_empty() {
+        Style::default().fg(Color::Rgb(73, 72, 71))
+    } else {
+        Style::default().fg(theme.fg)
+    };
+    let filter_para = Paragraph::new(filter_text).style(filter_style).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(" Filter ")
+            .border_style(Style::default().fg(theme.border)),
+    );
+    f.render_widget(filter_para, chunks[1]);
+
+    // Filter server list
+    let filter_lower = app.mcp_input.to_lowercase();
+    let filtered_items: Vec<_> = app
+        .mcp_browser_items
+        .iter()
+        .enumerate()
+        .filter(|(_, (name, desc, _))| {
+            filter_lower.is_empty()
+                || name.to_lowercase().contains(&filter_lower)
+                || desc.to_lowercase().contains(&filter_lower)
+        })
+        .collect();
+
     // Content area
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
-        .split(chunks[1]);
+        .split(chunks[2]);
 
     // Left panel: Available MCP Servers list
-    let available_servers: Vec<ListItem> = app
-        .mcp_browser_items
+    let available_servers: Vec<ListItem> = filtered_items
         .iter()
-        .enumerate()
-        .map(|(i, (name, _desc, _))| {
-            let is_installed = app.config.mcp.contains_key(name);
-            let prefix = if i == app.mcp_browser_selected {
+        .map(|(orig_idx, (name, _desc, _))| {
+            let is_installed = app.config.mcp.contains_key(name.as_str());
+            let prefix = if *orig_idx == app.mcp_browser_selected {
                 "> "
             } else {
                 "  "
             };
             let suffix = if is_installed { " [INSTALLED]" } else { "" };
-            let style = if i == app.mcp_browser_selected {
+            let style = if *orig_idx == app.mcp_browser_selected {
                 Style::default()
                     .fg(theme.accent)
                     .add_modifier(Modifier::BOLD)
@@ -427,7 +458,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let status = Paragraph::new(status_text)
         .style(status_bar_style(theme))
         .block(Block::default().borders(Borders::ALL));
-    f.render_widget(status, chunks[2]);
+    f.render_widget(status, chunks[3]);
 }
 
 pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
@@ -790,8 +821,11 @@ pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
         Line::from("  Ctrl+B          Toggle file sidebar"),
         Line::from("  Ctrl+K          Command palette"),
         Line::from("  Ctrl+Shift+K    Skill browser"),
+        Line::from("  Ctrl+Shift+P    Plugin browser"),
+        Line::from("  Ctrl+P          Toggle plan mode"),
         Line::from("  Ctrl+M          MCP server showcase"),
         Line::from("  Ctrl+G          Mission Control (task DAG)"),
+        Line::from("  Ctrl+T          Spawn background task"),
         Line::from("  Alt+V           Toggle Vim mode (insert)"),
         Line::from("  Ctrl+Q          Quit OpenCrust"),
         Line::from(""),
@@ -806,6 +840,19 @@ pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
         Line::from("  0/$             Line start/end"),
         Line::from("  d/c             Delete line"),
         Line::from("  y               Yank (copy) input"),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "── Commands ──",
+            Style::default()
+                .fg(theme.border)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from("  /init           Initialize project rules"),
+        Line::from("  /provider <n>   Switch LLM provider"),
+        Line::from("  /model <name>   Switch model"),
+        Line::from("  /goal <desc>    Set autonomous goal"),
+        Line::from("  /goal-clear     Clear active goal"),
+        Line::from("  /undo /redo     Git undo/redo"),
     ];
 
     let help_para = Paragraph::new(help_lines)

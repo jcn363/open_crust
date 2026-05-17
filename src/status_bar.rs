@@ -83,25 +83,50 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, _theme: &ThemeConte
     // Show keybinding hints based on mode
     let hints = match app.mode {
         crate::app::Mode::Normal => {
-            " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette  Ctrl+P:PlanMode"
+            " Ctrl+B:Sidebar  Tab:Switch  ?:Help  Ctrl+K:Palette  Ctrl+P:PlanMode  Ctrl+Shift+P:Plugins"
         }
-        crate::app::Mode::Insert => " Esc:Normal  Enter:Send  ↑↓:History",
+        crate::app::Mode::Insert => " Esc:Normal  Enter:Send  ↑↓:History  Tab:Accept Ghost",
         crate::app::Mode::Review => {
             " ↑↓:Navigate  j/k:Scroll  u:ToggleView  A:Approve  D:Deny  Enter:Execute"
         }
-        crate::app::Mode::Servers => " ↑↓:Navigate  Enter:Install  Esc:Close",
+        crate::app::Mode::Servers => " ↑↓:Navigate  Enter:Install  Type:Filter  Esc:Clear/Close",
         crate::app::Mode::Help => " Esc:Close",
-        _ => "",
+        crate::app::Mode::SkillBrowser => " ↑↓:Navigate  Enter:Toggle  Esc/q:Close",
+        crate::app::Mode::PluginBrowser => " ↑↓:Navigate  Enter:Toggle  Esc/q:Close",
+        crate::app::Mode::CommandPalette => " ↑↓:Navigate  Enter:Select  Esc:Cancel",
+        crate::app::Mode::McpShowcase => " ↑↓:Navigate  Enter:Toggle  Esc:Close",
+        crate::app::Mode::MissionControl => " ↑↓:Navigate  Enter:Select  Esc:Close",
+    };
+
+    // Mode-specific background coloring for visual context
+    let (mode_fg, mode_bg) = match app.mode {
+        crate::app::Mode::Insert => (
+            Color::Rgb(240, 238, 238),
+            Color::Rgb(30, 50, 30), // subtle green for insert
+        ),
+        crate::app::Mode::Review => (
+            Color::Rgb(240, 238, 238),
+            Color::Rgb(50, 40, 20), // subtle amber for review
+        ),
+        crate::app::Mode::Servers
+        | crate::app::Mode::SkillBrowser
+        | crate::app::Mode::PluginBrowser
+        | crate::app::Mode::CommandPalette
+        | crate::app::Mode::McpShowcase
+        | crate::app::Mode::MissionControl => (
+            Color::Rgb(240, 238, 238),
+            Color::Rgb(30, 30, 50), // subtle blue for modals
+        ),
+        _ => (
+            Color::Rgb(240, 238, 238),
+            Color::Rgb(26, 25, 25), // default dark
+        ),
     };
 
     let status_bar = Paragraph::new(format!(
         "{}{}{}{}{}{}",
         mode_tag, plan_tag, provider_tag, token_tag, task_tag, hints,
     ))
-    .style(
-        Style::default()
-            .fg(Color::Rgb(240, 238, 238))
-            .bg(Color::Rgb(26, 25, 25)),
-    );
+    .style(Style::default().fg(mode_fg).bg(mode_bg));
     f.render_widget(status_bar, area);
 }

@@ -193,8 +193,6 @@ impl EvidencePackage {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Compliance Policies
 // ═══════════════════════════════════════════════════════════════════════════════
-// Compliance Policies
-// ═══════════════════════════════════════════════════════════════════════════════
 
 /// Severity of a policy violation.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

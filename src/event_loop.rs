@@ -479,8 +479,13 @@ pub async fn run_tui(
                         {
                             app.mode = Mode::SkillBrowser;
                         }
-                        KeyCode::Char('p')
-                            if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
+                        KeyCode::Char('P')
+                            if key
+                                .modifiers
+                                .contains(crossterm::event::KeyModifiers::CONTROL)
+                                && key
+                                    .modifiers
+                                    .contains(crossterm::event::KeyModifiers::SHIFT) =>
                         {
                             app.mode = Mode::PluginBrowser;
                         }
@@ -730,7 +735,11 @@ pub async fn run_tui(
                     },
                     Mode::Servers => match key.code {
                         KeyCode::Esc => {
-                            app.mode = Mode::Normal;
+                            if !app.mcp_input.is_empty() {
+                                app.mcp_input.clear();
+                            } else {
+                                app.mode = Mode::Normal;
+                            }
                         }
                         KeyCode::Up => {
                             if app.mcp_browser_selected > 0 {
@@ -888,8 +897,8 @@ pub async fn run_tui(
                         KeyCode::Up if app.command_palette_selected > 0 => {
                             app.command_palette_selected -= 1;
                         }
-                        KeyCode::Down if app.command_palette_selected < 4 => {
-                            // 5 items total (0-4)
+                        KeyCode::Down if app.command_palette_selected < 3 => {
+                            // 4 items total (0-3)
                             app.command_palette_selected += 1;
                         }
                         KeyCode::Enter => {
@@ -897,7 +906,6 @@ pub async fn run_tui(
                             match app.command_palette_selected {
                                 0 => {
                                     // Switch Provider
-                                    // Cycle through providers
                                     let providers = [
                                         crate::config::ProviderType::Ollama,
                                         crate::config::ProviderType::OpenRouter,
@@ -926,7 +934,6 @@ pub async fn run_tui(
                                 }
                                 1 => {
                                     // Switch Model
-                                    // For simplicity, just show a message - in a real implementation this would open a model selector
                                     app.tabs[0].messages.push(Message::new(format!(
                                         "Model switching not fully implemented yet. Current model: {}",
                                         app.config.model
@@ -937,7 +944,7 @@ pub async fn run_tui(
                                     // Clear Context
                                     app.tabs[0].messages.clear();
                                     app.tabs[0].messages.push(Message::new(String::from(
-                                        "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'q' to quit.",
+                                        "Welcome to opencrust. Press 'i' to type, 'Tab' to switch tabs, 'Ctrl+Q' to quit.",
                                     )));
                                     app.history.clear();
                                     app.save_history();
@@ -946,7 +953,7 @@ pub async fn run_tui(
                                         .push(Message::new("Context cleared.".to_string()));
                                     app.mode = Mode::Normal;
                                 }
-                                4 => {
+                                3 => {
                                     // MCP Browser
                                     app.mode = Mode::Servers;
                                 }

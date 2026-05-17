@@ -184,7 +184,7 @@ impl App {
         let chat_tab = Tab {
             name: "Chat".to_string(),
             messages: vec![Message::new(String::from(
-                "Welcome to opencrust. Press 'i' to enter insert mode, 's' for servers, 'Ctrl+Q' to quit.",
+                "Welcome to OpenCrust. Press 'i' to type, 'Tab' to switch tabs, '?' for help, 'Ctrl+Q' to quit.",
             ))],
         };
         let tasks_tab = Tab {
