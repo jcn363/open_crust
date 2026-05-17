@@ -47,12 +47,12 @@ pub struct BackgroundAgent {
     pub provider: String,
     pub model: String,
     pub status: AgentStatus,
-    pub progress: u8,            // 0-100 approximate percentage
+    pub progress: u8, // 0-100 approximate percentage
     pub created_at: DateTime<Utc>,
     pub started_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
-    pub log: Vec<String>,        // ring buffer of log lines
-    pub tags: Vec<String>,       // user-defined tags for grouping/filtering
+    pub log: Vec<String>,  // ring buffer of log lines
+    pub tags: Vec<String>, // user-defined tags for grouping/filtering
 }
 
 impl BackgroundAgent {
@@ -77,7 +77,8 @@ impl BackgroundAgent {
         if self.log.len() >= 256 {
             self.log.remove(0);
         }
-        self.log.push(format!("[{}] {}", Utc::now().format("%H:%M:%S"), line));
+        self.log
+            .push(format!("[{}] {}", Utc::now().format("%H:%M:%S"), line));
     }
 }
 
@@ -142,8 +143,7 @@ impl BackgroundAgentManager {
         let resolved_provider = provider
             .clone()
             .unwrap_or_else(|| format!("{:?}", llm_client.config.provider));
-        let resolved_model = model
-            .unwrap_or_else(|| llm_client.config.model.clone());
+        let resolved_model = model.unwrap_or_else(|| llm_client.config.model.clone());
 
         let mut agent = BackgroundAgent::new(
             name.clone(),
@@ -178,7 +178,8 @@ impl BackgroundAgentManager {
 
             // Execute the query with timeout
             let timeout = Duration::from_secs(600); // 10 min max
-            let result = tokio::time::timeout(timeout, llm_client.query_simple(&prompt, None)).await;
+            let result =
+                tokio::time::timeout(timeout, llm_client.query_simple(&prompt, None)).await;
 
             // Update final state
             let mut guard = agents.write().await;
@@ -197,9 +198,7 @@ impl BackgroundAgentManager {
                 Ok(Err(e)) => {
                     let err = format!("LLM error: {}", e);
                     if let Some(a) = guard.get_mut(&id) {
-                        a.status = AgentStatus::Failed {
-                            error: err.clone(),
-                        };
+                        a.status = AgentStatus::Failed { error: err.clone() };
                         a.completed_at = Some(Utc::now());
                         a.log_line(format!("Agent failed: {}", err));
                     }
@@ -208,9 +207,7 @@ impl BackgroundAgentManager {
                 Err(_) => {
                     let err = "timeout (600s)".to_string();
                     if let Some(a) = guard.get_mut(&id) {
-                        a.status = AgentStatus::Failed {
-                            error: err.clone(),
-                        };
+                        a.status = AgentStatus::Failed { error: err.clone() };
                         a.completed_at = Some(Utc::now());
                         a.log_line(format!("Agent failed: {}", err));
                     }
@@ -323,12 +320,7 @@ impl std::fmt::Display for BackgroundAgent {
         write!(
             f,
             "[{:<9}] {:>4}% | {} | {} ({}) | {}",
-            status_str,
-            self.progress,
-            self.name,
-            self.provider,
-            self.model,
-            elapsed,
+            status_str, self.progress, self.name, self.provider, self.model, elapsed,
         )
     }
 }

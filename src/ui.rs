@@ -125,6 +125,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::Review => popups::draw_review_popup(f, app, &theme),
         Mode::Servers => popups::draw_servers_popup(f, app, &theme),
         Mode::SkillBrowser => popups::draw_skill_browser(f, app, &theme),
+        Mode::PluginBrowser => popups::draw_plugin_browser(f, app, &theme),
         Mode::CommandPalette => popups::draw_command_palette(f, app, &theme),
         Mode::Help => popups::draw_help_popup(f, app, &theme),
         Mode::McpShowcase => {

@@ -622,6 +622,130 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     f.render_widget(status, chunks[2]);
 }
 
+pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
+    let area = centered_rect(70, 60, f.area());
+    render_popup_shadow(f, area);
+    f.render_widget(Clear, area);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3), // Title
+                Constraint::Min(1),    // Content
+                Constraint::Length(3), // Status
+            ]
+            .as_ref(),
+        )
+        .split(area);
+
+    // Title
+    f.render_widget(
+        Paragraph::new("Plugin Browser (Ctrl+P)")
+            .style(
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .block(themed_block("Plugin Browser (Ctrl+P)", theme)),
+        chunks[0],
+    );
+
+    // Content area
+    let content_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)].as_ref())
+        .split(chunks[1]);
+
+    // Left panel: Installed Plugins list
+    let plugin_list: Vec<ListItem> = app
+        .plugin_browser_items
+        .iter()
+        .enumerate()
+        .map(|(i, (name, _desc, enabled))| {
+            let prefix = if i == app.plugin_browser_selected {
+                "> "
+            } else {
+                "  "
+            };
+            let status = if *enabled { "[ENABLED]" } else { "[DISABLED]" };
+            let style = if i == app.plugin_browser_selected {
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD)
+            } else if *enabled {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(theme.fg)
+            };
+            ListItem::new(Line::from(vec![Span::styled(
+                format!("{}{} {}", prefix, name, status),
+                style,
+            )]))
+        })
+        .collect();
+
+    let list = List::new(plugin_list).block(themed_block("Installed Plugins", theme));
+    f.render_widget(list, content_chunks[0]);
+
+    // Right panel: Selected plugin details
+    if let Some((name, desc, enabled)) = app.plugin_browser_items.get(app.plugin_browser_selected) {
+        let status_text = if *enabled { "ENABLED" } else { "DISABLED" };
+        let status_color = if *enabled { Color::Green } else { Color::Red };
+
+        let details = vec![
+            Line::from(vec![
+                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    name,
+                    Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().fg(Color::Yellow),
+            )]),
+            Line::from(desc.as_str()),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    status_text,
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    if *enabled {
+                        "Plugin is enabled. Press [Enter] to disable."
+                    } else {
+                        "Plugin is disabled. Press [Enter] to enable."
+                    },
+                    Style::default().fg(theme.fg),
+                ),
+            ]),
+        ];
+
+        let details_para = Paragraph::new(details)
+            .block(themed_block("Plugin Details", theme))
+            .wrap(Wrap { trim: true });
+        f.render_widget(details_para, content_chunks[1]);
+    }
+
+    // Unified status bar
+    let status_text = "[↑/↓] Navigate | [Enter] Toggle Enable | [Esc/q] Close";
+    let status = Paragraph::new(status_text)
+        .style(status_bar_style(theme))
+        .block(Block::default().borders(Borders::ALL));
+    f.render_widget(status, chunks[2]);
+}
+
 pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
     let area = centered_rect(65, 65, f.area());
     render_popup_shadow(f, area);

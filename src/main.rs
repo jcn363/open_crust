@@ -54,6 +54,7 @@ mod sessions;
 mod skills;
 mod startup;
 mod status_bar;
+mod token_budget;
 mod tool_executor;
 mod tools;
 mod ui;
@@ -807,8 +808,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         if !report.violations.is_empty() {
                             println!("\nPolicy violations found: {}", report.violations.len());
                             for v in &report.violations {
-                                println!("  [{}] {}: {}",
-                                    v.severity, v.rule_id, v.message);
+                                println!("  [{}] {}: {}", v.severity, v.rule_id, v.message);
                             }
                         } else {
                             println!("\nNo policy violations found.");
@@ -829,7 +829,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         let mut all_valid = true;
                         for (name, valid, hash) in &results {
                             let status = if *valid { "VALID" } else { "MISMATCH" };
-                            if !*valid { all_valid = false; }
+                            if !*valid {
+                                all_valid = false;
+                            }
                             println!("  {}: {} ({})", name, status, hash);
                         }
                         if all_valid {
@@ -854,9 +856,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             println!("\n✗ {} policy violation(s) found.", report.violations.len());
                         }
                         // Also build evidence package
-                        match compliance::EvidencePackage::build(
-                            &audit_log_path, &config, &out_dir
-                        ) {
+                        match compliance::EvidencePackage::build(&audit_log_path, &config, &out_dir)
+                        {
                             Ok(path) => println!("\nEvidence package: {}", path.display()),
                             Err(e) => eprintln!("\nWarning: evidence package build failed: {}", e),
                         }
@@ -878,7 +879,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 if agents.is_empty() {
                     println!("No background agents.");
                 } else {
-                    println!("{:<5} {:<24} {:<10} {:<12} {}", "ID", "Name", "Status", "Progress", "Age");
+                    println!(
+                        "{:<5} {:<24} {:<10} {:<12} Age",
+                        "ID", "Name", "Status", "Progress"
+                    );
                     println!("{}", "-".repeat(90));
                     for agent in &agents {
                         let id_short = agent.id.to_string().chars().take(8).collect::<String>();
@@ -925,7 +929,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         for line in agent.log.iter().rev().take(20) {
                             println!("    {}", line);
                         }
-                        if let background_agents::AgentStatus::Completed { output } = &agent.status {
+                        if let background_agents::AgentStatus::Completed { output } = &agent.status
+                        {
                             println!("\n  Result (first 500 chars):");
                             println!("    {}", &output.chars().take(500).collect::<String>());
                         }
@@ -941,7 +946,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 let (mcp_mgr, lsp_mgr, skill_mgr, custom_tool_mgr) = init_managers(&config).await;
                 let llm_client = match llm::LlmClient::new(
                     std::sync::Arc::new(config),
-                    mcp_mgr, lsp_mgr, skill_mgr, custom_tool_mgr,
+                    mcp_mgr,
+                    lsp_mgr,
+                    skill_mgr,
+                    custom_tool_mgr,
                 ) {
                     Ok(c) => std::sync::Arc::new(c),
                     Err(e) => {
@@ -949,12 +957,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         return Ok(());
                     }
                 };
-                let agent_id = agent_mgr.spawn(
-                    name.clone(),
-                    prompt.clone(),
-                    None, None, vec![],
-                    llm_client,
-                ).await;
+                let agent_id = agent_mgr
+                    .spawn(name.clone(), prompt.clone(), None, None, vec![], llm_client)
+                    .await;
                 println!("Started background agent '{}' with ID: {}", name, agent_id);
             }
             BackgroundCommands::Cancel { id } => {
@@ -1017,7 +1022,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         println!("  - {}", config_dir.join("opencrust/plugins").display());
                     }
                 } else {
-                    println!("{:<24} {:<10} {:<8} {:<40}", "Name", "Version", "Status", "Description");
+                    println!(
+                        "{:<24} {:<10} {:<8} {:<40}",
+                        "Name", "Version", "Status", "Description"
+                    );
                     println!("{}", "-".repeat(90));
                     for p in &plugins {
                         let status = if p.enabled { "enabled" } else { "disabled" };
@@ -1026,27 +1034,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         } else {
                             p.description.clone()
                         };
-                        println!("{:<24} {:<10} {:<8} {:<40}", p.name, p.version, status, desc);
+                        println!(
+                            "{:<24} {:<10} {:<8} {:<40}",
+                            p.name, p.version, status, desc
+                        );
                     }
                 }
             }
-            PluginCommands::Show { name } => {
-                match plugin_mgr.get(name) {
-                    Some(p) => {
-                        println!("Name:        {}", p.name);
-                        println!("Version:     {}", p.version);
-                        println!("Description: {}", p.description);
-                        println!("Author:      {}", p.author);
-                        println!("Path:        {}", p.path.display());
-                        println!("Enabled:     {}", p.enabled);
-                        println!("Entry:       {}", p.entry.as_deref().unwrap_or("(none)"));
-                        println!("Hooks:       {}", p.hooks.join(", "));
-                        println!("Tools:       {}", p.tools.join(", "));
-                        println!("Deps:        {}", p.dependencies.join(", "));
-                    }
-                    None => eprintln!("Plugin '{}' not found.", name),
+            PluginCommands::Show { name } => match plugin_mgr.get(name) {
+                Some(p) => {
+                    println!("Name:        {}", p.name);
+                    println!("Version:     {}", p.version);
+                    println!("Description: {}", p.description);
+                    println!("Author:      {}", p.author);
+                    println!("Path:        {}", p.path.display());
+                    println!("Enabled:     {}", p.enabled);
+                    println!("Entry:       {}", p.entry.as_deref().unwrap_or("(none)"));
+                    println!("Hooks:       {}", p.hooks.join(", "));
+                    println!("Tools:       {}", p.tools.join(", "));
+                    println!("Deps:        {}", p.dependencies.join(", "));
                 }
-            }
+                None => eprintln!("Plugin '{}' not found.", name),
+            },
             PluginCommands::Install { path } => {
                 let src = std::path::PathBuf::from(&path);
                 if !src.exists() {
@@ -1058,24 +1067,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     Err(e) => eprintln!("Error installing plugin: {}", e),
                 }
             }
-            PluginCommands::Remove { name } => {
-                match plugin_mgr.remove(&name) {
-                    Ok(_) => println!("Plugin '{}' removed.", name),
-                    Err(e) => eprintln!("Error removing plugin: {}", e),
-                }
-            }
-            PluginCommands::Enable { name } => {
-                match plugin_mgr.enable(&name) {
-                    Ok(_) => println!("Plugin '{}' enabled.", name),
-                    Err(e) => eprintln!("Error enabling plugin: {}", e),
-                }
-            }
-            PluginCommands::Disable { name } => {
-                match plugin_mgr.disable(&name) {
-                    Ok(_) => println!("Plugin '{}' disabled.", name),
-                    Err(e) => eprintln!("Error disabling plugin: {}", e),
-                }
-            }
+            PluginCommands::Remove { name } => match plugin_mgr.remove(name) {
+                Ok(_) => println!("Plugin '{}' removed.", name),
+                Err(e) => eprintln!("Error removing plugin: {}", e),
+            },
+            PluginCommands::Enable { name } => match plugin_mgr.enable(name) {
+                Ok(_) => println!("Plugin '{}' enabled.", name),
+                Err(e) => eprintln!("Error enabling plugin: {}", e),
+            },
+            PluginCommands::Disable { name } => match plugin_mgr.disable(name) {
+                Ok(_) => println!("Plugin '{}' disabled.", name),
+                Err(e) => eprintln!("Error disabling plugin: {}", e),
+            },
             PluginCommands::Stats => {
                 let stats = plugin_mgr.stats();
                 println!("{}", stats);
@@ -1094,7 +1097,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     println!("No repositories registered.");
                     println!("\nUse 'opencrust repo add <name> <path>' to register one.");
                 } else {
-                    println!("{:<20} {:<20} {:<30} {}", "Name", "Branch", "Path", "Remote");
+                    println!("{:<20} {:<20} {:<30} Remote", "Name", "Branch", "Path");
                     println!("{}", "-".repeat(100));
                     for repo in &repos {
                         let branch = repo.branch.as_deref().unwrap_or("(detached)");
@@ -1105,35 +1108,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         } else {
                             path_str
                         };
-                        println!("{:<20} {:<20} {:<30} {}", repo.name, branch, path_short, remote);
+                        println!(
+                            "{:<20} {:<20} {:<30} {}",
+                            repo.name, branch, path_short, remote
+                        );
                     }
                 }
             }
-            RepoCommands::Show { name } => {
-                match repo_mgr.get(name).await {
-                    Some(repo) => {
-                        println!("Name:       {}", repo.name);
-                        println!("Path:       {}", repo.path.display());
-                        println!("Branch:     {}", repo.branch.as_deref().unwrap_or("(detached)"));
-                        println!("Remote:     {}", repo.remote.as_deref().unwrap_or("(none)"));
-                        println!("Tags:       {}", repo.tags.join(", "));
-                        println!("Registered: {}", repo.registered_at);
-                        if let Some(idx) = repo.last_indexed {
-                            println!("Indexed:    {}", idx);
-                        }
+            RepoCommands::Show { name } => match repo_mgr.get(name).await {
+                Some(repo) => {
+                    println!("Name:       {}", repo.name);
+                    println!("Path:       {}", repo.path.display());
+                    println!(
+                        "Branch:     {}",
+                        repo.branch.as_deref().unwrap_or("(detached)")
+                    );
+                    println!("Remote:     {}", repo.remote.as_deref().unwrap_or("(none)"));
+                    println!("Tags:       {}", repo.tags.join(", "));
+                    println!("Registered: {}", repo.registered_at);
+                    if let Some(idx) = repo.last_indexed {
+                        println!("Indexed:    {}", idx);
                     }
-                    None => eprintln!("Repository '{}' not found.", name),
                 }
-            }
+                None => eprintln!("Repository '{}' not found.", name),
+            },
             RepoCommands::Add { name, path, tags } => {
                 let tags: Vec<String> = tags
                     .as_ref()
                     .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
                     .unwrap_or_default();
-                match repo_mgr.add(name.clone(), std::path::PathBuf::from(&path), tags).await {
+                match repo_mgr
+                    .add(name.clone(), std::path::PathBuf::from(&path), tags)
+                    .await
+                {
                     Ok(repo) => {
-                        println!("Repository '{}' registered at {}", repo.name, repo.path.display());
-                        println!("  Branch: {}", repo.branch.as_deref().unwrap_or("(detached)"));
+                        println!(
+                            "Repository '{}' registered at {}",
+                            repo.name,
+                            repo.path.display()
+                        );
+                        println!(
+                            "  Branch: {}",
+                            repo.branch.as_deref().unwrap_or("(detached)")
+                        );
                         if let Some(remote) = &repo.remote {
                             println!("  Remote: {}", remote);
                         }
@@ -1142,7 +1159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             RepoCommands::Remove { name } => {
-                if repo_mgr.remove(&name).await {
+                if repo_mgr.remove(name).await {
                     println!("Repository '{}' removed.", name);
                 } else {
                     eprintln!("Repository '{}' not found.", name);
@@ -1172,7 +1189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             RepoCommands::Search { pattern } => {
-                let results = repo_mgr.search_files(&pattern).await;
+                let results = repo_mgr.search_files(pattern).await;
                 if results.is_empty() {
                     println!("No matches found for pattern '{}'", pattern);
                 } else {
@@ -1227,7 +1244,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         return Ok(());
     }
 
-    run_tui(llm_client, skill_manager).await?;
+    let plugin_manager = llm_client.plugin_manager.clone();
+    run_tui(llm_client, skill_manager, plugin_manager).await?;
 
     Ok(())
 }

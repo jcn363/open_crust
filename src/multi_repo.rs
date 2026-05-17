@@ -77,10 +77,7 @@ impl RegisteredRepo {
 
     /// Quick status summary string.
     pub fn summary(&self) -> String {
-        let branch_str = self
-            .branch
-            .as_deref()
-            .unwrap_or("(detached)");
+        let branch_str = self.branch.as_deref().unwrap_or("(detached)");
         format!(
             "{} @ {} [{}]{}",
             self.name,
@@ -115,7 +112,9 @@ impl MultiRepoManager {
         let repos = if storage_path.exists() {
             fs::read_to_string(&storage_path)
                 .ok()
-                .and_then(|content| serde_json::from_str::<HashMap<String, RegisteredRepo>>(&content).ok())
+                .and_then(|content| {
+                    serde_json::from_str::<HashMap<String, RegisteredRepo>>(&content).ok()
+                })
                 .unwrap_or_default()
         } else {
             HashMap::new()
@@ -214,7 +213,10 @@ impl MultiRepoManager {
     }
 
     /// Run a git command across all repos in parallel.
-    pub async fn git_command_all(&self, args: &[&str]) -> Vec<(RegisteredRepo, Result<String, String>)> {
+    pub async fn git_command_all(
+        &self,
+        args: &[&str],
+    ) -> Vec<(RegisteredRepo, Result<String, String>)> {
         let repos = self.list().await;
         let mut handles = Vec::new();
 
@@ -245,7 +247,7 @@ impl MultiRepoManager {
         let mut results = Vec::new();
         for handle in handles {
             if let Ok((name, result)) = handle.await {
-                    if let Some(repo) = self.get(&name).await {
+                if let Some(repo) = self.get(&name).await {
                     results.push((repo, result));
                 }
             }
@@ -372,11 +374,7 @@ mod tests {
 
     #[test]
     fn test_register_nonexistent_path_fails() {
-        let result = RegisteredRepo::new(
-            "bad".into(),
-            PathBuf::from("/nonexistent/path"),
-            vec![],
-        );
+        let result = RegisteredRepo::new("bad".into(), PathBuf::from("/nonexistent/path"), vec![]);
         assert!(result.is_err());
     }
 
@@ -426,9 +424,7 @@ mod tests {
         let (_storage_dir, mgr) = create_test_manager();
 
         rt.block_on(async {
-            mgr.add("get-test".into(), repo_path, vec![])
-                .await
-                .unwrap();
+            mgr.add("get-test".into(), repo_path, vec![]).await.unwrap();
             assert!(mgr.get("get-test").await.is_some());
             assert!(mgr.get("nope").await.is_none());
         });

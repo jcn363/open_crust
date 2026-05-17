@@ -5,32 +5,32 @@
 //! `~/.config/opencrust/plugins/<name>/` containing a `plugin.json` manifest
 //! and optionally scripts, WASM modules, or configuration files.
 //!
-    //! ## Manifest format (`plugin.json`)
-    //!
-    //! ```json
-    //! {
-    //!   "name": "my-plugin",
-    //!   "version": "1.0.0",
-    //!   "description": "Integrates with FooBar API",
-    //!   "author": "You",
-    //!   "entry": "main.sh",
-    //!   "hooks": ["on_tool_execute", "on_message"],
-    //!   "tools": ["my_custom_tool"],
-    //!   "dependencies": [],
-    //!   "citations": [
-    //!     {
-    //!       "id": "ref1",
-    //!       "title": "OpenAI GPT-4 Technical Report",
-    //!       "author": "OpenAI",
-    //!       "source": "https://cdn.openai.com/papers/gpt-4.pdf",
-    //!       "date": "2023-03-14",
-    //!       "context": "Language model capabilities",
-    //!       "verified": true
-    //!     }
-    //!   ],
-    //!   "enabled": true
-    //! }
-    //! ```
+//! ## Manifest format (`plugin.json`)
+//!
+//! ```json
+//! {
+//!   "name": "my-plugin",
+//!   "version": "1.0.0",
+//!   "description": "Integrates with FooBar API",
+//!   "author": "You",
+//!   "entry": "main.sh",
+//!   "hooks": ["on_tool_execute", "on_message"],
+//!   "tools": ["my_custom_tool"],
+//!   "dependencies": [],
+//!   "citations": [
+//!     {
+//!       "id": "ref1",
+//!       "title": "OpenAI GPT-4 Technical Report",
+//!       "author": "OpenAI",
+//!       "source": "https://cdn.openai.com/papers/gpt-4.pdf",
+//!       "date": "2023-03-14",
+//!       "context": "Language model capabilities",
+//!       "verified": true
+//!     }
+//!   ],
+//!   "enabled": true
+//! }
+//! ```
 //!
 //! ## Hook System
 //!
@@ -45,6 +45,7 @@
 //! - `on_session_save` — when a session is persisted
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -113,6 +114,7 @@ pub enum PluginError {
     InvalidManifest(String),
     LoadError(String),
     HookError(String),
+    InstallError(String),
 }
 
 impl std::fmt::Display for PluginError {
@@ -122,16 +124,17 @@ impl std::fmt::Display for PluginError {
             PluginError::InvalidManifest(m) => write!(f, "invalid manifest: {}", m),
             PluginError::LoadError(e) => write!(f, "load error: {}", e),
             PluginError::HookError(e) => write!(f, "hook error: {}", e),
+            PluginError::InstallError(e) => write!(f, "install error: {}", e),
         }
     }
 }
 
 impl std::error::Error for PluginError {}
 
-/// Manages plugin discovery, loading, lifecycle, and hook dispatch.
 pub struct PluginManager {
     plugins: HashMap<String, Plugin>,
     search_paths: Vec<PathBuf>,
+    state_file: PathBuf,
 }
 
 impl PluginManager {
@@ -154,13 +157,23 @@ impl PluginManager {
             }
         }
 
+        let state_file = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("opencrust/plugins_state.json");
+
         Self {
             plugins: HashMap::new(),
             search_paths,
+            state_file,
         }
     }
 
-    /// Scan all search paths and load plugin manifests.
+    /// Reload all plugins from disk, clearing the current map.
+    #[expect(dead_code, reason = "public API for future plugin hot-reload")]
+    pub fn reload(&mut self) {
+        self.plugins.clear();
+        self.discover();
+    }
     pub fn discover(&mut self) -> Vec<String> {
         let mut discovered = Vec::new();
         // Collect all manifest paths first to avoid borrow conflicts
@@ -182,9 +195,8 @@ impl PluginManager {
                     match self.load_plugin(&manifest_path) {
                         Ok(plugin) => {
                             let name = plugin.name.clone();
-                            if !self.plugins.contains_key(&name) {
-                                discovered.push(name.clone());
-                                self.plugins.insert(name, plugin);
+                            if self.plugins.insert(name.clone(), plugin).is_none() {
+                                discovered.push(name);
                             }
                         }
                         Err(e) => {
@@ -213,16 +225,16 @@ impl PluginManager {
         plugin.path = manifest_path
             .parent()
             .map(|p| p.to_path_buf())
-            .ok_or_else(|| PluginError::InvalidManifest("cannot determine plugin directory".into()))?;
+            .ok_or_else(|| {
+                PluginError::InvalidManifest("cannot determine plugin directory".into())
+            })?;
 
         // Validate required fields
         if plugin.name.is_empty() {
             return Err(PluginError::InvalidManifest("name is required".into()));
         }
         if plugin.version.is_empty() {
-            return Err(PluginError::InvalidManifest(
-                "version is required".into(),
-            ));
+            return Err(PluginError::InvalidManifest("version is required".into()));
         }
 
         // If entry is specified, verify the file exists
@@ -264,6 +276,7 @@ impl PluginManager {
             .get_mut(name)
             .ok_or_else(|| PluginError::NotFound(name.to_string()))?;
         plugin.enabled = true;
+        let _ = self.save_state();
         Ok(())
     }
 
@@ -274,7 +287,46 @@ impl PluginManager {
             .get_mut(name)
             .ok_or_else(|| PluginError::NotFound(name.to_string()))?;
         plugin.enabled = false;
+        let _ = self.save_state();
         Ok(())
+    }
+
+    /// Save plugin enabled state to disk.
+    pub fn save_state(&self) -> Result<(), PluginError> {
+        let enabled: Vec<&str> = self
+            .plugins
+            .values()
+            .filter(|p| p.enabled)
+            .map(|p| p.name.as_str())
+            .collect();
+        let content = serde_json::to_string_pretty(&enabled)
+            .map_err(|e| PluginError::LoadError(format!("cannot serialize state: {}", e)))?;
+        if let Some(parent) = self.state_file.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| PluginError::LoadError(format!("cannot create state dir: {}", e)))?;
+        }
+        fs::write(&self.state_file, content)
+            .map_err(|e| PluginError::LoadError(format!("cannot write state: {}", e)))?;
+        Ok(())
+    }
+
+    /// Load plugin enabled state from disk and apply it.
+    pub fn load_state(&mut self) {
+        if !self.state_file.exists() {
+            return;
+        }
+        let content = match fs::read_to_string(&self.state_file) {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let enabled: Vec<String> = match serde_json::from_str(&content) {
+            Ok(e) => e,
+            Err(_) => return,
+        };
+        // Apply loaded state: enable listed plugins, disable others
+        for plugin in self.plugins.values_mut() {
+            plugin.enabled = enabled.contains(&plugin.name);
+        }
     }
 
     /// Install a plugin from a source directory by copying it into the user's
@@ -316,9 +368,8 @@ impl PluginManager {
         })?;
 
         // Recursively copy
-        copy_dir_recursively(src_dir, &target_dir).map_err(|e| {
-            PluginError::InstallError(format!("cannot copy plugin files: {}", e))
-        })?;
+        copy_dir_recursively(src_dir, &target_dir)
+            .map_err(|e| PluginError::InstallError(format!("cannot copy plugin files: {}", e)))?;
 
         // Load the installed plugin
         let installed_manifest = target_dir.join("plugin.json");
@@ -335,8 +386,9 @@ impl PluginManager {
         if let Some(config_dir) = dirs::config_dir() {
             let plugin_dir = config_dir.join("opencrust/plugins").join(name);
             if plugin_dir.exists() {
-                fs::remove_dir_all(&plugin_dir)
-                    .map_err(|e| PluginError::HookError(format!("cannot remove plugin dir: {}", e)))?;
+                fs::remove_dir_all(&plugin_dir).map_err(|e| {
+                    PluginError::HookError(format!("cannot remove plugin dir: {}", e))
+                })?;
             }
         }
         Ok(())
@@ -344,7 +396,6 @@ impl PluginManager {
 
     /// Execute a hook across all enabled plugins that subscribe to it.
     /// Each plugin's entry script is called with the hook name and JSON context.
-    #[expect(dead_code, reason = "plugin hook execution for CLI")]
     pub fn execute_hook(&self, hook: &str, context: &str) -> Vec<(String, Result<String, String>)> {
         let mut results = Vec::new();
         for plugin in self.plugins.values() {
@@ -417,6 +468,68 @@ impl PluginManager {
             citation_count,
         }
     }
+
+    /// Get tool schemas for all enabled plugins that declare tools.
+    /// Each plugin tool gets a generic schema that routes execution to the plugin's entry script.
+    pub fn get_tool_schemas(&self) -> Vec<Value> {
+        let mut schemas = Vec::new();
+        for plugin in self.plugins.values() {
+            if !plugin.enabled {
+                continue;
+            }
+            for tool_name in &plugin.tools {
+                schemas.push(serde_json::json!({
+                    "type": "function",
+                    "function": {
+                        "name": format!("plugin_{}", tool_name),
+                        "description": format!("Plugin tool: {} (from {})", tool_name, plugin.name),
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "args": {
+                                    "type": "object",
+                                    "description": "Arguments to pass to the plugin tool"
+                                }
+                            },
+                            "required": []
+                        }
+                    }
+                }));
+            }
+        }
+        schemas
+    }
+
+    /// Execute a plugin tool by name. Returns the tool output or an error.
+    pub fn execute_tool(&self, tool_name: &str, args: &Value) -> Result<String, String> {
+        // Find the plugin that owns this tool
+        for plugin in self.plugins.values() {
+            if !plugin.enabled {
+                continue;
+            }
+            // Check if this tool belongs to this plugin (strip "plugin_" prefix)
+            let bare_name = tool_name.strip_prefix("plugin_").unwrap_or(tool_name);
+            if plugin.tools.iter().any(|t| t == bare_name) {
+                let entry = match &plugin.entry {
+                    Some(e) => plugin.path.join(e),
+                    None => return Err(format!("plugin '{}' has no entry point", plugin.name)),
+                };
+                if !entry.exists() {
+                    return Err(format!(
+                        "plugin entry point '{}' not found",
+                        entry.display()
+                    ));
+                }
+                let context = serde_json::json!({
+                    "tool": bare_name,
+                    "args": args
+                });
+                let context_str = serde_json::to_string(&context).unwrap_or_default();
+                return self.run_plugin_entry(plugin, "tool_execute", &context_str);
+            }
+        }
+        Err(format!("no plugin owns tool '{}'", tool_name))
+    }
 }
 
 impl Default for PluginManager {
@@ -441,7 +554,12 @@ impl std::fmt::Display for PluginStats {
         write!(
             f,
             "Plugins: {} total, {} enabled, {} disabled | {} hooks, {} tools, {} citations",
-            self.total, self.enabled, self.disabled, self.hook_count, self.tool_count, self.citation_count
+            self.total,
+            self.enabled,
+            self.disabled,
+            self.hook_count,
+            self.tool_count,
+            self.citation_count
         )
     }
 }
@@ -502,32 +620,24 @@ fn copy_dir_recursively(src: &Path, dst: &Path) -> Result<(), std::io::Error> {
     Ok(())
 }
 
-// Extend PluginError with InstallError variant
-impl PluginError {
-    #[allow(non_snake_case)]
-    fn InstallError(msg: String) -> Self {
-        PluginError::HookError(msg)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use uuid::Uuid;
 
-fn create_test_manifest(dir: &Path, name: &str, enabled: bool) -> PathBuf {
-    fs::create_dir_all(dir).unwrap();
-    let manifest = dir.join("plugin.json");
-    let content = serde_json::json!({
-        "name": name,
-        "version": "1.0.0",
-        "description": "test plugin",
-        "author": "test",
-        "enabled": enabled
-    });
-    fs::write(&manifest, serde_json::to_string_pretty(&content).unwrap()).unwrap();
-    manifest
-}
+    fn create_test_manifest(dir: &Path, name: &str, enabled: bool) -> PathBuf {
+        fs::create_dir_all(dir).unwrap();
+        let manifest = dir.join("plugin.json");
+        let content = serde_json::json!({
+            "name": name,
+            "version": "1.0.0",
+            "description": "test plugin",
+            "author": "test",
+            "enabled": enabled
+        });
+        fs::write(&manifest, serde_json::to_string_pretty(&content).unwrap()).unwrap();
+        manifest
+    }
 
     #[test]
     fn test_discover_plugins() {

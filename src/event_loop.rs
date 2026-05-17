@@ -27,6 +27,7 @@ use tokio::sync::{Mutex, mpsc};
 pub async fn run_tui(
     llm_client: llm::LlmClient,
     skill_manager: Arc<Mutex<crate::skills::SkillManager>>,
+    plugin_manager: Arc<Mutex<crate::plugins::PluginManager>>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (prompt_tx, mut prompt_rx) = mpsc::channel::<String>(32);
     let (response_tx, mut response_rx) = mpsc::channel::<String>(32);
@@ -196,6 +197,18 @@ pub async fn run_tui(
         let skill_list = skills.list_skills_with_stats();
         for (name, description, active) in skill_list {
             app.skill_browser_items.push((name, description, active));
+        }
+    }
+
+    // Populate plugin browser items from plugin manager
+    {
+        let plugins = plugin_manager.lock().await;
+        for plugin in plugins.list() {
+            app.plugin_browser_items.push((
+                plugin.name.clone(),
+                plugin.description.clone(),
+                plugin.enabled,
+            ));
         }
     }
 
@@ -465,6 +478,11 @@ pub async fn run_tui(
                                     .contains(crossterm::event::KeyModifiers::SHIFT) =>
                         {
                             app.mode = Mode::SkillBrowser;
+                        }
+                        KeyCode::Char('p')
+                            if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
+                        {
+                            app.mode = Mode::PluginBrowser;
                         }
                         KeyCode::Char('t')
                             if key.modifiers == crossterm::event::KeyModifiers::CONTROL =>
@@ -808,6 +826,55 @@ pub async fn run_tui(
                                 };
                                 app.tabs[0].messages.push(Message::new(format!(
                                     "System: Skill '{}' {}",
+                                    name, status
+                                )));
+                            }
+                        }
+                        _ => {}
+                    },
+                    Mode::PluginBrowser => match key.code {
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            app.mode = Mode::Normal;
+                        }
+                        KeyCode::Up => {
+                            if app.plugin_browser_selected > 0 {
+                                app.plugin_browser_selected -= 1;
+                            }
+                            if app.plugin_browser_selected < app.plugin_browser_scroll {
+                                app.plugin_browser_scroll = app.plugin_browser_selected;
+                            }
+                        }
+                        KeyCode::Down => {
+                            if app.plugin_browser_selected < app.plugin_browser_items.len() - 1 {
+                                app.plugin_browser_selected += 1;
+                            }
+                            if app.plugin_browser_selected >= app.plugin_browser_scroll + 20 {
+                                app.plugin_browser_scroll = app.plugin_browser_selected - 19;
+                            }
+                        }
+                        KeyCode::Enter => {
+                            if let Some((name, _, enabled)) = app
+                                .plugin_browser_items
+                                .get_mut(app.plugin_browser_selected)
+                            {
+                                let new_enabled = !*enabled;
+                                *enabled = new_enabled;
+
+                                // Update plugin_manager
+                                let plugin_name = name.clone();
+                                let pm = plugin_manager.clone();
+                                tokio::spawn(async move {
+                                    let mut plugins = pm.lock().await;
+                                    if new_enabled {
+                                        let _ = plugins.enable(&plugin_name);
+                                    } else {
+                                        let _ = plugins.disable(&plugin_name);
+                                    }
+                                });
+
+                                let status = if new_enabled { "enabled" } else { "disabled" };
+                                app.tabs[0].messages.push(Message::new(format!(
+                                    "System: Plugin '{}' {}",
                                     name, status
                                 )));
                             }

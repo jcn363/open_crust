@@ -11,6 +11,7 @@ use crate::mcp::McpManager;
 use crate::orchestrator::Orchestrator;
 use crate::permissions::PermissionManager;
 use crate::planner::Planner;
+use crate::plugins::PluginManager;
 use crate::rag::RagManager;
 use crate::security::{validate_command, validate_path};
 use crate::skills::SkillManager;
@@ -45,6 +46,8 @@ pub struct ToolExecutor {
     pub rag_manager: Arc<Mutex<RagManager>>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
     pub orchestrator: Arc<Mutex<Orchestrator>>,
+    /// Plugin manager for extension tool execution
+    pub plugin_manager: Arc<Mutex<PluginManager>>,
     /// Cache for frequently accessed files to reduce disk I/O
     file_cache: Mutex<HashMap<String, (String, std::time::Instant)>>,
 }
@@ -63,6 +66,7 @@ impl ToolExecutor {
         rag_manager: Arc<Mutex<RagManager>>,
         pinned_files: Arc<Mutex<Vec<String>>>,
         orchestrator: Arc<Mutex<Orchestrator>>,
+        plugin_manager: Arc<Mutex<PluginManager>>,
     ) -> Self {
         Self {
             config,
@@ -76,12 +80,28 @@ impl ToolExecutor {
             rag_manager,
             pinned_files,
             orchestrator,
+            plugin_manager,
             file_cache: Mutex::new(HashMap::new()),
         }
     }
 
     /// Execute a tool by name
     pub async fn execute(&self, name: &str, args: &Value) -> ToolResult {
+        // Fire on_tool_execute hook for plugins that subscribe to it
+        {
+            let plugins = self.plugin_manager.lock().await;
+            let hook_ctx = serde_json::json!({"tool": name, "args": args});
+            let results = plugins.execute_hook(
+                "on_tool_execute",
+                &serde_json::to_string(&hook_ctx).unwrap_or_default(),
+            );
+            for (plugin_name, result) in &results {
+                if let Err(e) = result {
+                    eprintln!("[Plugin:{}] on_tool_execute error: {}", plugin_name, e);
+                }
+            }
+        }
+
         match name {
             // Built-in tools
             "bash" => self.execute_bash(args).await,
@@ -135,12 +155,21 @@ impl ToolExecutor {
                         match mcp.call_tool(name, args).await {
                             Ok(result) => Ok(result),
                             Err(_) => {
-                                // Fallback to built-in tools
-                                let result = tools::execute_tool(name, args);
-                                if result.is_empty() {
-                                    Err(format!("Unknown tool: {}", name).into())
+                                // Try plugin tools (prefixed with "plugin_")
+                                if name.starts_with("plugin_") {
+                                    let plugins = self.plugin_manager.lock().await;
+                                    match plugins.execute_tool(name, args) {
+                                        Ok(result) => Ok(result),
+                                        Err(e) => Err(e.into()),
+                                    }
                                 } else {
-                                    Ok(result)
+                                    // Fallback to built-in tools
+                                    let result = tools::execute_tool(name, args);
+                                    if result.starts_with("Unknown tool:") {
+                                        Err(format!("Unknown tool: {}", name).into())
+                                    } else {
+                                        Ok(result)
+                                    }
                                 }
                             }
                         }
@@ -510,6 +539,7 @@ impl ToolExecutor {
 pub async fn get_all_tool_schemas(
     mcp_manager: &Arc<Mutex<McpManager>>,
     custom_tool_manager: &Arc<Mutex<CustomToolManager>>,
+    plugin_manager: &Arc<Mutex<crate::plugins::PluginManager>>,
 ) -> Value {
     let mut tools_schema = tools::get_tools_schema();
 
@@ -522,6 +552,10 @@ pub async fn get_all_tool_schemas(
         // Add custom tools
         let custom = custom_tool_manager.lock().await;
         tools_array.extend(custom.get_tools_schema());
+
+        // Add plugin tools
+        let plugins = plugin_manager.lock().await;
+        tools_array.extend(plugins.get_tool_schemas());
     }
 
     tools_schema
@@ -545,6 +579,7 @@ mod tests {
         let rag_manager = Arc::new(Mutex::new(RagManager::new(&config)));
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
         let orchestrator = Arc::new(Mutex::new(Orchestrator::new(config.clone())));
+        let plugin_manager = Arc::new(Mutex::new(PluginManager::new()));
 
         let tool_executor = ToolExecutor::new(
             config.clone(),
@@ -558,6 +593,7 @@ mod tests {
             rag_manager,
             pinned_files,
             orchestrator,
+            plugin_manager,
         );
 
         let pin_args = json!({ "path": "/test/file.rs" });

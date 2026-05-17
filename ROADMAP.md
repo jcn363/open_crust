@@ -90,7 +90,7 @@ already enterprise-ready — the gap is in cost visibility and agent management 
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
 | 1 | **Token budget & cost dashboard** | Medium (3-4h) | 🔥 High | ⏳ |
-| 2 | **Background agent dashboard** | Medium (4-6h) | 🔥 High | ⏳ |
+| 2 | **Background agent dashboard** | Medium (4-6h) | 🔥 High | ✅ |
 | 3 | **Enterprise compliance packaging** | Medium (4-6h) | 🟡 Medium | ⏳ |
 
 #### 1. Token Budget & Cost Dashboard

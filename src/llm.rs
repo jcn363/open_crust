@@ -8,6 +8,7 @@
 use crate::config::{Config, PermissionAction, ProviderType, ResponseMode};
 use crate::orchestrator::Orchestrator;
 use crate::rules;
+use crate::token_budget::TokenBudgetManager;
 use crate::tool_executor::ToolExecutor;
 use reqwest::Client;
 use serde_json::{Value, json};
@@ -39,6 +40,7 @@ use crate::lsp::LspManager;
 use crate::mcp::McpManager;
 use crate::permissions::PermissionManager;
 use crate::planner::Planner;
+use crate::plugins::PluginManager;
 use crate::rag::RagManager;
 use crate::skills::SkillManager;
 use crate::web::WebManager;
@@ -52,6 +54,7 @@ use tokio::sync::Mutex;
 /// agentic conversation loop: send messages, process tool calls, enforce
 /// permissions, stream responses, and audit every interaction.
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct LlmClient {
     client: Client,
     pub config: Arc<Config>,
@@ -62,6 +65,10 @@ pub struct LlmClient {
     pub audit_logger: Arc<AuditLogger>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
     pub tool_executor: Arc<ToolExecutor>,
+    /// Token budget manager for tracking usage and costs
+    pub token_budget_manager: Arc<TokenBudgetManager>,
+    /// Plugin manager for extension system
+    pub plugin_manager: Arc<Mutex<PluginManager>>,
     /// Plan mode: when Planning, write tools are blocked
     plan_mode: Arc<std::sync::Mutex<PlanModeState>>,
     /// Persistent goal for autonomous execution
@@ -90,6 +97,30 @@ impl LlmClient {
             Orchestrator::new(config.clone()).with_shared_state(orchestrator_tasks.clone()),
         ));
 
+        // Initialize plugin manager and discover plugins
+        let mut plugin_mgr = PluginManager::new();
+        if config.plugins.enabled {
+            let discovered = plugin_mgr.discover();
+            // Load persisted state (overrides defaults)
+            plugin_mgr.load_state();
+            // Apply disabled_plugins from config
+            for disabled in &config.plugins.disabled_plugins {
+                let _ = plugin_mgr.disable(disabled);
+            }
+            if !discovered.is_empty() {
+                eprintln!("[Plugins] Discovered: {}", discovered.join(", "));
+            }
+            // Fire on_startup hook
+            let results = plugin_mgr.execute_hook("on_startup", "{}");
+            for (name, result) in &results {
+                match result {
+                    Ok(output) => eprintln!("[Plugin:{}] on_startup: {}", name, output.trim()),
+                    Err(e) => eprintln!("[Plugin:{}] on_startup error: {}", name, e),
+                }
+            }
+        }
+        let plugin_manager = Arc::new(Mutex::new(plugin_mgr));
+
         // Create ToolExecutor with all the managers
         let tool_executor = Arc::new(ToolExecutor::new(
             config.clone(),
@@ -103,6 +134,7 @@ impl LlmClient {
             Arc::new(Mutex::new(RagManager::new(&config))),
             pinned_files.clone(),
             orchestrator.clone(),
+            plugin_manager.clone(),
         ));
 
         Ok(Self {
@@ -115,6 +147,8 @@ impl LlmClient {
             audit_logger,
             pinned_files,
             tool_executor,
+            token_budget_manager: Arc::new(TokenBudgetManager::new()),
+            plugin_manager,
             plan_mode: Arc::new(std::sync::Mutex::new(PlanModeState::default())),
             goal: Arc::new(std::sync::Mutex::new(None)),
             orchestrator_tasks,
@@ -191,6 +225,21 @@ impl LlmClient {
         progress_tx: mpsc::Sender<String>,
         mut approval_rx: Option<&mut mpsc::Receiver<bool>>,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
+        // Fire on_message hook for plugins that subscribe to it
+        {
+            let plugins = self.plugin_manager.lock().await;
+            let hook_ctx = serde_json::json!({"prompt": prompt});
+            let results = plugins.execute_hook(
+                "on_message",
+                &serde_json::to_string(&hook_ctx).unwrap_or_default(),
+            );
+            for (plugin_name, result) in &results {
+                if let Err(e) = result {
+                    eprintln!("[Plugin:{}] on_message error: {}", plugin_name, e);
+                }
+            }
+        }
+
         if messages_history.is_empty() {
             let rules_content = rules::load_rules(&self.config.instructions);
             let mut system_prompt = format!(
@@ -448,6 +497,20 @@ impl LlmClient {
                 }
             } else if let Some(content) = res.get("content").and_then(|c| c.as_str()) {
                 messages_history.push(res.clone());
+                // Fire on_response hook
+                {
+                    let plugins = self.plugin_manager.lock().await;
+                    let hook_ctx = serde_json::json!({"response_length": content.len()});
+                    let results = plugins.execute_hook(
+                        "on_response",
+                        &serde_json::to_string(&hook_ctx).unwrap_or_default(),
+                    );
+                    for (plugin_name, result) in &results {
+                        if let Err(e) = result {
+                            eprintln!("[Plugin:{}] on_response error: {}", plugin_name, e);
+                        }
+                    }
+                }
                 return Ok(content.to_string());
             } else {
                 // If it neither has content nor tool_calls (rare, but can happen), just stop.
@@ -468,6 +531,7 @@ impl LlmClient {
         let tools_schema = crate::tool_executor::get_all_tool_schemas(
             &self.mcp_manager,
             &self.custom_tool_manager,
+            &self.plugin_manager,
         )
         .await;
 

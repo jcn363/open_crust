@@ -361,6 +361,10 @@ pub struct Config {
     // --- DAN (Do Anything Now) uncensored configuration ---
     #[serde(default)]
     pub dan_config: DanConfig,
+
+    // --- Plugin system configuration ---
+    #[serde(default)]
+    pub plugins: PluginConfig,
 }
 
 fn default_audit_retention() -> u64 {
@@ -395,6 +399,30 @@ impl Default for ModelAutoRefreshConfig {
         Self {
             enabled: true,
             interval_secs: 3600,
+        }
+    }
+}
+
+/// Plugin system configuration.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PluginConfig {
+    /// Whether plugin auto-discovery is enabled (default: true)
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// Plugin names to explicitly disable
+    #[serde(default)]
+    pub disabled_plugins: Vec<String>,
+    /// Additional search paths for plugin directories
+    #[serde(default)]
+    pub search_paths: Vec<String>,
+}
+
+impl Default for PluginConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            disabled_plugins: Vec::new(),
+            search_paths: Vec::new(),
         }
     }
 }
@@ -456,6 +484,7 @@ impl Default for Config {
             audit_retention_days: default_audit_retention(),
             audit_max_size_bytes: default_audit_max_size(),
             dan_config: DanConfig::default(),
+            plugins: PluginConfig::default(),
         }
     }
 }

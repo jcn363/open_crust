@@ -15,6 +15,7 @@ pub enum Mode {
     Review,
     Servers,
     SkillBrowser,   // Ctrl+Shift+K skill browser
+    PluginBrowser,  // Ctrl+P plugin browser
     CommandPalette, // Ctrl+K command palette
     Help,           // ? key help
     McpShowcase,    // Ctrl+M MCP Showcase
@@ -113,6 +114,10 @@ pub struct App {
     pub skill_browser_items: Vec<(String, String, bool)>, // (name, description, active)
     pub skill_browser_selected: usize,
     pub skill_browser_scroll: usize,
+    // Plugin Browser state (Ctrl+P)
+    pub plugin_browser_items: Vec<(String, String, bool)>, // (name, description, enabled)
+    pub plugin_browser_selected: usize,
+    pub plugin_browser_scroll: usize,
     // Plan review index (for diff viewer)
     pub plan_review_index: usize, // Which file in the plan being reviewed
     // Scroll offset for diff panels in review mode
@@ -142,6 +147,10 @@ pub struct App {
         Option<std::sync::Arc<tokio::sync::RwLock<Vec<crate::orchestrator::task::Task>>>>,
     /// Scroll offset for the message list (positive = scroll up)
     pub message_scroll: usize,
+    /// Token budget for current session
+    pub token_budget: Option<crate::token_budget::TokenBudget>,
+    /// Current session ID for token tracking
+    pub current_session_id: Option<String>,
 }
 
 impl App {
@@ -286,6 +295,10 @@ impl App {
             skill_browser_items: Vec::new(),
             skill_browser_selected: 0,
             skill_browser_scroll: 0,
+            // Plugin Browser initialization (populated in event_loop.rs)
+            plugin_browser_items: Vec::new(),
+            plugin_browser_selected: 0,
+            plugin_browser_scroll: 0,
             // Plan review index (for diff viewer)
             plan_review_index: 0,
             plan_review_scroll: 0,
@@ -308,6 +321,9 @@ impl App {
             mission_control_ui: None,
             orchestrator_tasks: None,
             message_scroll: 0,
+            // Token budget tracking
+            token_budget: None,
+            current_session_id: None,
         };
         app.load_history();
         app

@@ -21,12 +21,15 @@
 use crate::audit::{AuditEntry, AuditExport, AuditQuery, ExportFormat};
 use crate::config::Config;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
+
+/// Result type for evidence package verification operations.
+pub type VerifyResult = Result<Vec<(String, bool, String)>, Box<dyn std::error::Error>>;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Evidence Package
@@ -73,27 +76,46 @@ impl EvidencePackage {
         let custody_path = evidence_dir.join("chain-of-custody.txt");
         let mut custody = fs::File::create(&custody_path)?;
         writeln!(custody, "CHAIN OF CUSTODY LOG")?;
-        writeln!(custody, "{}", "=" .repeat(60))?;
+        writeln!(custody, "{}", "=".repeat(60))?;
         writeln!(
             custody,
             "Package created: {}",
             Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
         )?;
-        writeln!(custody, "Generator: OpenCrust Compliance v{}", env!("CARGO_PKG_VERSION"))?;
+        writeln!(
+            custody,
+            "Generator: OpenCrust Compliance v{}",
+            env!("CARGO_PKG_VERSION")
+        )?;
         writeln!(custody, "Audit source: {}", audit_path.display())?;
         writeln!(custody, "Total entries: {}", entries.len())?;
         writeln!(custody)?;
         writeln!(custody, "CONTENTS:")?;
         writeln!(custody, "  - audit.csv (CSV export of all audit entries)")?;
         writeln!(custody, "  - audit.json (JSON export of all audit entries)")?;
-        writeln!(custody, "  - config.json (OpenCrust configuration snapshot)")?;
+        writeln!(
+            custody,
+            "  - config.json (OpenCrust configuration snapshot)"
+        )?;
         writeln!(custody, "  - compliance-report.txt (generated report)")?;
-        writeln!(custody, "  - evidence-manifest.txt (SHA256 hashes of all files)")?;
+        writeln!(
+            custody,
+            "  - evidence-manifest.txt (SHA256 hashes of all files)"
+        )?;
         writeln!(custody, "  - chain-of-custody.txt (this file)")?;
         writeln!(custody)?;
-        writeln!(custody, "This package was generated automatically. The manifest")?;
-        writeln!(custody, "contains SHA256 hashes for all files. Verify integrity")?;
-        writeln!(custody, "by re-computing hashes and comparing to the manifest.")?;
+        writeln!(
+            custody,
+            "This package was generated automatically. The manifest"
+        )?;
+        writeln!(
+            custody,
+            "contains SHA256 hashes for all files. Verify integrity"
+        )?;
+        writeln!(
+            custody,
+            "by re-computing hashes and comparing to the manifest."
+        )?;
 
         // Generate manifest with SHA256
         let manifest_path = evidence_dir.join("evidence-manifest.txt");
@@ -106,7 +128,7 @@ impl EvidencePackage {
         dir_entries.sort_by_key(|e| e.file_name());
 
         writeln!(manifest, "EVIDENCE PACKAGE MANIFEST")?;
-        writeln!(manifest, "{}", "=" .repeat(60))?;
+        writeln!(manifest, "{}", "=".repeat(60))?;
         writeln!(
             manifest,
             "Generated: {}",
@@ -138,8 +160,6 @@ impl EvidencePackage {
         Ok(evidence_dir)
     }
 
-    type VerifyResult = Result<Vec<(String, bool, String)>, Box<dyn std::error::Error>>;
-    
     /// Verify an existing evidence package by re-computing hashes.
     pub fn verify(package_dir: &Path) -> VerifyResult {
         let manifest_path = package_dir.join("evidence-manifest.txt");
@@ -163,110 +183,15 @@ impl EvidencePackage {
                     };
                     let valid = actual_hash == expected_hash;
                     results.push((filename.to_string(), valid, actual_hash));
-     }
-
-
-
-     /// Evaluate audit entries against this profile.
-    /// Returns a map of control_id → list of matching audit entry indices.
-    pub fn evaluate(&self, entries: &[AuditEntry]) -> HashMap<String, Vec<usize>> {
-        let mut results: HashMap<String, Vec<usize>> = HashMap::new();
-        for (idx, entry) in entries.iter().enumerate() {
-            for (tool_pattern, control_ids) in &self.tool_to_control {
-                if entry.tool.contains(tool_pattern) || tool_pattern.contains(&entry.tool) {
-                    for cid in control_ids {
-                        results.entry(cid.clone()).or_default().push(idx);
-                    }
                 }
             }
         }
-        results
+        Ok(results)
     }
+}
 
-    // --- Preset profiles ---
-
-    fn soc2_defaults(name: String) -> Self {
-        let mut controls = HashMap::new();
-        controls.insert("CC1.1".into(), "Control environment — integrity and ethical values".into());
-        controls.insert("CC2.1".into(), "Communication and information — audit trails maintained".into());
-        controls.insert("CC3.1".into(), "Risk assessment — tool usage monitored".into());
-        controls.insert("CC4.1".into(), "Monitoring activities — all actions logged".into());
-        controls.insert("CC5.1".into(), "Control activities — permission enforcement".into());
-        controls.insert("CC6.1".into(), "Logical and physical access — command validation".into());
-        controls.insert("CC7.1".into(), "System operations — change management".into());
-
-        let mut tool_to_control = HashMap::new();
-        tool_to_control.insert("bash".into(), vec!["CC6.1".into(), "CC7.1".into()]);
-        tool_to_control.insert("write".into(), vec!["CC7.1".into()]);
-        tool_to_control.insert("read".into(), vec!["CC6.1".into()]);
-        tool_to_control.insert("notify".into(), vec!["CC2.1".into()]);
-
-        Self {
-            name,
-            framework: ComplianceFramework::SOC2,
-            description: "SOC2 — Service Organization Control 2 compliance profile".into(),
-            controls,
-            tool_to_control,
-        }
-    }
-
-    fn hipaa_defaults(name: String) -> Self {
-        let mut controls = HashMap::new();
-        controls.insert("164.308".into(), "Administrative safeguards — access control".into());
-        controls.insert("164.310".into(), "Physical safeguards — workstation security".into());
-        controls.insert("164.312".into(), "Technical safeguards — audit controls".into());
-
-        let mut tool_to_control = HashMap::new();
-        tool_to_control.insert("bash".into(), vec!["164.308".into()]);
-        tool_to_control.insert("write".into(), vec!["164.312".into()]);
-
-        Self {
-            name,
-            framework: ComplianceFramework::HIPAA,
-            description: "HIPAA — Health Insurance Portability and Accountability Act".into(),
-            controls,
-            tool_to_control,
-        }
-    }
-
-    fn gdpr_defaults(name: String) -> Self {
-        let mut controls = HashMap::new();
-        controls.insert("Art.5".into(), "Principles of data processing".into());
-        controls.insert("Art.32".into(), "Security of processing".into());
-        controls.insert("Art.33".into(), "Data breach notification".into());
-
-        let mut tool_to_control = HashMap::new();
-        tool_to_control.insert("bash".into(), vec!["Art.32".into()]);
-        tool_to_control.insert("write".into(), vec!["Art.5".into()]);
-
-        Self {
-            name,
-            framework: ComplianceFramework::GDPR,
-            description: "GDPR — General Data Protection Regulation".into(),
-            controls,
-            tool_to_control,
-        }
-    }
-
-    fn sox_defaults(name: String) -> Self {
-        let mut controls = HashMap::new();
-        controls.insert("302".into(), "Corporate responsibility for financial reports".into());
-        controls.insert("404".into(), "Internal controls over financial reporting".into());
-        controls.insert("409".into(), "Real-time disclosure of material changes".into());
-
-        let mut tool_to_control = HashMap::new();
-        tool_to_control.insert("bash".into(), vec!["404".into()]);
-        tool_to_control.insert("write".into(), vec!["302".into(), "404".into()]);
-
-        Self {
-            name,
-            framework: ComplianceFramework::SOX,
-            description: "SOX — Sarbanes-Oxley Act compliance".into(),
-            controls,
-            tool_to_control,
-        }
-    }
-
+// ═══════════════════════════════════════════════════════════════════════════════
+// Compliance Policies
 // ═══════════════════════════════════════════════════════════════════════════════
 // Compliance Policies
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -318,6 +243,214 @@ pub struct PolicyViolation {
     pub severity: PolicySeverity,
     pub message: String,
     pub enforced: bool,
+}
+
+/// Compliance framework standards.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[expect(
+    clippy::upper_case_acronyms,
+    reason = "standard compliance framework names"
+)]
+pub enum ComplianceFramework {
+    SOC2,
+    HIPAA,
+    SOX,
+    PciDss,
+    ISO27001,
+}
+
+impl std::fmt::Display for ComplianceFramework {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SOC2 => write!(f, "SOC2"),
+            Self::HIPAA => write!(f, "HIPAA"),
+            Self::SOX => write!(f, "SOX"),
+            Self::PciDss => write!(f, "PCI-DSS"),
+            Self::ISO27001 => write!(f, "ISO 27001"),
+        }
+    }
+}
+
+/// A compliance profile for a specific framework (SOC2, HIPAA, etc.)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComplianceProfile {
+    pub name: String,
+    pub framework: ComplianceFramework,
+    pub description: String,
+    /// Control mappings: control_id → description
+    pub controls: HashMap<String, String>,
+    /// Which tool patterns map to which controls
+    pub tool_to_control: HashMap<String, Vec<String>>,
+}
+
+impl ComplianceProfile {
+    /// Create a new compliance profile with framework-specific defaults.
+    pub fn new(name: String, framework: ComplianceFramework) -> Self {
+        match framework {
+            ComplianceFramework::SOC2 => Self::soc2_defaults(name),
+            ComplianceFramework::HIPAA => Self::hipaa_defaults(name),
+            ComplianceFramework::SOX => Self::sox_defaults(name),
+            ComplianceFramework::PciDss => Self::pci_dss_defaults(name),
+            ComplianceFramework::ISO27001 => Self::iso27001_defaults(name),
+        }
+    }
+
+    fn soc2_defaults(name: String) -> Self {
+        let mut controls = HashMap::new();
+        controls.insert(
+            "CC1.1".into(),
+            "Control environment — integrity and ethical values".into(),
+        );
+        controls.insert(
+            "CC2.1".into(),
+            "Communication and information — audit trails maintained".into(),
+        );
+        controls.insert(
+            "CC3.1".into(),
+            "Risk assessment — tool usage monitored".into(),
+        );
+        controls.insert(
+            "CC4.1".into(),
+            "Monitoring activities — all actions logged".into(),
+        );
+        controls.insert(
+            "CC5.1".into(),
+            "Control activities — permission enforcement".into(),
+        );
+        controls.insert(
+            "CC6.1".into(),
+            "Logical and physical access — command validation".into(),
+        );
+        controls.insert(
+            "CC7.1".into(),
+            "Restricted access — sensitive operations audited".into(),
+        );
+        controls.insert(
+            "CC8.1".into(),
+            "Change management — all modifications tracked".into(),
+        );
+        controls.insert(
+            "CC9.1".into(),
+            "Incident response — audit logs enable forensics".into(),
+        );
+
+        let mut tool_to_control = HashMap::new();
+        tool_to_control.insert("bash".into(), vec!["CC4.1".into(), "CC6.1".into()]);
+        tool_to_control.insert("write".into(), vec!["CC5.1".into(), "CC8.1".into()]);
+        tool_to_control.insert("read".into(), vec!["CC6.1".into()]);
+
+        Self {
+            name,
+            framework: ComplianceFramework::SOC2,
+            description: "SOC 2 Type II compliance".into(),
+            controls,
+            tool_to_control,
+        }
+    }
+
+    fn hipaa_defaults(name: String) -> Self {
+        let mut controls = HashMap::new();
+        controls.insert("164.308(a)(1)".into(), "Security management process".into());
+        controls.insert("164.308(a)(3)".into(), "Workforce security".into());
+        controls.insert(
+            "164.308(a)(4)".into(),
+            "Information access management".into(),
+        );
+        controls.insert("164.312(a)(2)".into(), "Audit controls".into());
+        controls.insert("164.312(b)".into(), "Audit logs and accountability".into());
+
+        let mut tool_to_control = HashMap::new();
+        tool_to_control.insert(
+            "bash".into(),
+            vec!["164.312(a)(2)".into(), "164.312(b)".into()],
+        );
+        tool_to_control.insert("write".into(), vec!["164.308(a)(4)".into()]);
+
+        Self {
+            name,
+            framework: ComplianceFramework::HIPAA,
+            description: "HIPAA compliance".into(),
+            controls,
+            tool_to_control,
+        }
+    }
+
+    fn sox_defaults(name: String) -> Self {
+        let mut controls = HashMap::new();
+        controls.insert("IT-1".into(), "IT governance and risk management".into());
+        controls.insert("IT-2".into(), "System access and change management".into());
+        controls.insert("IT-3".into(), "System monitoring and logging".into());
+
+        let mut tool_to_control = HashMap::new();
+        tool_to_control.insert("bash".into(), vec!["IT-3".into()]);
+        tool_to_control.insert("write".into(), vec!["IT-2".into()]);
+
+        Self {
+            name,
+            framework: ComplianceFramework::SOX,
+            description: "SOX — Sarbanes-Oxley Act compliance".into(),
+            controls,
+            tool_to_control,
+        }
+    }
+
+    fn pci_dss_defaults(name: String) -> Self {
+        let mut controls = HashMap::new();
+        controls.insert("1.1".into(), "Firewall configuration standards".into());
+        controls.insert("2.1".into(), "Default security parameters".into());
+        controls.insert("6.1".into(), "Security patches".into());
+        controls.insert("7.1".into(), "Access control".into());
+        controls.insert("10.1".into(), "Audit logging".into());
+
+        let mut tool_to_control = HashMap::new();
+        tool_to_control.insert("bash".into(), vec!["10.1".into()]);
+        tool_to_control.insert("write".into(), vec!["7.1".into()]);
+
+        Self {
+            name,
+            framework: ComplianceFramework::PciDss,
+            description: "PCI DSS compliance".into(),
+            controls,
+            tool_to_control,
+        }
+    }
+
+    fn iso27001_defaults(name: String) -> Self {
+        let mut controls = HashMap::new();
+        controls.insert("A.5.1".into(), "Information security policies".into());
+        controls.insert("A.6.1".into(), "Internal organization".into());
+        controls.insert("A.7.1".into(), "Human resource security".into());
+        controls.insert("A.9.1".into(), "Access control".into());
+        controls.insert("A.12.4".into(), "Logging".into());
+
+        let mut tool_to_control = HashMap::new();
+        tool_to_control.insert("bash".into(), vec!["A.12.4".into()]);
+        tool_to_control.insert("write".into(), vec!["A.9.1".into()]);
+
+        Self {
+            name,
+            framework: ComplianceFramework::ISO27001,
+            description: "ISO 27001 compliance".into(),
+            controls,
+            tool_to_control,
+        }
+    }
+
+    /// Evaluate audit entries against this profile.
+    /// Returns a map of control_id → list of matching audit entry indices.
+    pub fn evaluate(&self, entries: &[AuditEntry]) -> HashMap<String, Vec<usize>> {
+        let mut results: HashMap<String, Vec<usize>> = HashMap::new();
+        for (idx, entry) in entries.iter().enumerate() {
+            for (tool_pattern, control_ids) in &self.tool_to_control {
+                if entry.tool.contains(tool_pattern) || tool_pattern.contains(&entry.tool) {
+                    for cid in control_ids {
+                        results.entry(cid.clone()).or_default().push(idx);
+                    }
+                }
+            }
+        }
+        results
+    }
 }
 
 /// A collection of policy rules for compliance enforcement.
@@ -709,7 +842,11 @@ impl std::fmt::Display for ComplianceReport {
                     v.severity,
                     v.rule_id,
                     v.message,
-                    if v.enforced { "[ENFORCED]" } else { "[ADVISORY]" }
+                    if v.enforced {
+                        "[ENFORCED]"
+                    } else {
+                        "[ADVISORY]"
+                    }
                 )?;
             }
         }
@@ -882,7 +1019,12 @@ mod tests {
         let mut manifest = fs::File::create(out.join("evidence-manifest.txt")).unwrap();
         writeln!(manifest, "EVIDENCE PACKAGE MANIFEST").unwrap();
         writeln!(manifest, "Algorithm: SHA256").unwrap();
-        writeln!(manifest, "test.txt  SHA256:{})", hex::encode(Sha256::digest(b"hello"))).unwrap();
+        writeln!(
+            manifest,
+            "test.txt  SHA256:{})",
+            hex::encode(Sha256::digest(b"hello"))
+        )
+        .unwrap();
 
         // Create the file with matching content
         fs::write(out.join("test.txt"), b"hello").unwrap();
@@ -897,17 +1039,15 @@ mod tests {
     #[test]
     fn test_compliance_profile_evaluate() {
         let profile = ComplianceProfile::new("Test".into(), ComplianceFramework::SOC2);
-        let entries = vec![
-            AuditEntry {
-                timestamp: "2026-01-01T00:00:00Z".into(),
-                session_id: "s-1".into(),
-                agent_type: "t".into(),
-                tool: "bash".into(),
-                input: "ls".into(),
-                duration_ms: 0,
-                approved: true,
-            },
-        ];
+        let entries = vec![AuditEntry {
+            timestamp: "2026-01-01T00:00:00Z".into(),
+            session_id: "s-1".into(),
+            agent_type: "t".into(),
+            tool: "bash".into(),
+            input: "ls".into(),
+            duration_ms: 0,
+            approved: true,
+        }];
         let results = profile.evaluate(&entries);
         // bash maps to CC6.1 and CC7.1
         assert!(results.contains_key("CC6.1"));

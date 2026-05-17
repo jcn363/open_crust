@@ -16,6 +16,7 @@ fn mode_str(mode: crate::app::Mode) -> &'static str {
         crate::app::Mode::Review => "REVIEW",
         crate::app::Mode::Servers => "SERVERS",
         crate::app::Mode::SkillBrowser => "SKILLS",
+        crate::app::Mode::PluginBrowser => "PLUGINS",
         crate::app::Mode::CommandPalette => "PALETTE",
         crate::app::Mode::Help => "HELP",
         crate::app::Mode::McpShowcase => "MCP SHOWCASE",
@@ -47,7 +48,7 @@ fn provider_str(provider: &ProviderType) -> &'static str {
 }
 
 pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
-    // Structure: [MODE] [PLAN] [Provider:Model] tasks:N | keybind hints
+    // Structure: [MODE] [PLAN] [Provider:Model] tokens:N/M cost:$X.XX tasks:N | keybind hints
     let mode_tag = format!(" {} ", mode_str(app.mode));
     let plan_tag = plan_mode_tag(app);
     let provider_tag = format!(
@@ -55,6 +56,23 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         provider_str(&app.config.provider),
         app.config.model
     );
+
+    // Add token and cost information
+    let token_tag = if let Some(_session_id) = &app.current_session_id {
+        if let Some(budget) = app.token_budget.as_ref() {
+            let usage_pct =
+                (budget.current_tokens as f64 / budget.max_tokens as f64 * 100.0) as u32;
+            format!(
+                " tokens:{}/{} ({}%) cost:${:.2} ",
+                budget.current_tokens, budget.max_tokens, usage_pct, budget.total_cost
+            )
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
     let task_tag = format!(" tasks:{} ", app.background_tasks.len());
 
     // Show keybinding hints based on mode
@@ -72,8 +90,8 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
     };
 
     let status_bar = Paragraph::new(format!(
-        "{}{}{}{}{}",
-        mode_tag, plan_tag, provider_tag, task_tag, hints,
+        "{}{}{}{}{}{}",
+        mode_tag, plan_tag, provider_tag, token_tag, task_tag, hints,
     ))
     .style(Style::default().fg(theme.fg).bg(theme.accent));
     f.render_widget(status_bar, area);
