@@ -3,7 +3,12 @@
 //! Draws the bottom status bar showing mode (insert/normal), provider,
 //! model, token count, and active agent/background task count.
 
-use ratatui::{Frame, layout::Rect, style::Style, widgets::Paragraph};
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::{Color, Style},
+    widgets::Paragraph,
+};
 
 use crate::app::App;
 use crate::config::ProviderType;
@@ -47,7 +52,7 @@ fn provider_str(provider: &ProviderType) -> &'static str {
     }
 }
 
-pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
+pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, _theme: &ThemeContext) {
     // Structure: [MODE] [PLAN] [Provider:Model] tokens:N/M cost:$X.XX tasks:N | keybind hints
     let mode_tag = format!(" {} ", mode_str(app.mode));
     let plan_tag = plan_mode_tag(app);
@@ -93,6 +98,10 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         "{}{}{}{}{}{}",
         mode_tag, plan_tag, provider_tag, token_tag, task_tag, hints,
     ))
-    .style(Style::default().fg(theme.fg).bg(theme.accent));
+    .style(
+        Style::default()
+            .fg(Color::Rgb(240, 238, 238))
+            .bg(Color::Rgb(26, 25, 25)),
+    );
     f.render_widget(status_bar, area);
 }

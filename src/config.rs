@@ -278,16 +278,16 @@ impl Default for ThemeConfig {
 }
 
 fn default_color_bg() -> String {
-    "#1e1e1e".to_string()
+    "#131211".to_string()
 }
 fn default_color_fg() -> String {
-    "#ffffff".to_string()
+    "#b6b5b4".to_string()
 }
 fn default_color_accent() -> String {
-    "#1e90ff".to_string()
+    "#f0eeee".to_string()
 }
 fn default_color_border() -> String {
-    "#333333".to_string()
+    "#3c3b3a".to_string()
 }
 
 /// Top-level configuration for OpenCrust

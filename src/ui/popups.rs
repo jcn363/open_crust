@@ -44,7 +44,7 @@ fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect) {
             height: area.height.saturating_sub(1),
         };
         f.render_widget(
-            Block::default().style(Style::default().bg(Color::Rgb(10, 10, 10))),
+            Block::default().style(Style::default().bg(Color::Rgb(10, 9, 9))),
             shadow,
         );
     }
@@ -89,8 +89,8 @@ fn side_by_side_diff<'a>(
                 left_lines.push(Line::from(Span::styled(
                     value,
                     Style::default()
-                        .bg(Color::Rgb(80, 20, 20))
-                        .fg(Color::Rgb(255, 150, 150)),
+                        .bg(Color::Rgb(60, 20, 20))
+                        .fg(Color::Rgb(200, 130, 130)),
                 )));
                 right_lines.push(empty);
             }
@@ -99,8 +99,8 @@ fn side_by_side_diff<'a>(
                 right_lines.push(Line::from(Span::styled(
                     value,
                     Style::default()
-                        .bg(Color::Rgb(20, 80, 20))
-                        .fg(Color::Rgb(150, 255, 150)),
+                        .bg(Color::Rgb(20, 50, 20))
+                        .fg(Color::Rgb(130, 200, 130)),
                 )));
             }
         }

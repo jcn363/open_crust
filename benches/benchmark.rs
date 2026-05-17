@@ -17,6 +17,7 @@ use serde::Deserialize;
 // ---------------------------------------------------------------------------
 
 #[derive(Deserialize, Default)]
+#[allow(dead_code)]
 struct BenchConfig {
     provider: Option<String>,
     model: Option<String>,
@@ -130,7 +131,7 @@ fn bench_json_merge(c: &mut Criterion) {
             let patch: serde_json::Value = serde_json::from_str(patch).unwrap();
             if let serde_json::Value::Object(ref mut m) = base {
                 if let serde_json::Value::Object(p) = patch {
-                    m.extend(p.into_iter());
+                    m.extend(p);
                 }
             }
             black_box(base);

@@ -29,10 +29,10 @@ impl ThemeContext {
     pub fn from_config(config: &crate::config::Config) -> Self {
         let theme = config.theme.as_ref();
         Self {
-            bg: parse_color(theme.map(|t| t.background.as_str()).unwrap_or("#1e1e1e")),
-            fg: parse_color(theme.map(|t| t.foreground.as_str()).unwrap_or("#ffffff")),
-            accent: parse_color(theme.map(|t| t.accent.as_str()).unwrap_or("#007acc")),
-            border: parse_color(theme.map(|t| t.border.as_str()).unwrap_or("#333333")),
+            bg: parse_color(theme.map(|t| t.background.as_str()).unwrap_or("#131211")),
+            fg: parse_color(theme.map(|t| t.foreground.as_str()).unwrap_or("#b6b5b4")),
+            accent: parse_color(theme.map(|t| t.accent.as_str()).unwrap_or("#f0eeee")),
+            border: parse_color(theme.map(|t| t.border.as_str()).unwrap_or("#3c3b3a")),
         }
     }
 }

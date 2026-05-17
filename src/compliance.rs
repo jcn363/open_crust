@@ -1049,9 +1049,9 @@ mod tests {
             approved: true,
         }];
         let results = profile.evaluate(&entries);
-        // bash maps to CC6.1 and CC7.1
+        // bash maps to CC4.1 and CC6.1 in SOC2 defaults
+        assert!(results.contains_key("CC4.1"));
         assert!(results.contains_key("CC6.1"));
-        assert!(results.contains_key("CC7.1"));
     }
 
     #[test]

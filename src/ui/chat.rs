@@ -16,20 +16,20 @@ use crate::app::{App, Message, Mode};
 use crate::ui::ThemeContext;
 
 /// Determine message style based on message content.
-/// Uses theme colors where possible, with semantic overrides for sender distinction.
+/// Uses theme colors for a cohesive, subtle appearance.
 fn message_style(content: &str, theme: &ThemeContext) -> Style {
     if content.starts_with("You: ") {
-        // User message - bright green (semantic, not themed)
-        Style::default().fg(Color::LightGreen)
+        // User message - use theme foreground for subtle distinction
+        Style::default().fg(theme.fg)
     } else if content.starts_with("opencrust: ") {
         // System message - use theme border for subtle appearance
         Style::default().fg(theme.border)
     } else if content.starts_with("System: ") {
-        // System notification - yellow (semantic)
-        Style::default().fg(Color::Yellow)
+        // System notification - warm amber (subtle)
+        Style::default().fg(Color::Rgb(180, 160, 80))
     } else if content.starts_with("Error: ") {
-        // Error messages - red
-        Style::default().fg(Color::Red)
+        // Error messages - soft red
+        Style::default().fg(Color::Rgb(200, 80, 80))
     } else {
         // LLM response - use theme accent
         Style::default().fg(theme.accent)
@@ -161,7 +161,7 @@ pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         if let Some(ref ghost) = app.ghost_text {
             line.spans.push(Span::styled(
                 ghost.clone(),
-                Style::default().fg(Color::DarkGray),
+                Style::default().fg(Color::Rgb(73, 72, 71)),
             ));
         }
         line
@@ -199,7 +199,7 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
             let style = if is_selected {
                 Style::default().fg(Color::Black).bg(theme.accent)
             } else if is_dir {
-                Style::default().fg(Color::Cyan)
+                Style::default().fg(Color::Rgb(111, 109, 108))
             } else {
                 Style::default().fg(theme.fg)
             };
