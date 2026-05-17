@@ -556,7 +556,24 @@ pub async fn run_tui(
                     },
                     Mode::Insert => {
                         if check_key_match(&key, &submit_keys) {
-                            app.submit_message();
+                            // Handle /share command before submitting
+                            if app.input.trim() == "/share" {
+                                let share_path = share_conversation(&app);
+                                if let Some(path) = share_path {
+                                    let _ = clipboard.copy(&path);
+                                    app.tabs[0].messages.push(Message::new(format!(
+                                        "Conversation shared to: {}\nPath copied to clipboard.",
+                                        path
+                                    )));
+                                } else {
+                                    app.tabs[0].messages.push(Message::new(
+                                        "Error: Failed to share conversation.".to_string(),
+                                    ));
+                                }
+                                app.input.clear();
+                            } else {
+                                app.submit_message();
+                            }
                         } else if app.vim_mode {
                             // Vim Mode input editing
                             match key.code {
@@ -610,36 +627,96 @@ pub async fn run_tui(
                                 _ => {}
                             }
                         } else {
-                            match key.code {
-                                KeyCode::Tab => {
-                                    if let Some(ghost) = app.ghost_text.take() {
-                                        app.input.push_str(&ghost);
-                                        app.last_input_time = Some(std::time::Instant::now());
+                            // File picker is active — handle navigation
+                            if app.file_picker_active {
+                                match key.code {
+                                    KeyCode::Esc => {
+                                        app.cancel_file_picker();
                                     }
-                                }
-                                KeyCode::Esc => {
-                                    if app.ghost_text.is_some() {
-                                        app.clear_ghost_text();
-                                    } else {
-                                        app.enter_normal_mode();
+                                    KeyCode::Up if app.file_picker_selected > 0 => {
+                                        app.file_picker_selected -= 1;
+                                        // Auto-scroll
+                                        if app.file_picker_selected < app.file_picker_scroll {
+                                            app.file_picker_scroll = app.file_picker_selected;
+                                        }
                                     }
-                                }
-                                KeyCode::Backspace => {
-                                    app.handle_backspace();
-                                }
-                                KeyCode::Char(c) => {
-                                    app.handle_char(c);
-                                    if app.input_prediction_enabled {
-                                        app.last_input_time = Some(std::time::Instant::now());
+                                    KeyCode::Down
+                                        if app.file_picker_selected + 1
+                                            < app.file_picker_results.len() =>
+                                    {
+                                        app.file_picker_selected += 1;
+                                        // Auto-scroll
+                                        let max_visible = 9; // matches picker height - 3
+                                        if app.file_picker_selected
+                                            >= app.file_picker_scroll + max_visible
+                                        {
+                                            app.file_picker_scroll =
+                                                app.file_picker_selected - max_visible + 1;
+                                        }
                                     }
+                                    KeyCode::Enter => {
+                                        if let Some(path) = app.confirm_file_picker() {
+                                            // Insert file reference into input
+                                            app.input.push_str(&format!("@\"{}\" ", path));
+                                        }
+                                    }
+                                    KeyCode::Backspace => {
+                                        if app.file_picker_query.is_empty() {
+                                            app.cancel_file_picker();
+                                        } else {
+                                            app.file_picker_query.pop();
+                                            app.file_picker_selected = 0;
+                                            app.file_picker_scroll = 0;
+                                            app.file_picker_results =
+                                                app.collect_project_files(&app.file_picker_query);
+                                        }
+                                    }
+                                    KeyCode::Char(c) => {
+                                        app.file_picker_query.push(c);
+                                        app.file_picker_selected = 0;
+                                        app.file_picker_scroll = 0;
+                                        app.file_picker_results =
+                                            app.collect_project_files(&app.file_picker_query);
+                                    }
+                                    _ => {}
                                 }
-                                KeyCode::Up => {
-                                    app.history_up();
+                            } else {
+                                match key.code {
+                                    KeyCode::Char('@') => {
+                                        // Activate file picker with current input as query
+                                        let query = app.input.clone();
+                                        app.activate_file_picker(query);
+                                    }
+                                    KeyCode::Tab => {
+                                        if let Some(ghost) = app.ghost_text.take() {
+                                            app.input.push_str(&ghost);
+                                            app.last_input_time = Some(std::time::Instant::now());
+                                        }
+                                    }
+                                    KeyCode::Esc => {
+                                        if app.ghost_text.is_some() {
+                                            app.clear_ghost_text();
+                                        } else {
+                                            app.enter_normal_mode();
+                                        }
+                                    }
+                                    KeyCode::Backspace => {
+                                        app.handle_backspace();
+                                    }
+                                    KeyCode::Char(c) => {
+                                        app.handle_char(c);
+                                        if app.input_prediction_enabled {
+                                            app.last_input_time = Some(std::time::Instant::now());
+                                        }
+                                    }
+                                    KeyCode::Up => {
+                                        app.history_up();
+                                    }
+                                    KeyCode::Down => {
+                                        app.history_down();
+                                    }
+                                    _ => {}
                                 }
-                                KeyCode::Down => {
-                                    app.history_down();
-                                }
-                                _ => {}
                             }
                         }
                     }
@@ -1034,6 +1111,51 @@ pub async fn run_tui(
     std::io::stdout().execute(LeaveAlternateScreen)?;
 
     Ok(())
+}
+
+/// Serialize the current tab's conversation to a shareable JSON file.
+/// Returns the file path on success.
+fn share_conversation(app: &App) -> Option<String> {
+    use chrono::Utc;
+    use serde_json::json;
+    use std::fs;
+
+    let tab = app.tabs.get(app.active_tab)?;
+    if tab.messages.is_empty() {
+        return None;
+    }
+
+    let share_data = json!({
+        "version": 1,
+        "project": std::env::current_dir().ok().map(|p| p.to_string_lossy().to_string()),
+        "provider": app.config.provider.to_string(),
+        "model": app.config.model,
+        "tab": tab.name,
+        "created_at": Utc::now().to_rfc3339(),
+        "messages": tab.messages.iter().map(|m| {
+            json!({
+                "timestamp": m.timestamp.to_rfc3339(),
+                "content": m.content,
+            })
+        }).collect::<Vec<_>>(),
+        "message_count": tab.messages.len(),
+    });
+
+    let share_dir = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join(".config/opencrust/shares");
+    if fs::create_dir_all(&share_dir).is_err() {
+        return None;
+    }
+
+    let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("share-{}.json", timestamp);
+    let share_path = share_dir.join(&filename);
+
+    let content = serde_json::to_string_pretty(&share_data).ok()?;
+    fs::write(&share_path, content).ok()?;
+
+    share_path.to_str().map(|s| s.to_string())
 }
 
 fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool {

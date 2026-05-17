@@ -148,6 +148,12 @@ pub struct App {
     pub token_budget: Option<crate::token_budget::TokenBudget>,
     /// Current session ID for token tracking
     pub current_session_id: Option<String>,
+    // File picker state (@ fuzzy search)
+    pub file_picker_active: bool,
+    pub file_picker_query: String,
+    pub file_picker_selected: usize,
+    pub file_picker_results: Vec<String>,
+    pub file_picker_scroll: usize,
 }
 
 impl App {
@@ -167,6 +173,81 @@ impl App {
     pub fn clear_ghost_text(&mut self) {
         self.ghost_text = None;
         self.last_input_time = None;
+    }
+
+    /// Activate the file picker with an initial query string.
+    /// Collects all project files and filters by the query.
+    pub fn activate_file_picker(&mut self, query: String) {
+        self.file_picker_active = true;
+        self.file_picker_query = query.clone();
+        self.file_picker_selected = 0;
+        self.file_picker_scroll = 0;
+        self.file_picker_results = self.collect_project_files(&query);
+    }
+
+    /// Deactivate the file picker without selecting a file.
+    pub fn cancel_file_picker(&mut self) {
+        self.file_picker_active = false;
+        self.file_picker_query.clear();
+        self.file_picker_results.clear();
+    }
+
+    /// Confirm the current selection and insert the file path into input.
+    pub fn confirm_file_picker(&mut self) -> Option<String> {
+        if let Some(path) = self.file_picker_results.get(self.file_picker_selected) {
+            let selected = path.clone();
+            self.cancel_file_picker();
+            Some(selected)
+        } else {
+            None
+        }
+    }
+
+    /// Collect all files in the project, filtered by query (fuzzy match).
+    pub(crate) fn collect_project_files(&self, query: &str) -> Vec<String> {
+        let mut files = Vec::new();
+        for entry in walkdir::WalkDir::new(".")
+            .into_iter()
+            .filter_entry(|e| {
+                e.file_name()
+                    .to_str()
+                    .map(|n| !n.starts_with('.'))
+                    .unwrap_or(false)
+            })
+            .flatten()
+        {
+            if entry.file_type().is_file() {
+                if let Some(path) = entry.path().to_str() {
+                    // Skip binary/large files
+                    if path.ends_with(".git")
+                        || path.contains("/target/")
+                        || path.contains("\\target\\")
+                    {
+                        continue;
+                    }
+                    files.push(path.to_string());
+                }
+            }
+        }
+
+        // Fuzzy filter
+        if query.is_empty() {
+            files.sort();
+            files.truncate(50);
+            files
+        } else {
+            let query_lower = query.to_lowercase();
+            let mut scored: Vec<_> = files
+                .into_iter()
+                .filter_map(|f| {
+                    let score = fuzzy_score(&f, &query_lower);
+                    if score > 0 { Some((score, f)) } else { None }
+                })
+                .collect();
+            scored.sort_by_key(|b| std::cmp::Reverse(b.0));
+            scored.truncate(50);
+            scored.into_iter().map(|(_, f)| f).collect()
+        }
     }
 }
 
@@ -319,6 +400,12 @@ impl App {
             // Token budget tracking
             token_budget: None,
             current_session_id: None,
+            // File picker state (@ fuzzy search)
+            file_picker_active: false,
+            file_picker_query: String::new(),
+            file_picker_selected: 0,
+            file_picker_results: Vec::new(),
+            file_picker_scroll: 0,
         };
         app.load_history();
         app
@@ -981,4 +1068,58 @@ mod tests {
         app.history_index = None;
         app
     }
+}
+
+/// Simple fuzzy string matching score.
+/// Returns 0 if no match, higher values for better matches.
+/// Prioritizes consecutive character matches and prefix matches.
+fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
+    let needle_chars: Vec<char> = needle.chars().collect();
+    let haystack_chars: Vec<char> = haystack.chars().collect();
+    let needle_len = needle_chars.len();
+    let haystack_len = haystack_chars.len();
+
+    if needle_len == 0 || needle_len > haystack_len {
+        return 0;
+    }
+
+    // Try to find all needle characters in order in haystack
+    let mut score = 0u32;
+    let mut needle_idx = 0;
+    let mut prev_matched_idx = None;
+
+    for (i, &hc) in haystack_chars.iter().enumerate() {
+        if needle_idx < needle_len && hc == needle_chars[needle_idx] {
+            // Match found
+            score += 1;
+
+            // Bonus for consecutive matches
+            if let Some(prev) = prev_matched_idx {
+                if i == prev + 1 {
+                    score += 2;
+                }
+            }
+
+            // Bonus for prefix match
+            if needle_idx == 0 && i == 0 {
+                score += 5;
+            }
+
+            // Bonus for match after separator (/, _, -)
+            if let Some(prev) = prev_matched_idx {
+                let between = &haystack_chars[prev + 1..i];
+                if between
+                    .iter()
+                    .any(|&c| c == '/' || c == '_' || c == '-' || c == '.')
+                {
+                    score += 3;
+                }
+            }
+
+            prev_matched_idx = Some(i);
+            needle_idx += 1;
+        }
+    }
+
+    if needle_idx == needle_len { score } else { 0 }
 }

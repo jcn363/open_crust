@@ -140,4 +140,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
         _ => {}
     }
+
+    // File picker overlay (renders on top of everything when active)
+    if app.file_picker_active {
+        popups::draw_file_picker(f, app, f.area(), &theme);
+    }
 }

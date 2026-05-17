@@ -7,46 +7,35 @@ static RE_HEADINGS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^(#{1,6})\s+(.+)$").unwrap());
 static RE_CODE_BLOCKS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?s)```(\w*?)\n(.+?)```").unwrap());
-static RE_INLINE_CODE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"`([^`]+)`").unwrap());
+static RE_INLINE_CODE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"`([^`]+)`").unwrap());
 static RE_LINKS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").unwrap());
 static RE_IMAGES: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"!\[([^\]]*)\]\(([^)]+)\)").unwrap());
-static RE_URLS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"https?://[^\s\)>\]`]+").unwrap());
-static RE_LIST_ITEMS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?m)^[-*]\s+(.+)$").unwrap());
+static RE_URLS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"https?://[^\s\)>\]`]+").unwrap());
+static RE_LIST_ITEMS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^[-*]\s+(.+)$").unwrap());
 static RE_NUMBERED_ITEMS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^\d+\.\s+(.+)$").unwrap());
 static RE_TASKS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^[-*]\s+\[([ x])\]\s+(.+)$").unwrap());
 static RE_TABLES: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?ms)^\|.+\|\n\|[-:|]+\|\n(.+?)\n\n").unwrap());
-static RE_QUOTES: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?m)^>\s+(.+)$").unwrap());
-static RE_BOLD: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*(.+?)\*\*|__(.+?)__").unwrap());
-static RE_ITALIC: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*(.+?)\*|_(.+?)_").unwrap());
-static RE_CODE_FENCE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"```[\s\S]*?```").unwrap());
+static RE_QUOTES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^>\s+(.+)$").unwrap());
+static RE_BOLD: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*\*(.+?)\*\*|__(.+?)__").unwrap());
+static RE_ITALIC: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*(.+?)\*|_(.+?)_").unwrap());
+static RE_CODE_FENCE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"```[\s\S]*?```").unwrap());
 static RE_URLS_WORD_COUNT: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"https?://[^\s]+").unwrap());
 static RE_LINKS_HTML: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").unwrap());
 static RE_CODE_BLOCKS_HTML: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"```(\w*)\n([\s\S]*?)```").unwrap());
-static RE_INLINE_CODE_HTML: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"`([^`]+)`").unwrap());
+static RE_INLINE_CODE_HTML: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"`([^`]+)`").unwrap());
 static RE_LIST_ITEMS_HTML: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^[-*]\s+(.+)$").unwrap());
-static RE_LIST_WRAP: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(<li>.*</li>\n)+").unwrap());
-static RE_BOLD_HTML: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*(.+?)\*\*").unwrap());
-static RE_ITALIC_HTML: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*(.+?)\*").unwrap());
+static RE_LIST_WRAP: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(<li>.*</li>\n)+").unwrap());
+static RE_BOLD_HTML: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*\*(.+?)\*\*").unwrap());
+static RE_ITALIC_HTML: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*(.+?)\*").unwrap());
 
 /// Extract frontmatter from markdown
 pub fn extract_frontmatter(md: &str) -> Option<(String, String)> {
@@ -97,7 +86,10 @@ pub fn extract_code_blocks(md: &str) -> Vec<(Option<String>, String)> {
 
 /// Extract inline code (`code`)
 pub fn extract_inline_code(md: &str) -> Vec<String> {
-    RE_INLINE_CODE.captures_iter(md).map(|c| c[1].to_string()).collect()
+    RE_INLINE_CODE
+        .captures_iter(md)
+        .map(|c| c[1].to_string())
+        .collect()
 }
 
 /// Extract links [text](url)
@@ -118,7 +110,10 @@ pub fn extract_images(md: &str) -> Vec<(String, String)> {
 
 /// Extract URLs from markdown
 pub fn extract_urls(md: &str) -> Vec<String> {
-    RE_URLS.find_iter(md).map(|m| m.as_str().to_string()).collect()
+    RE_URLS
+        .find_iter(md)
+        .map(|m| m.as_str().to_string())
+        .collect()
 }
 
 /// Extract bullet list items
@@ -174,7 +169,10 @@ fn parse_table(table_str: &str) -> Vec<Vec<String>> {
 
 /// Extract blockquotes
 pub fn extract_quotes(md: &str) -> Vec<String> {
-    RE_QUOTES.captures_iter(md).map(|c| c[1].to_string()).collect()
+    RE_QUOTES
+        .captures_iter(md)
+        .map(|c| c[1].to_string())
+        .collect()
 }
 
 /// Extract bold (**text** or __text__)
@@ -234,7 +232,9 @@ pub fn to_html(md: &str) -> String {
     }
 
     // Bold
-    html = RE_BOLD_HTML.replace_all(&html, "<strong>$1</strong>").to_string();
+    html = RE_BOLD_HTML
+        .replace_all(&html, "<strong>$1</strong>")
+        .to_string();
 
     // Italic
     html = RE_ITALIC_HTML.replace_all(&html, "<em>$1</em>").to_string();
@@ -260,9 +260,7 @@ pub fn to_html(md: &str) -> String {
         .to_string();
 
     // Wrap list items in <ul>
-    html = RE_LIST_WRAP
-        .replace_all(&html, "<ul>$0</ul>")
-        .to_string();
+    html = RE_LIST_WRAP.replace_all(&html, "<ul>$0</ul>").to_string();
 
     html
 }
