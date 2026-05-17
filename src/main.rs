@@ -27,6 +27,7 @@ mod clipboard;
 mod compliance;
 mod config;
 mod context;
+mod custom_commands;
 mod custom_tools;
 mod desktop;
 mod event_loop;

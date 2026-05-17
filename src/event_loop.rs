@@ -596,6 +596,37 @@ pub async fn run_tui(
                                     }
                                 }
                                 app.input.clear();
+                            } else if input_trimmed.starts_with('/') {
+                                // Check for custom commands
+                                let cmd_name = input_trimmed
+                                    .trim_start_matches('/')
+                                    .split_whitespace()
+                                    .next()
+                                    .unwrap_or("");
+                                let args = input_trimmed
+                                    .trim_start_matches('/')
+                                    .strip_prefix(cmd_name)
+                                    .unwrap_or("")
+                                    .trim();
+                                if app.custom_commands.has_command(cmd_name) {
+                                    match app.custom_commands.execute_command(cmd_name, args) {
+                                        Ok(output) => {
+                                            app.tabs[0].messages.push(Message::new(format!(
+                                                "/{}: {}",
+                                                cmd_name, output
+                                            )));
+                                        }
+                                        Err(e) => {
+                                            app.tabs[0].messages.push(Message::new(format!(
+                                                "/{} error: {}",
+                                                cmd_name, e
+                                            )));
+                                        }
+                                    }
+                                    app.input.clear();
+                                } else {
+                                    app.submit_message();
+                                }
                             } else {
                                 app.submit_message();
                             }

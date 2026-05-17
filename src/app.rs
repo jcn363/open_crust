@@ -154,6 +154,8 @@ pub struct App {
     pub file_picker_selected: usize,
     pub file_picker_results: Vec<String>,
     pub file_picker_scroll: usize,
+    /// Custom commands manager (from .opencrust/commands/)
+    pub custom_commands: crate::custom_commands::CustomCommandManager,
 }
 
 impl App {
@@ -419,8 +421,12 @@ impl App {
             file_picker_selected: 0,
             file_picker_results: Vec::new(),
             file_picker_scroll: 0,
+            // Custom commands manager
+            custom_commands: crate::custom_commands::CustomCommandManager::new(),
         };
         app.load_history();
+        // Discover custom commands from .opencrust/commands/
+        app.custom_commands.discover();
         app
     }
 
