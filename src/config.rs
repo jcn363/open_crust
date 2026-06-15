@@ -729,6 +729,7 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
     );
 
     // GitHub - Repository management
+    // Requires GITHUB_TOKEN environment variable to be set by user
     mcp.insert(
         "github".to_string(),
         McpConfig {
@@ -737,15 +738,13 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
                 "-y".to_string(),
                 "@modelcontextprotocol/server-github".to_string(),
             ],
-            environment: Some(std::collections::HashMap::from([(
-                "GITHUB_TOKEN".to_string(),
-                "your-github-token".to_string(),
-            )])),
+            environment: None,
             enabled: false,
         },
     );
 
     // Brave Search - Web research
+    // Requires BRAVE_API_KEY environment variable to be set by user
     mcp.insert(
         "brave-search".to_string(),
         McpConfig {
@@ -754,15 +753,13 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
                 "-y".to_string(),
                 "@modelcontextprotocol/server-brave-search".to_string(),
             ],
-            environment: Some(std::collections::HashMap::from([(
-                "BRAVE_API_KEY".to_string(),
-                "your-brave-api-key".to_string(),
-            )])),
+            environment: None,
             enabled: false,
         },
     );
 
     // PostgreSQL - Database queries
+    // Requires DATABASE_URL environment variable to be set by user
     mcp.insert(
         "postgres".to_string(),
         McpConfig {
@@ -771,15 +768,13 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
                 "-y".to_string(),
                 "@modelcontextprotocol/server-postgres".to_string(),
             ],
-            environment: Some(std::collections::HashMap::from([(
-                "DATABASE_URL".to_string(),
-                "postgres://user:pass@localhost:5432/db".to_string(),
-            )])),
+            environment: None,
             enabled: false,
         },
     );
 
     // Filesystem - Enhanced file operations
+    // Requires ALLOWED_DIRS environment variable to be set by user
     mcp.insert(
         "filesystem".to_string(),
         McpConfig {
@@ -788,10 +783,7 @@ pub fn default_mcp_servers() -> std::collections::HashMap<String, McpConfig> {
                 "-y".to_string(),
                 "@modelcontextprotocol/server-filesystem".to_string(),
             ],
-            environment: Some(std::collections::HashMap::from([(
-                "ALLOWED_DIRS".to_string(),
-                "/home/user/projects".to_string(),
-            )])),
+            environment: None,
             enabled: false,
         },
     );

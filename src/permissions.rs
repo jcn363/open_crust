@@ -6,60 +6,144 @@
 
 use crate::config::{Config, PermissionAction, PermissionRule};
 use glob::Pattern;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+/// Pre-compiled permission pattern for efficient matching
+struct CompiledPermissionRule {
+    /// The original pattern string (for debugging)
+    pattern: String,
+    /// The compiled glob pattern
+    compiled: Pattern,
+    /// The action to take when this pattern matches
+    action: PermissionAction,
+}
+
+/// Pre-compiled permission rules for a specific tool
+struct CompiledToolRules {
+    /// Simple action rule (Allow/Deny/Ask) - takes precedence over patterns
+    simple_action: Option<PermissionAction>,
+    /// Pattern-based rules, sorted by specificity (non-glob first, then glob)
+    pattern_rules: Vec<CompiledPermissionRule>,
+}
 
 /// Security gate for all tool execution
 ///
 /// Checks tool names and inputs against configurable rules. Returns
 /// Allow/Deny/Ask decisions based on glob-pattern matching and
 /// per-tool or global permission rules.
+///
+/// Patterns are pre-compiled at initialization for performance.
 pub struct PermissionManager {
     config: Arc<Config>,
+    /// Pre-compiled tool-specific rules
+    tool_rules: HashMap<String, CompiledToolRules>,
+    /// Pre-compiled global rules (for "*" tool)
+    global_rules: Option<CompiledToolRules>,
 }
 
 impl PermissionManager {
     pub fn new(config: Arc<Config>) -> Self {
-        Self { config }
+        let tool_rules = Self::compile_tool_rules(&config.permission);
+        let global_rules = config.permission.get("*").map(Self::compile_rule);
+        Self {
+            config,
+            tool_rules,
+            global_rules,
+        }
+    }
+
+    /// Compile a single permission rule into a CompiledToolRules structure
+    fn compile_rule(rule: &PermissionRule) -> CompiledToolRules {
+        match rule {
+            PermissionRule::Action(action) => CompiledToolRules {
+                simple_action: Some(action.clone()),
+                pattern_rules: Vec::new(),
+            },
+            PermissionRule::Map(map) => {
+                let mut pattern_rules: Vec<CompiledPermissionRule> = map
+                    .iter()
+                    .filter_map(|(pattern, action)| {
+                        if pattern == "*" {
+                            // Wildcard pattern matches everything
+                            Some(CompiledPermissionRule {
+                                pattern: pattern.clone(),
+                                compiled: Pattern::new("*")
+                                    .expect("Wildcard pattern should compile"),
+                                action: action.clone(),
+                            })
+                        } else {
+                            Pattern::new(pattern)
+                                .ok()
+                                .map(|compiled| CompiledPermissionRule {
+                                    pattern: pattern.clone(),
+                                    compiled,
+                                    action: action.clone(),
+                                })
+                        }
+                    })
+                    .collect();
+
+                // Sort for deterministic evaluation: non-glob patterns first, then globs.
+                // Among same category, preserve stable order for predictable matching.
+                pattern_rules.sort_by(|a, b| {
+                    let a_star = a.pattern.contains('*');
+                    let b_star = b.pattern.contains('*');
+                    a_star.cmp(&b_star)
+                });
+
+                CompiledToolRules {
+                    simple_action: None,
+                    pattern_rules,
+                }
+            }
+        }
+    }
+
+    /// Compile all tool-specific rules from the permission map
+    fn compile_tool_rules(
+        permissions: &HashMap<String, PermissionRule>,
+    ) -> HashMap<String, CompiledToolRules> {
+        permissions
+            .iter()
+            .filter(|(tool, _)| *tool != "*") // Skip global rule, handled separately
+            .map(|(tool, rule)| (tool.clone(), Self::compile_rule(rule)))
+            .collect()
     }
 
     pub fn check_permission(&self, tool_name: &str, input: &str) -> PermissionAction {
         // 1. Check tool-specific rules
-        if let Some(rule) = self.config.permission.get(tool_name) {
-            match rule {
-                PermissionRule::Action(action) => return action.clone(),
-                PermissionRule::Map(map) => {
-                    // Collect matching patterns first, then take last key in insertion order
-                    let mut keys: Vec<&String> = map
-                        .keys()
-                        .filter(|k| {
-                            if *k == "*" {
-                                return true;
-                            }
-                            Pattern::new(k).map(|p| p.matches(input)).unwrap_or(false)
-                        })
-                        .collect();
-                    // Sort for deterministic evaluation: non-glob patterns first, then globs.
-                    // Among same category, preserve stable order for predictable matching.
-                    keys.sort_by(|a, b| {
-                        let a_star = a.contains('*');
-                        let b_star = b.contains('*');
-                        a_star.cmp(&b_star)
-                    });
-                    // Last key after sort is the most specific match (glob > non-glob,
-                    // and among same category the last insertion-order match wins)
-                    if let Some(last_key) = keys.last() {
-                        return map.get(*last_key).cloned().unwrap_or(PermissionAction::Ask);
-                    }
-                    return PermissionAction::Ask;
+        if let Some(rules) = self.tool_rules.get(tool_name) {
+            // Simple action takes precedence
+            if let Some(action) = &rules.simple_action {
+                return action.clone();
+            }
+            // Check pattern rules - find all matches, return the last (most specific)
+            let mut matched_action = None;
+            for rule in &rules.pattern_rules {
+                if rule.compiled.matches(input) {
+                    matched_action = Some(rule.action.clone());
                 }
             }
+            if let Some(action) = matched_action {
+                return action;
+            }
+            return PermissionAction::Ask;
         }
 
         // 2. Check global rule
-        if let Some(rule) = self.config.permission.get("*") {
-            match rule {
-                PermissionRule::Action(action) => return action.clone(),
-                PermissionRule::Map(_) => {} // Global * shouldn't be a map really
+        if let Some(rules) = &self.global_rules {
+            if let Some(action) = &rules.simple_action {
+                return action.clone();
+            }
+            let mut matched_action = None;
+            for rule in &rules.pattern_rules {
+                if rule.compiled.matches(input) {
+                    matched_action = Some(rule.action.clone());
+                }
+            }
+            if let Some(action) = matched_action {
+                return action;
             }
         }
 

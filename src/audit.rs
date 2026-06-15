@@ -79,7 +79,7 @@ impl AuditLogger {
         let status = if approved { "APPROVED" } else { "DENIED" };
         let session = &self.session_id;
         let agent = self.agent_type.as_deref().unwrap_or("unknown");
-        let safe_input = input.replace(['\n', '\r'], " ").replace(['=', ' '], "_");
+        let safe_input = redact_sensitive_data(tool_name, input);
         let log_entry = format!(
             "[{}] session={} agent={} tool={} input={} duration={} status={}\n",
             timestamp, session, agent, tool_name, safe_input, duration_ms, status,
@@ -398,6 +398,191 @@ impl AuditExport {
         let mut file = fs::File::create(path)?;
         Self::export(entries, format, &mut file)
     }
+}
+
+/// Redact sensitive data from audit logs.
+///
+/// Redacts:
+/// - API keys, tokens, passwords, secrets (key=value patterns)
+/// - File contents for read/write tools (logs only path)
+/// - Command arguments that may contain secrets
+/// - Environment variables that may contain credentials
+fn redact_sensitive_data(tool_name: &str, input: &str) -> String {
+    // For file read/write tools, only log the path, not the content
+    if matches!(
+        tool_name,
+        "read" | "write" | "edit" | "bash" | "glob" | "grep" | "ls"
+    ) {
+        // Try to extract just the path from the input
+        if let Some(path) = extract_path_from_input(input) {
+            return format!("path={}", path);
+        }
+    }
+
+    let mut redacted = input.to_string();
+
+    // Redact key=value patterns where key suggests sensitive data
+    let sensitive_keys = [
+        "api_key",
+        "apikey",
+        "api-key",
+        "token",
+        "password",
+        "passwd",
+        "secret",
+        "access_token",
+        "access-key",
+        "access_key",
+        "auth_token",
+        "auth-token",
+        "auth_key",
+        "authkey",
+        "private_key",
+        "private-key",
+        "privatekey",
+        "secret_key",
+        "secret-key",
+        "secretkey",
+        "bearer",
+        "authorization",
+        "x-api-key",
+        "x-auth-token",
+        "api_secret",
+        "api-secret",
+        "client_secret",
+        "client-secret",
+        "client_id",
+        "client-id",
+        "refresh_token",
+        "refresh-token",
+    ];
+
+    for key in &sensitive_keys {
+        // Match key=value, key="value", key='value', key: value patterns
+        let patterns = [
+            format!("{}=", key),
+            format!("{}=\"", key),
+            format!("{}='", key),
+            format!("{}: ", key),
+            format!("{}: \"", key),
+            format!("{}: '", key),
+        ];
+
+        for pattern in &patterns {
+            if let Some(pos) = redacted.find(pattern) {
+                let start = pos + pattern.len();
+                // Find the end of the value (space, comma, }, ", ', or end of string)
+                let end = redacted[start..]
+                    .find(|c: char| {
+                        c.is_whitespace() || c == ',' || c == '}' || c == '"' || c == '\''
+                    })
+                    .map(|e| start + e)
+                    .unwrap_or(redacted.len());
+                if end > start {
+                    redacted.replace_range(start..end, "[REDACTED]");
+                }
+            }
+        }
+    }
+
+    // Redact common token patterns (long alphanumeric strings that look like tokens)
+    // JWT tokens (three base64 parts separated by dots)
+    redacted = redact_jwt_tokens(&redacted);
+
+    // Redact Bearer tokens in Authorization headers
+    if let Some(pos) = redacted.find("Bearer ") {
+        let start = pos + "Bearer ".len();
+        let end = redacted[start..]
+            .find(|c: char| c.is_whitespace() || c == ',' || c == '}')
+            .map(|e| start + e)
+            .unwrap_or(redacted.len());
+        if end > start {
+            redacted.replace_range(start..end, "[REDACTED]");
+        }
+    }
+
+    // Replace newlines and carriage returns with spaces for log readability
+    redacted = redacted.replace(['\n', '\r'], " ");
+
+    redacted
+}
+
+/// Extract a file path from tool input for logging purposes
+fn extract_path_from_input(input: &str) -> Option<String> {
+    // Try to parse as JSON first (many tools use JSON input)
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(input) {
+        // Common path fields in tool inputs
+        for field in [
+            "path",
+            "file_path",
+            "filepath",
+            "filename",
+            "file",
+            "dir",
+            "directory",
+        ] {
+            if let Some(path) = json.get(field).and_then(|v| v.as_str()) {
+                return Some(path.to_string());
+            }
+        }
+        // For bash commands, try to extract the first argument that looks like a path
+        if let Some(cmd) = json.get("command").and_then(|v| v.as_str()) {
+            let parts: Vec<&str> = cmd.split_whitespace().collect();
+            if parts.len() > 1 {
+                // Return the first non-flag argument
+                for part in &parts[1..] {
+                    if !part.starts_with('-')
+                        && (part.contains('/')
+                            || part.contains('.')
+                            || part.starts_with("./")
+                            || part.starts_with("../"))
+                    {
+                        return Some(part.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: if input looks like a simple path
+    let trimmed = input.trim();
+    if (trimmed.contains('/')
+        || trimmed.contains('\\')
+        || trimmed.starts_with("./")
+        || trimmed.starts_with("../"))
+        && !trimmed.contains(' ')
+        && trimmed.len() < 256
+    {
+        return Some(trimmed.to_string());
+    }
+
+    None
+}
+
+/// Redact JWT tokens (three base64 parts separated by dots)
+fn redact_jwt_tokens(input: &str) -> String {
+    let mut result = input.to_string();
+    // Simple regex-like matching for JWT pattern: xxxxx.yyyyy.zzzzz
+    // Collect potential JWT tokens first to avoid borrow checker issues
+    let potential_tokens: Vec<String> = result
+        .split_whitespace()
+        .filter(|part| part.matches('.').count() == 2)
+        .map(|s| s.to_string())
+        .collect();
+
+    for part in potential_tokens {
+        let segments: Vec<&str> = part.split('.').collect();
+        if segments.len() == 3
+            && segments.iter().all(|s| {
+                !s.is_empty()
+                    && s.chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            })
+        {
+            result = result.replace(&part, "[REDACTED_JWT]");
+        }
+    }
+    result
 }
 
 #[cfg(test)]

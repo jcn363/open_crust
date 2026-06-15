@@ -47,6 +47,9 @@ pub fn security_base() -> &'static Path {
 /// - Path traversal attempts (../, symlinks outside allowed dirs)
 /// - Access to sensitive system paths
 /// - Null bytes
+///
+/// This function is strict: it rejects ANY path containing ".." components,
+/// resolves symlinks, and ensures the canonical path is within the security base.
 pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> {
     let path = path.as_ref();
     let path_str = path.to_string_lossy();
@@ -56,49 +59,63 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
         return Err(SecurityError::UnsafePath(path_str.to_string()));
     }
 
-    // Check for path traversal patterns
+    // STRICT: Reject any path containing ".." components (no relative traversal allowed)
+    // This prevents path traversal attacks even if they "resolve safely" via symlinks
     if path_str.contains("..") {
-        // Allow .. if it's part of a legitimate relative path that resolves safely
-        let canonical = std::fs::canonicalize(path)
-            .map_err(|_| SecurityError::PathTraversal(path_str.to_string()))?;
+        return Err(SecurityError::PathTraversal(path_str.to_string()));
+    }
 
-        // Use the fixed security base (captured once at startup)
-        let base = security_base();
+    // Get the security base (fixed at startup)
+    let base = security_base();
+
+    // For existing paths: canonicalize (resolves symlinks) and verify within base
+    if path.exists() {
+        let canonical = std::fs::canonicalize(path)
+            .map_err(|_| SecurityError::UnsafePath(path_str.to_string()))?;
 
         // Ensure the canonical path starts with the base directory
         if !canonical.starts_with(base) {
-            return Err(SecurityError::PathTraversal(path_str.to_string()));
+            return Err(SecurityError::AccessDenied(path_str.to_string()));
         }
 
         return Ok(canonical);
     }
 
-    // For paths without traversal, canonicalize and verify
-    match std::fs::canonicalize(path) {
-        Ok(canonical) => {
-            let base = security_base();
+    // For non-existent paths (e.g., write operations):
+    // Validate the parent directory exists and is within base
+    if let Some(parent) = path.parent() {
+        let parent_str = parent.to_string_lossy();
 
+        // Empty parent or "." means current directory - use security base
+        if parent_str.is_empty() || parent == Path::new(".") {
+            let full_path = base.join(path);
+            // Ensure the resulting path doesn't escape base (defense in depth)
+            if let Ok(canonical) = std::fs::canonicalize(&full_path) {
+                if !canonical.starts_with(base) {
+                    return Err(SecurityError::AccessDenied(path_str.to_string()));
+                }
+            }
+            return Ok(full_path);
+        }
+
+        // Recursively validate parent (will reject ".." and verify within base)
+        let canon_parent = validate_path(parent)?;
+
+        // Join the validated parent with the file name
+        let full_path = canon_parent.join(path.file_name().unwrap_or_default());
+
+        // Final check: ensure the full path is within base
+        if let Ok(canonical) = std::fs::canonicalize(&full_path) {
             if !canonical.starts_with(base) {
                 return Err(SecurityError::AccessDenied(path_str.to_string()));
             }
-            Ok(canonical)
         }
-        Err(_) => {
-            // Path doesn't exist yet (e.g., for write operations)
-            // Validate the parent directory
-            if let Some(parent) = path.parent() {
-                if parent.to_string_lossy().is_empty() || parent == Path::new(".") {
-                    return Ok(security_base().join(path));
-                }
-                validate_path(parent)?;
-                match std::fs::canonicalize(parent) {
-                    Ok(canon_parent) => Ok(canon_parent.join(path.file_name().unwrap_or_default())),
-                    Err(_) => Ok(path.to_path_buf()),
-                }
-            } else {
-                Ok(path.to_path_buf())
-            }
-        }
+
+        Ok(full_path)
+    } else {
+        // No parent component - treat as relative to security base
+        let full_path = base.join(path);
+        Ok(full_path)
     }
 }
 
