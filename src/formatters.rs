@@ -117,19 +117,15 @@ pub fn format_file(path: &Path) -> Result<(), String> {
 }
 
 /// Get the list of supported file extensions
-#[allow(dead_code)]
+#[allow(dead_code)] // used by tests; dead in binary cfg
 pub fn supported_extensions() -> Vec<&'static str> {
-    default_formatters()
-        .into_keys()
-        .collect::<Vec<_>>()
-        .sort_by_key(|e| e.to_lowercase());
     let mut exts: Vec<_> = default_formatters().into_keys().collect();
     exts.sort_by_key(|e| e.to_lowercase());
     exts
 }
 
 /// Check if a file extension has a configured formatter
-#[allow(dead_code)]
+#[allow(dead_code)] // used by tests; dead in binary cfg
 pub fn has_formatter(extension: &str) -> bool {
     default_formatters().contains_key(extension)
 }

@@ -663,6 +663,60 @@ impl App {
     }
 }
 
+/// Simple fuzzy string matching score.
+/// Returns 0 if no match, higher values for better matches.
+/// Prioritizes consecutive character matches and prefix matches.
+fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
+    let needle_chars: Vec<char> = needle.chars().collect();
+    let haystack_chars: Vec<char> = haystack.chars().collect();
+    let needle_len = needle_chars.len();
+    let haystack_len = haystack_chars.len();
+
+    if needle_len == 0 || needle_len > haystack_len {
+        return 0;
+    }
+
+    // Try to find all needle characters in order in haystack
+    let mut score = 0u32;
+    let mut needle_idx = 0;
+    let mut prev_matched_idx = None;
+
+    for (i, &hc) in haystack_chars.iter().enumerate() {
+        if needle_idx < needle_len && hc == needle_chars[needle_idx] {
+            // Match found
+            score += 1;
+
+            // Bonus for consecutive matches
+            if let Some(prev) = prev_matched_idx {
+                if i == prev + 1 {
+                    score += 2;
+                }
+            }
+
+            // Bonus for prefix match
+            if needle_idx == 0 && i == 0 {
+                score += 5;
+            }
+
+            // Bonus for match after separator (/, _, -)
+            if let Some(prev) = prev_matched_idx {
+                let between = &haystack_chars[prev + 1..i];
+                if between
+                    .iter()
+                    .any(|&c| c == '/' || c == '_' || c == '-' || c == '.')
+                {
+                    score += 3;
+                }
+            }
+
+            prev_matched_idx = Some(i);
+            needle_idx += 1;
+        }
+    }
+
+    if needle_idx == needle_len { score } else { 0 }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1087,58 +1141,4 @@ mod tests {
         app.history_index = None;
         app
     }
-}
-
-/// Simple fuzzy string matching score.
-/// Returns 0 if no match, higher values for better matches.
-/// Prioritizes consecutive character matches and prefix matches.
-fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
-    let needle_chars: Vec<char> = needle.chars().collect();
-    let haystack_chars: Vec<char> = haystack.chars().collect();
-    let needle_len = needle_chars.len();
-    let haystack_len = haystack_chars.len();
-
-    if needle_len == 0 || needle_len > haystack_len {
-        return 0;
-    }
-
-    // Try to find all needle characters in order in haystack
-    let mut score = 0u32;
-    let mut needle_idx = 0;
-    let mut prev_matched_idx = None;
-
-    for (i, &hc) in haystack_chars.iter().enumerate() {
-        if needle_idx < needle_len && hc == needle_chars[needle_idx] {
-            // Match found
-            score += 1;
-
-            // Bonus for consecutive matches
-            if let Some(prev) = prev_matched_idx {
-                if i == prev + 1 {
-                    score += 2;
-                }
-            }
-
-            // Bonus for prefix match
-            if needle_idx == 0 && i == 0 {
-                score += 5;
-            }
-
-            // Bonus for match after separator (/, _, -)
-            if let Some(prev) = prev_matched_idx {
-                let between = &haystack_chars[prev + 1..i];
-                if between
-                    .iter()
-                    .any(|&c| c == '/' || c == '_' || c == '-' || c == '.')
-                {
-                    score += 3;
-                }
-            }
-
-            prev_matched_idx = Some(i);
-            needle_idx += 1;
-        }
-    }
-
-    if needle_idx == needle_len { score } else { 0 }
 }

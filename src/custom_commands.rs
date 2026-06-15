@@ -23,10 +23,9 @@ pub struct CustomCommand {
     /// Command name (used as `/name` in the input)
     pub name: String,
     /// Human-readable description
-    #[allow(dead_code)]
     pub description: String,
     /// Optional keybind (e.g., "Ctrl+Shift+M")
-    #[allow(dead_code)]
+    #[allow(dead_code)] // wired for future keybind handling
     pub keybind: Option<String>,
     /// Path to the executable script
     pub path: PathBuf,
@@ -130,7 +129,7 @@ impl CustomCommandManager {
     }
 
     /// Get a list of all registered custom command names and descriptions.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests; dead in binary cfg
     pub fn list_commands(&self) -> Vec<(String, String)> {
         self.commands
             .values()

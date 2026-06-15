@@ -5,6 +5,7 @@
 
 use std::env;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 /// Errors that can occur during security validation
 #[derive(Debug)]
@@ -28,6 +29,17 @@ impl std::fmt::Display for SecurityError {
 
 impl std::error::Error for SecurityError {}
 
+/// Fixed security base directory, captured once at first use.
+/// All path validation is relative to this directory to prevent
+/// CWD-shift attacks during execution.
+static SECURITY_BASE: OnceLock<PathBuf> = OnceLock::new();
+
+/// Returns the fixed security base directory (captured once at first use).
+/// All path validation is relative to this directory.
+pub fn security_base() -> &'static Path {
+    SECURITY_BASE.get_or_init(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+}
+
 /// Validate that a path is safe to access
 ///
 /// Checks for:
@@ -49,13 +61,11 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
         let canonical = std::fs::canonicalize(path)
             .map_err(|_| SecurityError::PathTraversal(path_str.to_string()))?;
 
-        // Get the current directory as base
-        let base = env::current_dir().map_err(|_| {
-            SecurityError::UnsafePath("Cannot determine current directory".to_string())
-        })?;
+        // Use the fixed security base (captured once at startup)
+        let base = security_base();
 
         // Ensure the canonical path starts with the base directory
-        if !canonical.starts_with(&base) {
+        if !canonical.starts_with(base) {
             return Err(SecurityError::PathTraversal(path_str.to_string()));
         }
 
@@ -65,11 +75,9 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
     // For paths without traversal, canonicalize and verify
     match std::fs::canonicalize(path) {
         Ok(canonical) => {
-            let base = env::current_dir().map_err(|_| {
-                SecurityError::UnsafePath("Cannot determine current directory".to_string())
-            })?;
+            let base = security_base();
 
-            if !canonical.starts_with(&base) {
+            if !canonical.starts_with(base) {
                 return Err(SecurityError::AccessDenied(path_str.to_string()));
             }
             Ok(canonical)
@@ -79,10 +87,7 @@ pub fn validate_path<P: AsRef<Path>>(path: P) -> Result<PathBuf, SecurityError> 
             // Validate the parent directory
             if let Some(parent) = path.parent() {
                 if parent.to_string_lossy().is_empty() || parent == Path::new(".") {
-                    match std::fs::canonicalize(".") {
-                        Ok(canon_cwd) => return Ok(canon_cwd.join(path)),
-                        Err(_) => return Ok(path.to_path_buf()),
-                    }
+                    return Ok(security_base().join(path));
                 }
                 validate_path(parent)?;
                 match std::fs::canonicalize(parent) {

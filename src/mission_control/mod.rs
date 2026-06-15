@@ -1,9 +1,12 @@
 //! Mission Control module for visualizing the orchestrator task DAG
 //! Provides TUI (ratatui) for real-time task graph monitoring
 
-pub mod tui;
-pub use tui::MissionControlAction;
-pub use tui::MissionControlUI;
+mod render;
+mod state;
+mod types;
+
+pub use state::MissionControlUI;
+pub use types::MissionControlAction;
 
 #[cfg(test)]
 mod tests {
@@ -12,7 +15,7 @@ mod tests {
     #[test]
     fn test_module_structure() {
         // Just verify the module compiles and exports the expected items
-        let _ = tui::MissionControlUI::new();
-        let _ = tui::MissionControlAction::None;
+        let _ = MissionControlUI::new();
+        let _ = MissionControlAction::None;
     }
 }

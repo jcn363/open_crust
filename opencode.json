@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["$HOME/Desktop/extras/micode"],
+  "plugin": ["$HOME/Desktop/extras/micode", "superpowers@git+https://github.com/obra/superpowers.git"],
   "model": "opencode/big-pickle",
   "tools": {
     "bash": true
