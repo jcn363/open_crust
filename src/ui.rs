@@ -75,6 +75,46 @@ impl ThemeContext {
     pub fn status_fg(&self) -> Color {
         Color::Rgb(240, 238, 238)
     }
+
+    /// Shadow background for popup depth effect
+    pub fn shadow(&self) -> Color {
+        Color::Rgb(10, 9, 9)
+    }
+
+    /// Diff deletion background (subtle red)
+    pub fn diff_delete_bg(&self) -> Color {
+        Color::Rgb(60, 20, 20)
+    }
+
+    /// Diff deletion foreground
+    pub fn diff_delete_fg(&self) -> Color {
+        Color::Rgb(200, 130, 130)
+    }
+
+    /// Diff insertion background (subtle green)
+    pub fn diff_insert_bg(&self) -> Color {
+        Color::Rgb(20, 50, 20)
+    }
+
+    /// Diff insertion foreground
+    pub fn diff_insert_fg(&self) -> Color {
+        Color::Rgb(130, 200, 130)
+    }
+
+    /// Dimmed/muted text color
+    pub fn dim(&self) -> Color {
+        Color::Rgb(111, 109, 108)
+    }
+
+    /// Success/install indicator color
+    pub fn success(&self) -> Color {
+        Color::Green
+    }
+
+    /// Warning/highlight color
+    pub fn warning(&self) -> Color {
+        Color::Yellow
+    }
 }
 
 pub fn parse_color(s: &str) -> Color {

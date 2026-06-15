@@ -81,7 +81,7 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
                 ListItem::new(Line::from(vec![
                     Span::styled(
                         format!("{} ", status_icon),
-                        Style::default().fg(Color::Yellow),
+                        Style::default().fg(theme.warning()),
                     ),
                     Span::raw(format!("[{}] {}: {}", task.id, time_str, task.prompt)),
                 ]))
@@ -102,14 +102,14 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
             .filter(|tab| !tab.messages.is_empty())
         {
             let sep_line = Line::from(vec![
-                Span::styled("─── ", Style::default().fg(Color::DarkGray)),
+                Span::styled("─── ", Style::default().fg(theme.dim())),
                 Span::styled(
                     "Chat Messages",
                     Style::default()
-                        .fg(Color::Yellow)
+                        .fg(theme.warning())
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(" ───", Style::default().fg(Color::DarkGray)),
+                Span::styled(" ───", Style::default().fg(theme.dim())),
             ]);
             all_items.push(ListItem::new(sep_line));
             all_items.extend(tab.messages.iter().map(|m| render_message(m, theme)));
@@ -205,7 +205,7 @@ pub fn draw_sidebar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) 
             let style = if is_selected {
                 Style::default().fg(Color::Black).bg(theme.accent)
             } else if is_dir {
-                Style::default().fg(Color::Rgb(111, 109, 108))
+                Style::default().fg(theme.dim())
             } else {
                 Style::default().fg(theme.fg)
             };

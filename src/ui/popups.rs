@@ -35,7 +35,7 @@ fn themed_block_with_color<'a>(title: &str, border_color: Color) -> Block<'a> {
 }
 
 /// Render a faint shadow behind a popup for visual depth
-fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect) {
+fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect, theme: &ThemeContext) {
     if area.width > 2 && area.height > 1 {
         let shadow = ratatui::layout::Rect {
             x: area.x + 2,
@@ -44,7 +44,7 @@ fn render_popup_shadow(f: &mut Frame, area: ratatui::layout::Rect) {
             height: area.height.saturating_sub(1),
         };
         f.render_widget(
-            Block::default().style(Style::default().bg(Color::Rgb(10, 9, 9))),
+            Block::default().style(Style::default().bg(theme.shadow())),
             shadow,
         );
     }
@@ -72,6 +72,7 @@ fn side_by_side_diff<'a>(
     proposed: &'a str,
     scroll: usize,
     area_height: usize,
+    theme: &ThemeContext,
 ) -> (Paragraph<'a>, Paragraph<'a>) {
     let diff = TextDiff::from_lines(original, proposed);
     let mut left_lines: Vec<Line<'a>> = Vec::new();
@@ -89,8 +90,8 @@ fn side_by_side_diff<'a>(
                 left_lines.push(Line::from(Span::styled(
                     value,
                     Style::default()
-                        .bg(Color::Rgb(60, 20, 20))
-                        .fg(Color::Rgb(200, 130, 130)),
+                        .bg(theme.diff_delete_bg())
+                        .fg(theme.diff_delete_fg()),
                 )));
                 right_lines.push(empty);
             }
@@ -99,8 +100,8 @@ fn side_by_side_diff<'a>(
                 right_lines.push(Line::from(Span::styled(
                     value,
                     Style::default()
-                        .bg(Color::Rgb(20, 50, 20))
-                        .fg(Color::Rgb(130, 200, 130)),
+                        .bg(theme.diff_insert_bg())
+                        .fg(theme.diff_insert_fg()),
                 )));
             }
         }
@@ -114,10 +115,10 @@ fn side_by_side_diff<'a>(
     };
 
     let left = Paragraph::new(left_lines)
-        .block(themed_block_with_color("Original", Color::Red))
+        .block(themed_block_with_color("Original", theme.error()))
         .scroll((scroll_adj as u16, 0));
     let right = Paragraph::new(right_lines)
-        .block(themed_block_with_color("Proposed", Color::Green))
+        .block(themed_block_with_color("Proposed", theme.success()))
         .scroll((scroll_adj as u16, 0));
 
     (left, right)
@@ -130,6 +131,7 @@ fn unified_diff<'a>(
     proposed: &'a str,
     scroll: usize,
     area_height: usize,
+    theme: &ThemeContext,
 ) -> Paragraph<'a> {
     let diff = TextDiff::from_lines(original, proposed);
     let mut lines: Vec<Line<'a>> = Vec::new();
@@ -143,14 +145,16 @@ fn unified_diff<'a>(
             ChangeTag::Delete => {
                 lines.push(Line::from(Span::styled(
                     format!("-{}", value),
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(theme.error())
+                        .add_modifier(Modifier::BOLD),
                 )));
             }
             ChangeTag::Insert => {
                 lines.push(Line::from(Span::styled(
                     format!("+{}", value),
                     Style::default()
-                        .fg(Color::Green)
+                        .fg(theme.success())
                         .add_modifier(Modifier::BOLD),
                 )));
             }
@@ -163,7 +167,7 @@ fn unified_diff<'a>(
     let block = Block::default()
         .borders(Borders::ALL)
         .title(" Unified Diff ")
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_style(Style::default().fg(theme.accent));
 
     Paragraph::new(lines)
         .block(block)
@@ -176,7 +180,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     }
 
     let area = centered_rect(90, 90, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -213,9 +217,9 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 ChangeStatus::Denied => "✗",
             };
             let style = match change.status {
-                ChangeStatus::Pending => Style::default().fg(Color::Yellow),
-                ChangeStatus::Approved => Style::default().fg(Color::Green),
-                ChangeStatus::Denied => Style::default().fg(Color::Red),
+                ChangeStatus::Pending => Style::default().fg(theme.warning()),
+                ChangeStatus::Approved => Style::default().fg(theme.success()),
+                ChangeStatus::Denied => Style::default().fg(theme.error()),
             };
             let prefix = if i == app.plan_review_index {
                 "> "
@@ -231,7 +235,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
     let file_list_widget = List::new(file_list)
         .block(themed_block("Files", theme))
-        .highlight_style(Style::default().bg(Color::DarkGray));
+        .highlight_style(Style::default().bg(theme.dim()));
     f.render_widget(file_list_widget, main_chunks[0]);
 
     // Diff view (right panel)
@@ -240,11 +244,22 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
     if let Some(change) = app.proposed_changes.get(app.plan_review_index) {
         if app.review_show_unified {
-            let unified = unified_diff(&change.original, &change.proposed, scroll, area_height);
+            let unified = unified_diff(
+                &change.original,
+                &change.proposed,
+                scroll,
+                area_height,
+                theme,
+            );
             f.render_widget(unified, main_chunks[1]);
         } else {
-            let (original, proposed) =
-                side_by_side_diff(&change.original, &change.proposed, scroll, area_height);
+            let (original, proposed) = side_by_side_diff(
+                &change.original,
+                &change.proposed,
+                scroll,
+                area_height,
+                theme,
+            );
             let diff_chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -289,7 +304,7 @@ pub fn draw_review_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(90, 80, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -322,7 +337,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
         &app.mcp_input
     };
     let filter_style = if app.mcp_input.is_empty() {
-        Style::default().fg(Color::Rgb(73, 72, 71))
+        Style::default().fg(theme.ghost())
     } else {
         Style::default().fg(theme.fg)
     };
@@ -369,7 +384,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
                     .fg(theme.accent)
                     .add_modifier(Modifier::BOLD)
             } else if is_installed {
-                Style::default().fg(Color::Green)
+                Style::default().fg(theme.success())
             } else {
                 Style::default().fg(theme.fg)
             };
@@ -390,7 +405,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
         let details = vec![
             Line::from(vec![
-                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Name: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     name,
                     Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
@@ -399,18 +414,18 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
             Line::from(""),
             Line::from(vec![Span::styled(
                 "Description: ",
-                Style::default().fg(Color::Yellow),
+                Style::default().fg(theme.warning()),
             )]),
             Line::from(desc.as_str()),
             Line::from(""),
             Line::from(vec![Span::styled(
                 "Command: ",
-                Style::default().fg(Color::Yellow),
+                Style::default().fg(theme.warning()),
             )]),
             Line::from(cmd_str),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Status: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     if is_installed {
                         "Installed"
@@ -418,15 +433,15 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
                         "Not installed"
                     },
                     Style::default().fg(if is_installed {
-                        Color::Green
+                        theme.success()
                     } else {
-                        Color::Red
+                        theme.error()
                     }),
                 ),
             ]),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Note: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     if is_installed {
                         "Restart opencrust to use this server."
@@ -463,7 +478,7 @@ pub fn draw_servers_popup(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(60, 35, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -509,7 +524,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
                 "  "
             };
             let style = if i == app.command_palette_selected {
-                Style::default().fg(Color::Yellow)
+                Style::default().fg(theme.warning())
             } else {
                 Style::default().fg(theme.fg)
             };
@@ -533,7 +548,7 @@ pub fn draw_command_palette(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(70, 60, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -581,7 +596,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
                     .fg(theme.accent)
                     .add_modifier(Modifier::BOLD)
             } else if *active {
-                Style::default().fg(Color::Green)
+                Style::default().fg(theme.success())
             } else {
                 Style::default().fg(theme.fg)
             };
@@ -598,11 +613,15 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     // Right panel: Selected skill details
     if let Some((name, desc, active)) = app.skill_browser_items.get(app.skill_browser_selected) {
         let status_text = if *active { "ACTIVE" } else { "INACTIVE" };
-        let status_color = if *active { Color::Green } else { Color::Red };
+        let status_color = if *active {
+            theme.success()
+        } else {
+            theme.error()
+        };
 
         let details = vec![
             Line::from(vec![
-                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Name: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     name,
                     Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
@@ -611,12 +630,12 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
             Line::from(""),
             Line::from(vec![Span::styled(
                 "Description: ",
-                Style::default().fg(Color::Yellow),
+                Style::default().fg(theme.warning()),
             )]),
             Line::from(desc.as_str()),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Status: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     status_text,
                     Style::default()
@@ -627,7 +646,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
             Line::from(""),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Note: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     if *active {
                         "Skill is active and will be used by the LLM. Press [Enter] to deactivate."
@@ -655,7 +674,7 @@ pub fn draw_skill_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     let area = centered_rect(70, 60, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let chunks = Layout::default()
@@ -705,7 +724,7 @@ pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
                     .fg(theme.accent)
                     .add_modifier(Modifier::BOLD)
             } else if *enabled {
-                Style::default().fg(Color::Green)
+                Style::default().fg(theme.success())
             } else {
                 Style::default().fg(theme.fg)
             };
@@ -722,11 +741,15 @@ pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
     // Right panel: Selected plugin details
     if let Some((name, desc, enabled)) = app.plugin_browser_items.get(app.plugin_browser_selected) {
         let status_text = if *enabled { "ENABLED" } else { "DISABLED" };
-        let status_color = if *enabled { Color::Green } else { Color::Red };
+        let status_color = if *enabled {
+            theme.success()
+        } else {
+            theme.error()
+        };
 
         let details = vec![
             Line::from(vec![
-                Span::styled("Name: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Name: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     name,
                     Style::default().fg(theme.fg).add_modifier(Modifier::BOLD),
@@ -735,12 +758,12 @@ pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
             Line::from(""),
             Line::from(vec![Span::styled(
                 "Description: ",
-                Style::default().fg(Color::Yellow),
+                Style::default().fg(theme.warning()),
             )]),
             Line::from(desc.as_str()),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Status: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Status: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     status_text,
                     Style::default()
@@ -751,7 +774,7 @@ pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
             Line::from(""),
             Line::from(""),
             Line::from(vec![
-                Span::styled("Note: ", Style::default().fg(Color::Yellow)),
+                Span::styled("Note: ", Style::default().fg(theme.warning())),
                 Span::styled(
                     if *enabled {
                         "Plugin is enabled. Press [Enter] to disable."
@@ -779,7 +802,7 @@ pub fn draw_plugin_browser(f: &mut Frame, app: &App, theme: &ThemeContext) {
 
 pub fn draw_help_popup(f: &mut Frame, _app: &App, theme: &ThemeContext) {
     let area = centered_rect(65, 65, f.area());
-    render_popup_shadow(f, area);
+    render_popup_shadow(f, area, theme);
     f.render_widget(Clear, area);
 
     let help_lines = vec![
