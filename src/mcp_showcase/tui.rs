@@ -2,6 +2,7 @@
 //! Uses ratatui for terminal rendering
 
 use crate::mcp_showcase::McpServerInfo;
+use crate::ui::ThemeContext;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -75,7 +76,7 @@ impl McpShowcaseUI {
     }
 
     /// Render the MCP Showcase TUI
-    pub fn render(&mut self, f: &mut Frame, area: Rect) {
+    pub fn render(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -88,7 +89,7 @@ impl McpShowcaseUI {
         // Title
         let title = Paragraph::new("MCP Server Showcase")
             .block(Block::default().borders(Borders::ALL).title("MCP Servers"))
-            .style(Style::default().fg(Color::Cyan));
+            .style(Style::default().fg(theme.accent));
         f.render_widget(title, chunks[0]);
 
         // Server list with checkbox indicators
@@ -115,14 +116,14 @@ impl McpShowcaseUI {
         self.visible_items = chunks[1].height as usize - 2; // Subtract border
         let list = List::new(items)
             .block(Block::default().borders(Borders::ALL).title("Servers"))
-            .highlight_style(Style::default().bg(Color::DarkGray));
+            .highlight_style(Style::default().bg(theme.dim()));
         let mut state = ListState::default().with_selected(Some(self.selected_index));
         f.render_stateful_widget(list, chunks[1], &mut state);
 
         // Help
         let help = Paragraph::new("↑/↓: Navigate | Enter: Toggle enabled | Esc: Close")
             .block(Block::default().borders(Borders::ALL))
-            .style(Style::default().fg(Color::Gray));
+            .style(Style::default().fg(theme.dim()));
         f.render_widget(help, chunks[2]);
     }
 }

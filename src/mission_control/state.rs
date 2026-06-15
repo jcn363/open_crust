@@ -215,13 +215,15 @@ impl MissionControlUI {
     }
 
     /// Get the state icon and color for a task
-    pub(crate) fn task_style(task: &Task) -> (char, ratatui::style::Color) {
-        use ratatui::style::Color;
+    pub(crate) fn task_style(
+        task: &Task,
+        theme: &crate::ui::ThemeContext,
+    ) -> (char, ratatui::style::Color) {
         match &task.state {
-            TaskState::Pending => ('⏳', Color::White),
-            TaskState::Running { .. } => ('▶', Color::Yellow),
-            TaskState::Completed { .. } => ('✓', Color::Green),
-            TaskState::Failed { .. } => ('✗', Color::Red),
+            TaskState::Pending => ('⏳', theme.fg),
+            TaskState::Running { .. } => ('▶', theme.warning()),
+            TaskState::Completed { .. } => ('✓', theme.success()),
+            TaskState::Failed { .. } => ('✗', theme.error()),
         }
     }
 
@@ -382,6 +384,15 @@ mod tests {
             state,
             result: None,
             agent_type: agent.to_string(),
+        }
+    }
+
+    fn dummy_theme() -> crate::ui::ThemeContext {
+        crate::ui::ThemeContext {
+            bg: ratatui::style::Color::Reset,
+            fg: ratatui::style::Color::White,
+            accent: ratatui::style::Color::Cyan,
+            border: ratatui::style::Color::DarkGray,
         }
     }
 
@@ -682,9 +693,10 @@ mod tests {
     #[test]
     fn test_task_style_pending() {
         let task = make_task(Uuid::new_v4(), "t", "a", vec![], TaskState::Pending);
-        let (icon, color) = MissionControlUI::task_style(&task);
+        let theme = dummy_theme();
+        let (icon, color) = MissionControlUI::task_style(&task, &theme);
         assert_eq!(icon, '⏳');
-        assert_eq!(color, ratatui::style::Color::White);
+        assert_eq!(color, theme.fg);
     }
 
     #[test]
@@ -698,9 +710,10 @@ mod tests {
                 agent_id: "x".into(),
             },
         );
-        let (icon, color) = MissionControlUI::task_style(&task);
+        let theme = dummy_theme();
+        let (icon, color) = MissionControlUI::task_style(&task, &theme);
         assert_eq!(icon, '▶');
-        assert_eq!(color, ratatui::style::Color::Yellow);
+        assert_eq!(color, theme.warning());
     }
 
     #[test]
@@ -714,9 +727,10 @@ mod tests {
                 output: "ok".into(),
             },
         );
-        let (icon, color) = MissionControlUI::task_style(&task);
+        let theme = dummy_theme();
+        let (icon, color) = MissionControlUI::task_style(&task, &theme);
         assert_eq!(icon, '✓');
-        assert_eq!(color, ratatui::style::Color::Green);
+        assert_eq!(color, theme.success());
     }
 
     #[test]
@@ -730,9 +744,10 @@ mod tests {
                 error: "err".into(),
             },
         );
-        let (icon, color) = MissionControlUI::task_style(&task);
+        let theme = dummy_theme();
+        let (icon, color) = MissionControlUI::task_style(&task, &theme);
         assert_eq!(icon, '✗');
-        assert_eq!(color, ratatui::style::Color::Red);
+        assert_eq!(color, theme.error());
     }
 
     #[test]

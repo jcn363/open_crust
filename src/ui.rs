@@ -210,12 +210,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         Mode::Help => popups::draw_help_popup(f, app, &theme),
         Mode::McpShowcase => {
             if let Some(ui) = app.mcp_showcase_ui.as_mut() {
-                ui.render(f, f.area());
+                ui.render(f, f.area(), &theme);
             }
         }
         Mode::MissionControl => {
             if let Some(ui) = app.mission_control_ui.as_mut() {
-                ui.render(f, f.area());
+                ui.render(f, f.area(), &theme);
             }
         }
         _ => {}

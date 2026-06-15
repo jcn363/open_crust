@@ -158,6 +158,8 @@ pub struct App {
     cached_project_files: Vec<String>,
     /// Custom commands manager (from .opencrust/commands/)
     pub custom_commands: crate::custom_commands::CustomCommandManager,
+    /// Whether the UI needs a redraw (dirty flag for idle optimization)
+    pub dirty: bool,
 }
 
 impl App {
@@ -177,6 +179,11 @@ impl App {
     pub fn clear_ghost_text(&mut self) {
         self.ghost_text = None;
         self.last_input_time = None;
+    }
+
+    /// Mark the UI as needing a redraw
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
     }
 
     /// Activate the file picker with an initial query string.
@@ -436,6 +443,8 @@ impl App {
             cached_project_files: Vec::new(),
             // Custom commands manager
             custom_commands: crate::custom_commands::CustomCommandManager::new(),
+            // Dirty flag — starts true to force initial render
+            dirty: true,
         };
         app.load_history();
         // Discover custom commands from .opencrust/commands/
@@ -625,7 +634,8 @@ impl App {
     }
 
     pub fn move_cursor_right(&mut self) {
-        if self.vim_cursor_pos < self.input.len() {
+        let char_count = self.input.chars().count();
+        if self.vim_cursor_pos < char_count {
             self.vim_cursor_pos += 1;
         }
     }
@@ -663,7 +673,7 @@ impl App {
     }
 
     pub fn move_to_line_end(&mut self) {
-        self.vim_cursor_pos = self.input.len();
+        self.vim_cursor_pos = self.input.chars().count();
     }
 
     pub fn delete_line(&mut self) {
@@ -681,20 +691,18 @@ impl App {
 /// Prioritizes consecutive character matches and prefix matches.
 fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
     let needle_chars: Vec<char> = needle.chars().collect();
-    let haystack_chars: Vec<char> = haystack.chars().collect();
     let needle_len = needle_chars.len();
-    let haystack_len = haystack_chars.len();
 
-    if needle_len == 0 || needle_len > haystack_len {
+    if needle_len == 0 || needle_len > haystack.chars().count() {
         return 0;
     }
 
     // Try to find all needle characters in order in haystack
     let mut score = 0u32;
     let mut needle_idx = 0;
-    let mut prev_matched_idx = None;
+    let mut prev_matched_idx: Option<usize> = None;
 
-    for (i, &hc) in haystack_chars.iter().enumerate() {
+    for (i, hc) in haystack.chars().enumerate() {
         if needle_idx < needle_len && hc == needle_chars[needle_idx] {
             // Match found
             score += 1;
@@ -711,12 +719,12 @@ fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
                 score += 5;
             }
 
-            // Bonus for match after separator (/, _, -)
+            // Bonus for match after separator (/, _, -, .)
             if let Some(prev) = prev_matched_idx {
-                let between = &haystack_chars[prev + 1..i];
+                let between: String = haystack.chars().skip(prev + 1).take(i - prev - 1).collect();
                 if between
-                    .iter()
-                    .any(|&c| c == '/' || c == '_' || c == '-' || c == '.')
+                    .chars()
+                    .any(|c| c == '/' || c == '_' || c == '-' || c == '.')
                 {
                     score += 3;
                 }

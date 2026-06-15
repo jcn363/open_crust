@@ -182,14 +182,15 @@ pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
 
     // Cursor — account for border (Borders::ALL = 1-char offset)
     if let Mode::Insert = app.mode {
+        let char_count = app.input.chars().count();
         let cursor_pos = if app.vim_mode {
             app.vim_cursor_pos
         } else {
-            app.input.chars().count()
+            char_count
         };
         let border_offset: u16 = 1;
         // Clamp cursor to input length to avoid out-of-bounds
-        let clamped_pos = (cursor_pos as u16).min(app.input.chars().count() as u16);
+        let clamped_pos = (cursor_pos as u16).min(char_count as u16);
         f.set_cursor_position((area.x + border_offset + clamped_pos, area.y + border_offset));
     }
 }

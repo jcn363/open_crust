@@ -1,6 +1,7 @@
 //! Mission Control rendering
 
 use crate::orchestrator::task::{Task, TaskState};
+use crate::ui::ThemeContext;
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     prelude::*,
@@ -11,10 +12,10 @@ use super::state::MissionControlUI;
 
 impl MissionControlUI {
     /// Render the DAG panel (left side)
-    pub(crate) fn render_dag_panel(&mut self, f: &mut Frame, area: Rect) {
+    pub(crate) fn render_dag_panel(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
         if self.tasks.is_empty() || self.layers.is_empty() {
             let empty =
-                Paragraph::new("No active task graph").style(Style::default().fg(Color::Gray));
+                Paragraph::new("No active task graph").style(Style::default().fg(theme.dim()));
             f.render_widget(empty, area);
             return;
         }
@@ -30,7 +31,75 @@ impl MissionControlUI {
         let vis_height = area.height;
         let vis_start = self.scroll_offset as u16;
 
-        // Render each task node as a bordered paragraph
+        // Draw edges as unicode box-drawing characters (before nodes so nodes render on top)
+        if !self.edges.is_empty() {
+            // Create a buffer of characters for the DAG area
+            let mut buf: Vec<Vec<char>> = (0..area.height as usize)
+                .map(|_| vec![' '; area.width as usize])
+                .collect();
+            // Helper to set a char in buffer, ignoring out-of-bounds
+            let mut set_char = |x: i16, y: i16, c: char| {
+                if x >= 0 && y >= 0 && (x as u16) < area.width && (y as u16) < area.height {
+                    buf[y as usize][x as usize] = c;
+                }
+            };
+            // For each edge, draw a line from source to target
+            for (from_idx, to_idx) in &self.edges {
+                if *from_idx >= self.node_positions.len() || *to_idx >= self.node_positions.len() {
+                    continue;
+                }
+                let src = &self.node_positions[*from_idx];
+                let dst = &self.node_positions[*to_idx];
+                // Compute center of source node (bottom center)
+                let src_cx = src.x as i16 + (node_width as i16) / 2;
+                let src_cy = src.y as i16 + (node_height as i16) - 1; // bottom
+                // Compute center of target node (top center)
+                let dst_cx = dst.x as i16 + (node_width as i16) / 2;
+                let dst_cy = dst.y as i16; // top
+                // Draw vertical line from src bottom to dst top
+                let start_y = src_cy;
+                let end_y = dst_cy;
+                if start_y <= end_y {
+                    for y in start_y..=end_y {
+                        set_char(src_cx, y, '│');
+                    }
+                } else {
+                    for y in end_y..=start_y {
+                        set_char(src_cx, y, '│');
+                    }
+                }
+                // If horizontal offset, draw horizontal line at dst top
+                if src_cx != dst_cx {
+                    let (left, right) = if src_cx < dst_cx {
+                        (src_cx, dst_cx)
+                    } else {
+                        (dst_cx, src_cx)
+                    };
+                    for x in left..=right {
+                        set_char(x, dst_cy, '─');
+                    }
+                    // Adjust corners
+                    if src_cx < dst_cx {
+                        set_char(src_cx, dst_cy, '┌');
+                        set_char(dst_cx, dst_cy, '┐');
+                    } else {
+                        set_char(dst_cx, dst_cy, '└');
+                        set_char(src_cx, dst_cy, '┘');
+                    }
+                }
+            }
+            // Convert buffer to string
+            let mut edge_text = String::new();
+            for row in buf.iter() {
+                let row_str: String = row.iter().collect();
+                edge_text.push_str(&row_str);
+                edge_text.push('\n');
+            }
+            let edge_para = Paragraph::new(edge_text).style(Style::default().fg(theme.dim()));
+            f.render_widget(edge_para, area);
+        }
+
+        // Render each task node (on top of edges)
         for (task_idx, task) in self.tasks.iter().enumerate() {
             if task_idx >= self.node_positions.len() {
                 continue;
@@ -62,7 +131,7 @@ impl MissionControlUI {
                 continue;
             }
 
-            let (icon, state_color) = Self::task_style(task);
+            let (icon, state_color) = Self::task_style(task, theme);
             let is_selected = task_idx == self.selected_index && self.active_panel == 0;
 
             // Build node content
@@ -91,86 +160,13 @@ impl MissionControlUI {
 
             f.render_widget(node, node_area);
         }
-
-        // Draw edges as unicode box-drawing characters
-        if self.edges.is_empty() {
-            return;
-        }
-
-        // Create a buffer of characters for the DAG area
-        let mut buf: Vec<Vec<char>> = (0..area.height as usize)
-            .map(|_| vec![' '; area.width as usize])
-            .collect();
-        // Helper to set a char in buffer, ignoring out-of-bounds
-        let mut set_char = |x: i16, y: i16, c: char| {
-            if x >= 0 && y >= 0 && (x as u16) < area.width && (y as u16) < area.height {
-                buf[y as usize][x as usize] = c;
-            }
-        };
-        // For each edge, draw a line from source to target
-        for (from_idx, to_idx) in &self.edges {
-            if *from_idx >= self.node_positions.len() || *to_idx >= self.node_positions.len() {
-                continue;
-            }
-            let src = &self.node_positions[*from_idx];
-            let dst = &self.node_positions[*to_idx];
-            // Compute center of source node (bottom center)
-            let src_cx = src.x as i16 + (node_width as i16) / 2;
-            let src_cy = src.y as i16 + (node_height as i16) - 1; // bottom
-            // Compute center of target node (top center)
-            let dst_cx = dst.x as i16 + (node_width as i16) / 2;
-            let dst_cy = dst.y as i16; // top
-            // Draw vertical line from src bottom to dst top
-            let start_y = src_cy;
-            let end_y = dst_cy;
-            if start_y <= end_y {
-                for y in start_y..=end_y {
-                    set_char(src_cx, y, '│');
-                }
-            } else {
-                for y in end_y..=start_y {
-                    set_char(src_cx, y, '│');
-                }
-            }
-            // If horizontal offset, draw horizontal line at dst top
-            if src_cx != dst_cx {
-                let (left, right) = if src_cx < dst_cx {
-                    (src_cx, dst_cx)
-                } else {
-                    (dst_cx, src_cx)
-                };
-                for x in left..=right {
-                    set_char(x, dst_cy, '─');
-                }
-                // Adjust corners
-                if src_cx < dst_cx {
-                    set_char(src_cx, dst_cy, '┌');
-                    set_char(dst_cx, dst_cy, '┐');
-                } else {
-                    set_char(dst_cx, dst_cy, '└');
-                    set_char(src_cx, dst_cy, '┘');
-                }
-            } else {
-                // Same column, just a vertical line; ensure arrow at bottom?
-                // Use '▲' or keep '│'
-            }
-        }
-        // Convert buffer to string
-        let mut edge_text = String::new();
-        for row in buf.iter() {
-            let row_str: String = row.iter().collect();
-            edge_text.push_str(&row_str);
-            edge_text.push('\n');
-        }
-        let edge_para = Paragraph::new(edge_text).style(Style::default().fg(Color::DarkGray));
-        f.render_widget(edge_para, area);
     }
 
     /// Render the detail panel (right side)
-    pub(crate) fn render_detail_panel(&mut self, f: &mut Frame, area: Rect) {
+    pub(crate) fn render_detail_panel(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
         if self.tasks.is_empty() {
             let empty = Paragraph::new("Select a task to view details")
-                .style(Style::default().fg(Color::Gray));
+                .style(Style::default().fg(theme.dim()));
             f.render_widget(empty, area);
             return;
         }
@@ -184,7 +180,7 @@ impl MissionControlUI {
         // --- Task Details (top) ---
         let selected = self.selected_index.min(self.tasks.len().saturating_sub(1));
         let task = &self.tasks[selected];
-        let (icon, _state_color) = Self::task_style(task);
+        let (icon, _state_color) = Self::task_style(task, theme);
 
         let state_str = match &task.state {
             TaskState::Pending => "Pending".to_string(),
@@ -262,7 +258,7 @@ impl MissionControlUI {
             Block::default()
                 .borders(Borders::ALL)
                 .title(format!("Task #{}", selected))
-                .border_style(Style::default().fg(Color::Cyan))
+                .border_style(Style::default().fg(theme.accent))
         } else {
             Block::default()
                 .borders(Borders::ALL)
@@ -271,7 +267,7 @@ impl MissionControlUI {
 
         let detail = Paragraph::new(detail_text)
             .block(detail_block)
-            .style(Style::default().fg(Color::White))
+            .style(Style::default().fg(theme.fg))
             .wrap(Wrap { trim: true });
         f.render_widget(detail, chunks[0]);
 
@@ -281,7 +277,7 @@ impl MissionControlUI {
         // Title
         let dash_title = Paragraph::new(" System Dashboard")
             .block(Block::default().borders(Borders::ALL).title("Dashboard"))
-            .style(Style::default().fg(Color::Cyan));
+            .style(Style::default().fg(theme.accent));
         // Render title block
         f.render_widget(dash_title, chunks[1]);
 
@@ -308,12 +304,12 @@ impl MissionControlUI {
 
         let dash = Paragraph::new(dash_text)
             .block(Block::default().borders(Borders::ALL).title("Stats"))
-            .style(Style::default().fg(Color::White));
+            .style(Style::default().fg(theme.fg));
         f.render_widget(dash, dash_inner);
     }
 
     /// Main render function
-    pub fn render(&mut self, f: &mut Frame, area: Rect) {
+    pub fn render(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
@@ -321,31 +317,31 @@ impl MissionControlUI {
 
         // DAG panel (left 60%)
         let dag_border_style = if self.active_panel == 0 {
-            Style::default().fg(Color::Cyan)
+            Style::default().fg(theme.accent)
         } else {
-            Style::default().fg(Color::White)
+            Style::default().fg(theme.fg)
         };
         let dag_block = Block::default()
             .borders(Borders::ALL)
             .title(" Task Graph ")
             .border_style(dag_border_style)
-            .style(Style::default().fg(Color::Cyan));
+            .style(Style::default().fg(theme.accent));
         let dag_inner = dag_block.inner(chunks[0]);
         f.render_widget(dag_block, chunks[0]);
 
         if self.tasks.is_empty() {
             let empty =
-                Paragraph::new("No active task graph").style(Style::default().fg(Color::Gray));
+                Paragraph::new("No active task graph").style(Style::default().fg(theme.dim()));
             f.render_widget(empty, dag_inner);
         } else {
-            self.render_dag_panel(f, dag_inner);
+            self.render_dag_panel(f, dag_inner, theme);
         }
 
         // Detail panel (right 40%)
         let detail_border_style = if self.active_panel == 1 {
-            Style::default().fg(Color::Cyan)
+            Style::default().fg(theme.accent)
         } else {
-            Style::default().fg(Color::White)
+            Style::default().fg(theme.fg)
         };
         let detail_block = Block::default()
             .borders(Borders::ALL)
@@ -356,10 +352,10 @@ impl MissionControlUI {
 
         if self.tasks.is_empty() {
             let empty = Paragraph::new("Select a task to view details")
-                .style(Style::default().fg(Color::Gray));
+                .style(Style::default().fg(theme.dim()));
             f.render_widget(empty, detail_inner);
         } else {
-            self.render_detail_panel(f, detail_inner);
+            self.render_detail_panel(f, detail_inner, theme);
         }
     }
 }

@@ -261,11 +261,13 @@ pub async fn run_tui(
             tab.messages.push(Message::new(response));
             // Auto-scroll to bottom on new messages
             app.message_scroll = 0;
+            app.mark_dirty();
         }
 
         // Handle background task notifications
         while let Ok(notification) = background_task_rx.try_recv() {
             app.handle_background_notification(&notification);
+            app.mark_dirty();
         }
 
         // Periodic skill hot-reload check
@@ -287,6 +289,7 @@ pub async fn run_tui(
                             ));
                         }
                     }
+                    app.mark_dirty();
                 }
                 if !removed.is_empty() {
                     app.tabs[0].messages.push(Message::new(format!(
@@ -295,6 +298,7 @@ pub async fn run_tui(
                     )));
                     app.skill_browser_items
                         .retain(|(name, _, _)| !removed.contains(name));
+                    app.mark_dirty();
                 }
                 if !modified.is_empty() {
                     app.tabs[0].messages.push(Message::new(format!(
@@ -312,6 +316,7 @@ pub async fn run_tui(
                             ));
                         }
                     }
+                    app.mark_dirty();
                 }
             }
         }
@@ -323,9 +328,14 @@ pub async fn run_tui(
             tokio::time::sleep(target_frame_duration - elapsed).await;
         }
         last_frame = std::time::Instant::now();
-        terminal.draw(|f| ui::draw(f, &mut app))?;
+        // Only redraw when state has changed (dirty flag)
+        if app.dirty {
+            terminal.draw(|f| ui::draw(f, &mut app))?;
+            app.dirty = false;
+        }
 
         if let Some(Event::Key(key)) = crate::events::next_event()? {
+            app.mark_dirty();
             // Check for Copy (Ctrl+C) - copy current input to clipboard
             if check_key_match(&key, &copy_key) {
                 if !app.input.is_empty() && clipboard.copy(&app.input) {
@@ -834,35 +844,31 @@ pub async fn run_tui(
                         }
                         // Execute approved changes
                         KeyCode::Enter => {
-                            // Execute approved changes
-                            let approved: Vec<_> = app
-                                .proposed_changes
-                                .iter()
-                                .filter(|c| c.status == crate::app::ChangeStatus::Approved)
-                                .cloned()
-                                .collect();
-
-                            for change in &approved {
-                                // Write approved changes to files
-                                if let Err(e) = std::fs::write(&change.path, &change.proposed) {
-                                    app.tabs[0].messages.push(Message::new(format!(
-                                        "Error writing {}: {}",
-                                        change.path, e
-                                    )));
-                                } else {
-                                    app.tabs[0]
-                                        .messages
-                                        .push(Message::new(format!("Applied: {}", change.path)));
+                            // Drain approved changes without cloning
+                            let all_changes = std::mem::take(&mut app.proposed_changes);
+                            let mut approved_count = 0usize;
+                            for change in all_changes {
+                                if change.status == crate::app::ChangeStatus::Approved {
+                                    if let Err(e) = std::fs::write(&change.path, &change.proposed) {
+                                        app.tabs[0].messages.push(Message::new(format!(
+                                            "Error writing {}: {}",
+                                            change.path, e
+                                        )));
+                                    } else {
+                                        app.tabs[0].messages.push(Message::new(format!(
+                                            "Applied: {}",
+                                            change.path
+                                        )));
+                                    }
+                                    approved_count += 1;
                                 }
                             }
 
-                            // Clear reviewed changes
-                            app.proposed_changes.clear();
                             app.plan_review_index = 0;
                             app.mode = Mode::Normal;
                             app.tabs[0].messages.push(Message::new(format!(
                                 "Executed {} approved changes",
-                                approved.len()
+                                approved_count
                             )));
                         }
                         // Cancel (Esc)
@@ -1153,6 +1159,7 @@ pub async fn run_tui(
             && input_text == app.input
         {
             app.ghost_text = Some(prediction);
+            app.mark_dirty();
         }
 
         // Trigger prediction if needed (after 300ms debounce)
