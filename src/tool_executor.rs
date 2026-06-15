@@ -13,7 +13,7 @@ use crate::permissions::PermissionManager;
 use crate::planner::Planner;
 use crate::plugins::PluginManager;
 use crate::rag::RagManager;
-use crate::security::{validate_command, validate_path};
+use crate::security::validate_path;
 use crate::skills::SkillManager;
 use crate::tools;
 use crate::web::WebManager;
@@ -180,24 +180,22 @@ impl ToolExecutor {
     }
 
     async fn execute_bash(&self, args: &Value) -> ToolResult {
-        let command = args.get("command").and_then(|v| v.as_str()).unwrap_or("");
+        let command = args
+            .get("command")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
 
-        // Validate command for safety
-        validate_command(command).map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
+        // Execute command safely without shell interpretation
+        let output =
+            tokio::task::spawn_blocking(move || crate::security::execute_command_safely(&command))
+                .await
+                .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?
+                .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)?;
 
-        match tokio::process::Command::new("sh")
-            .arg("-c")
-            .arg(command)
-            .output()
-            .await
-        {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Ok(format!("Stdout:\n{}\nStderr:\n{}", stdout, stderr))
-            }
-            Err(e) => Err(Box::new(e) as Box<dyn Error + Send + Sync>),
-        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Ok(format!("Stdout:\n{}\nStderr:\n{}", stdout, stderr))
     }
 
     async fn execute_read(&self, args: &Value) -> ToolResult {

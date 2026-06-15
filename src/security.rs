@@ -5,6 +5,7 @@
 
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::OnceLock;
 
 /// Errors that can occur during security validation
@@ -147,6 +148,103 @@ pub fn validate_command(command: &str) -> Result<(), SecurityError> {
     }
 
     Ok(())
+}
+
+/// Safely execute a command without shell interpretation.
+///
+/// This function:
+/// 1. Validates the command string for dangerous patterns
+/// 2. Splits the command into program and arguments using shell-aware parsing
+/// 3. Executes the command directly without invoking a shell interpreter
+///
+/// This prevents shell injection vulnerabilities that occur when using `sh -c`.
+pub fn execute_command_safely(command: &str) -> Result<std::process::Output, SecurityError> {
+    // Validate command first
+    validate_command(command)?;
+
+    // Split command into program and arguments using shell-aware parsing
+    // This handles quoted arguments correctly (e.g., "echo 'hello world'")
+    let parts = shell_words::split(command)
+        .map_err(|e| SecurityError::UnsafeCommand(format!("Failed to parse command: {}", e)))?;
+
+    if parts.is_empty() {
+        return Err(SecurityError::UnsafeCommand(
+            "Empty command after parsing".to_string(),
+        ));
+    }
+
+    let program = &parts[0];
+    let args = &parts[1..];
+
+    // Execute directly without shell
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .map_err(|e| SecurityError::UnsafeCommand(format!("Failed to execute command: {}", e)))?;
+
+    Ok(output)
+}
+
+#[cfg(test)]
+mod execute_command_safely_tests {
+    use super::*;
+
+    #[test]
+    fn test_execute_safe_command() {
+        let result = execute_command_safely("echo hello");
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(String::from_utf8_lossy(&output.stdout).contains("hello"));
+    }
+
+    #[test]
+    fn test_execute_command_with_args() {
+        let result = execute_command_safely("echo hello world");
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("hello"));
+        assert!(stdout.contains("world"));
+    }
+
+    #[test]
+    fn test_execute_command_with_quoted_args() {
+        let result = execute_command_safely(r#"echo "hello world""#);
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("hello world"));
+    }
+
+    #[test]
+    fn test_execute_dangerous_command_rejected() {
+        let result = execute_command_safely("echo hello; rm -rf /");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_pipe_rejected() {
+        let result = execute_command_safely("echo test | cat");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_command_substitution_rejected() {
+        let result = execute_command_safely("echo $(whoami)");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_backtick_rejected() {
+        let result = execute_command_safely("echo `whoami`");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_empty_command_rejected() {
+        let result = execute_command_safely("");
+        assert!(result.is_err());
+    }
 }
 
 #[cfg(test)]

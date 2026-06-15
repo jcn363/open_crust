@@ -20,10 +20,16 @@ impl McpServer {
             return Err("Empty MCP command".into());
         }
 
-        // Resolve command based on type (npx, pip, cargo, etc.)
-        let (cmd, args) = resolve_spawn_command(&config.command.join(" "))?;
+        // SECURITY: Use command array directly to avoid shell injection via join/split round-trip.
+        // The command array comes from trusted configuration (config.json), not user input.
+        // Validate the command is from an allowed list of MCP server executables.
+        let cmd = &config.command[0];
+        let args = &config.command[1..];
 
-        let mut command = Command::new(&cmd);
+        // Validate the executable is a known-safe MCP server command
+        validate_mcp_command(cmd)?;
+
+        let mut command = Command::new(cmd);
         command.args(args);
 
         // Configure stdio for JSON-RPC communication
@@ -40,6 +46,44 @@ impl McpServer {
             name: name.to_string(),
             rpc,
         })
+    }
+}
+
+/// Validate that an MCP server command is from a trusted, allowed list.
+/// This prevents execution of arbitrary commands via MCP configuration.
+fn validate_mcp_command(cmd: &str) -> Result<(), String> {
+    // List of allowed MCP server executables (basename only)
+    // These are the standard MCP server packages from the official registry
+    const ALLOWED_MCP_COMMANDS: &[&str] = &[
+        "npx",
+        "node",
+        "python",
+        "python3",
+        "pip",
+        "pip3",
+        "cargo",
+        "uvx",
+        "uv",
+        "go",
+        "java",
+        "mcp-server",
+    ];
+
+    // Extract basename (handle paths like /usr/bin/npx)
+    let basename = std::path::Path::new(cmd)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or(cmd);
+
+    // Check if the command is in the allowed list
+    if ALLOWED_MCP_COMMANDS.contains(&basename) {
+        Ok(())
+    } else {
+        Err(format!(
+            "MCP command '{}' is not in the allowed list. Allowed: {}",
+            basename,
+            ALLOWED_MCP_COMMANDS.join(", ")
+        ))
     }
 }
 
@@ -161,38 +205,36 @@ impl McpManager {
     }
 }
 
-/// Helper to parse command format like "npx some-tool@latest" or "pip install some-pkg"
-/// Handles quoted arguments (e.g., `"arg with spaces"`) and ensures proper splitting.
-pub(crate) fn resolve_spawn_command(command: &str) -> Result<(String, Vec<String>), String> {
-    let parts = shell_words::split(command).map_err(|e| e.to_string())?;
-    if parts.is_empty() {
-        return Err("Empty command".into());
-    }
-    let bin = parts[0].to_string();
-    let args = parts[1..].to_vec();
-    Ok((bin, args))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_resolve_spawn_command_npx() {
-        let (cmd, args) = resolve_spawn_command("npx some-tool@latest").unwrap();
-        assert_eq!(cmd, "npx");
-        assert_eq!(args, vec!["some-tool@latest"]);
+    fn test_validate_mcp_command_allowed() {
+        assert!(validate_mcp_command("npx").is_ok());
+        assert!(validate_mcp_command("node").is_ok());
+        assert!(validate_mcp_command("python").is_ok());
+        assert!(validate_mcp_command("python3").is_ok());
+        assert!(validate_mcp_command("pip").is_ok());
+        assert!(validate_mcp_command("pip3").is_ok());
+        assert!(validate_mcp_command("cargo").is_ok());
+        assert!(validate_mcp_command("uvx").is_ok());
+        assert!(validate_mcp_command("uv").is_ok());
+        assert!(validate_mcp_command("go").is_ok());
+        assert!(validate_mcp_command("java").is_ok());
+        assert!(validate_mcp_command("mcp-server").is_ok());
+        // Test with full path
+        assert!(validate_mcp_command("/usr/bin/npx").is_ok());
+        assert!(validate_mcp_command("/usr/local/bin/node").is_ok());
     }
 
     #[test]
-    fn test_resolve_spawn_command_simple() {
-        let (cmd, args) = resolve_spawn_command("ls").unwrap();
-        assert_eq!(cmd, "ls");
-        assert!(args.is_empty());
-    }
-
-    #[test]
-    fn test_resolve_spawn_command_empty() {
-        assert!(resolve_spawn_command("").is_err());
+    fn test_validate_mcp_command_rejected() {
+        assert!(validate_mcp_command("ls").is_err());
+        assert!(validate_mcp_command("rm").is_err());
+        assert!(validate_mcp_command("sh").is_err());
+        assert!(validate_mcp_command("bash").is_err());
+        assert!(validate_mcp_command("evil-command").is_err());
+        assert!(validate_mcp_command("/tmp/malicious").is_err());
     }
 }

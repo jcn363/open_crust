@@ -7,7 +7,6 @@
 
 use serde_json::Value;
 use std::fs;
-use std::process::Command;
 
 use crate::desktop::notifications;
 use crate::json_utils;
@@ -21,16 +20,13 @@ pub fn execute_tool(name: &str, arguments: &Value) -> String {
                 .get("command")
                 .and_then(|v| v.as_str())
                 .unwrap_or("");
-            if let Err(e) = security::validate_command(command) {
-                return format!("Security error: {}", e);
-            }
-            match Command::new("sh").arg("-c").arg(command).output() {
+            match security::execute_command_safely(command) {
                 Ok(output) => {
                     let stdout = String::from_utf8_lossy(&output.stdout);
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     format!("Stdout:\n{}\nStderr:\n{}", stdout, stderr)
                 }
-                Err(e) => format!("Error executing command: {}", e),
+                Err(e) => format!("Security error: {}", e),
             }
         }
         "read" => {

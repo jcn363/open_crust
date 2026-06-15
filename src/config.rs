@@ -70,72 +70,6 @@ impl FromStr for ProviderType {
     }
 }
 
-/// DAN (Do Anything Now) response modes for uncensored operation
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq)]
-pub enum ResponseMode {
-    #[default]
-    /// Default standard responses
-    Normal,
-    /// 100% uncensored via local Ollama
-    Heretic,
-    /// Brutal honesty
-    Savage,
-    /// Raw opinions
-    Based,
-    /// Expert analysis
-    Genius,
-    /// Wild creativity
-    Chaos,
-}
-
-impl ResponseMode {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Self::Normal => "normal",
-            Self::Heretic => "heretic",
-            Self::Savage => "savage",
-            Self::Based => "based",
-            Self::Genius => "genius",
-            Self::Chaos => "chaos",
-        }
-    }
-}
-
-/// DAN configuration for uncensored AI operation
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct DanConfig {
-    /// Enable DAN (Do Anything Now) mode
-    #[serde(default)]
-    pub enabled: bool,
-    /// Current response mode
-    #[serde(default)]
-    pub mode: ResponseMode,
-    /// Use local Ollama for uncensored responses
-    #[serde(default = "default_dan_local_heretic")]
-    pub local_heretic: bool,
-    /// Private-only mode: zero data retention
-    #[serde(default = "default_dan_private")]
-    pub private_mode: bool,
-}
-
-fn default_dan_local_heretic() -> bool {
-    true
-}
-fn default_dan_private() -> bool {
-    true
-}
-
-impl Default for DanConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            mode: ResponseMode::Normal,
-            local_heretic: true,
-            private_mode: true,
-        }
-    }
-}
-
 /// Model tiers for cost-aware routing
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum ModelTier {
@@ -294,7 +228,7 @@ fn default_color_border() -> String {
 ///
 /// Loaded from a TOML file. Contains provider settings, model aliases,
 /// MCP/LSP server configs, UI theme, keybindings, permission rules,
-/// auto-refresh settings, and subagent/`dan` configuration.
+/// auto-refresh settings, and subagent configuration.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub provider: ProviderType,
@@ -358,9 +292,6 @@ pub struct Config {
     pub audit_retention_days: u64,
     #[serde(default = "default_audit_max_size")]
     pub audit_max_size_bytes: u64,
-    // --- DAN (Do Anything Now) uncensored configuration ---
-    #[serde(default)]
-    pub dan_config: DanConfig,
 
     // --- Plugin system configuration ---
     #[serde(default)]
@@ -483,7 +414,6 @@ impl Default for Config {
             compliance_log_path: None,
             audit_retention_days: default_audit_retention(),
             audit_max_size_bytes: default_audit_max_size(),
-            dan_config: DanConfig::default(),
             plugins: PluginConfig::default(),
         }
     }
@@ -1074,18 +1004,6 @@ mod tests {
         assert_eq!(ProviderType::Replicate.to_string(), "replicate");
         assert_eq!(ProviderType::DeepSeek.to_string(), "deepseek");
         assert_eq!(ProviderType::LocalAi.to_string(), "localai");
-    }
-
-    // --- ResponseMode ---
-
-    #[test]
-    fn response_mode_as_str_all_variants() {
-        assert_eq!(ResponseMode::Normal.as_str(), "normal");
-        assert_eq!(ResponseMode::Heretic.as_str(), "heretic");
-        assert_eq!(ResponseMode::Savage.as_str(), "savage");
-        assert_eq!(ResponseMode::Based.as_str(), "based");
-        assert_eq!(ResponseMode::Genius.as_str(), "genius");
-        assert_eq!(ResponseMode::Chaos.as_str(), "chaos");
     }
 
     // --- Config ---
