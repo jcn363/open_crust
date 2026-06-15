@@ -283,6 +283,11 @@ pub struct Config {
     #[serde(default)]
     pub model_auto_refresh: Option<ModelAutoRefreshConfig>,
 
+    // --- Context summarization configuration ---
+    /// Whether to automatically summarize context when approaching token limit
+    #[serde(default = "default_auto_summarize")]
+    pub auto_summarize: bool,
+
     // --- Compliance / Audit configuration ---
     #[serde(default)]
     pub compliance_mode: bool,
@@ -323,6 +328,10 @@ fn default_model_auto_refresh_enabled() -> bool {
 
 fn default_model_auto_refresh_interval() -> u64 {
     3600
+}
+
+fn default_auto_summarize() -> bool {
+    true
 }
 
 impl Default for ModelAutoRefreshConfig {
@@ -410,6 +419,7 @@ impl Default for Config {
             subagent_max_concurrent: None,
             subagent_timeout_secs: None,
             model_auto_refresh: Some(ModelAutoRefreshConfig::default()),
+            auto_summarize: true,
             compliance_mode: false,
             compliance_log_path: None,
             audit_retention_days: default_audit_retention(),

@@ -6,6 +6,8 @@
 //! message history, and cursor movement within the input prompt.
 
 use crate::config::Config;
+use nucleo::{Config as NucleoConfig, Matcher, Utf32Str};
+use rayon::prelude::*;
 use tokio::sync::mpsc;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -156,6 +158,10 @@ pub struct App {
     pub file_picker_scroll: usize,
     /// Cached full project file list (populated on file picker activation)
     cached_project_files: Vec<String>,
+    /// Nucleo matcher for fast fuzzy matching
+    file_matcher: Option<Matcher>,
+    /// Debounce timer for file picker input
+    file_picker_last_input: Option<std::time::Instant>,
     /// Custom commands manager (from .opencrust/commands/)
     pub custom_commands: crate::custom_commands::CustomCommandManager,
     /// Whether the UI needs a redraw (dirty flag for idle optimization)
@@ -193,9 +199,13 @@ impl App {
         self.file_picker_query = query.clone();
         self.file_picker_selected = 0;
         self.file_picker_scroll = 0;
+        self.file_picker_last_input = Some(std::time::Instant::now());
         // Cache the full file list on first activation
         if self.cached_project_files.is_empty() {
             self.cached_project_files = self.collect_all_project_files();
+            // Initialize nucleo matcher for fast fuzzy matching
+            let config = NucleoConfig::DEFAULT;
+            self.file_matcher = Some(Matcher::new(config));
         }
         self.file_picker_results = self.filter_project_files(&query);
     }
@@ -262,25 +272,51 @@ impl App {
     }
 
     /// Filter cached project files by query (fuzzy match). No filesystem access.
-    pub(crate) fn filter_project_files(&self, query: &str) -> Vec<String> {
+    /// Uses nucleo for fast fuzzy matching with parallel processing.
+    pub(crate) fn filter_project_files(&mut self, query: &str) -> Vec<String> {
         if query.is_empty() {
-            return self.cached_project_files.iter().take(50).cloned().collect();
+            return self
+                .cached_project_files
+                .iter()
+                .take(100)
+                .cloned()
+                .collect();
         }
+
+        // Debounce: only re-filter if 100ms has passed since last input
+        if let Some(last_input) = self.file_picker_last_input {
+            if last_input.elapsed() < std::time::Duration::from_millis(100) {
+                // Return cached results if debounce period hasn't elapsed
+                return self.file_picker_results.clone();
+            }
+        }
+        self.file_picker_last_input = Some(std::time::Instant::now());
+
         let query_lower = query.to_lowercase();
-        let mut scored: Vec<_> = self
+        let _ = &mut self.file_matcher; // Ensure matcher is initialized
+
+        // Use parallel processing for large file lists
+        // Each thread gets its own buffers and matcher
+        let scored: Vec<(u16, String)> = self
             .cached_project_files
-            .iter()
+            .par_iter()
             .filter_map(|f| {
-                let score = fuzzy_score(f, &query_lower);
-                if score > 0 {
-                    Some((score, f.clone()))
-                } else {
-                    None
-                }
+                let mut haystack_buf = Vec::new();
+                let mut needle_buf = Vec::new();
+                let haystack = Utf32Str::new(f, &mut haystack_buf);
+                let needle = Utf32Str::new(&query_lower, &mut needle_buf);
+                // Create a local matcher for this thread
+                let mut local_matcher = Matcher::new(NucleoConfig::DEFAULT);
+                local_matcher
+                    .fuzzy_match(haystack, needle)
+                    .map(|score| (score, f.clone()))
             })
             .collect();
+
+        // Sort by score (higher is better) and take top 100
+        let mut scored = scored;
         scored.sort_by_key(|b| std::cmp::Reverse(b.0));
-        scored.truncate(50);
+        scored.truncate(100);
         scored.into_iter().map(|(_, f)| f).collect()
     }
 }
@@ -441,6 +477,8 @@ impl App {
             file_picker_results: Vec::new(),
             file_picker_scroll: 0,
             cached_project_files: Vec::new(),
+            file_matcher: None,
+            file_picker_last_input: None,
             // Custom commands manager
             custom_commands: crate::custom_commands::CustomCommandManager::new(),
             // Dirty flag — starts true to force initial render
@@ -689,6 +727,7 @@ impl App {
 /// Simple fuzzy string matching score.
 /// Returns 0 if no match, higher values for better matches.
 /// Prioritizes consecutive character matches and prefix matches.
+#[expect(dead_code, reason = "Kept for potential future use or testing")]
 fn fuzzy_score(haystack: &str, needle: &str) -> u32 {
     let needle_chars: Vec<char> = needle.chars().collect();
     let needle_len = needle_chars.len();

@@ -29,7 +29,16 @@
         "baseURL": "http://127.0.0.1:11434/v1"
       },
       "models": {
-        "deepseek-r1": {
+        "qwen3:30b-a3b": {
+          "_launch": true
+        },
+        "qwen2.5-coder:14b": {
+          "_launch": true
+        },
+        "qwen3:8b": {
+          "_launch": true
+        },
+        "deepseek-coder-v2:16b": {
           "_launch": true
         }
       }

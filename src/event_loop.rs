@@ -743,16 +743,17 @@ pub async fn run_tui(
                                             app.file_picker_query.pop();
                                             app.file_picker_selected = 0;
                                             app.file_picker_scroll = 0;
+                                            let query = app.file_picker_query.clone();
                                             app.file_picker_results =
-                                                app.filter_project_files(&app.file_picker_query);
+                                                app.filter_project_files(&query);
                                         }
                                     }
                                     KeyCode::Char(c) => {
                                         app.file_picker_query.push(c);
                                         app.file_picker_selected = 0;
                                         app.file_picker_scroll = 0;
-                                        app.file_picker_results =
-                                            app.filter_project_files(&app.file_picker_query);
+                                        let query = app.file_picker_query.clone();
+                                        app.file_picker_results = app.filter_project_files(&query);
                                     }
                                     _ => {}
                                 }
