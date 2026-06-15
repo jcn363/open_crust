@@ -151,3 +151,4 @@ AppDir/
 # Telemetry and npm
 telemetry.json
 .npmignore
+graphify-out/
