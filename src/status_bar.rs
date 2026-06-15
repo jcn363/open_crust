@@ -3,12 +3,7 @@
 //! Draws the bottom status bar showing mode (insert/normal), provider,
 //! model, token count, and active agent/background task count.
 
-use ratatui::{
-    Frame,
-    layout::Rect,
-    style::{Color, Style},
-    widgets::Paragraph,
-};
+use ratatui::{Frame, layout::Rect, style::Style, widgets::Paragraph};
 
 use crate::app::App;
 use crate::config::ProviderType;
@@ -52,7 +47,7 @@ fn provider_str(provider: &ProviderType) -> &'static str {
     }
 }
 
-pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, _theme: &ThemeContext) {
+pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
     // Structure: [MODE] [PLAN] [Provider:Model] tokens:N/M cost:$X.XX tasks:N | keybind hints
     let mode_tag = format!(" {} ", mode_str(app.mode));
     let plan_tag = plan_mode_tag(app);
@@ -100,27 +95,15 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, _theme: &ThemeConte
 
     // Mode-specific background coloring for visual context
     let (mode_fg, mode_bg) = match app.mode {
-        crate::app::Mode::Insert => (
-            Color::Rgb(240, 238, 238),
-            Color::Rgb(30, 50, 30), // subtle green for insert
-        ),
-        crate::app::Mode::Review => (
-            Color::Rgb(240, 238, 238),
-            Color::Rgb(50, 40, 20), // subtle amber for review
-        ),
+        crate::app::Mode::Insert => (theme.status_fg(), theme.status_insert_bg()),
+        crate::app::Mode::Review => (theme.status_fg(), theme.status_review_bg()),
         crate::app::Mode::Servers
         | crate::app::Mode::SkillBrowser
         | crate::app::Mode::PluginBrowser
         | crate::app::Mode::CommandPalette
         | crate::app::Mode::McpShowcase
-        | crate::app::Mode::MissionControl => (
-            Color::Rgb(240, 238, 238),
-            Color::Rgb(30, 30, 50), // subtle blue for modals
-        ),
-        _ => (
-            Color::Rgb(240, 238, 238),
-            Color::Rgb(26, 25, 25), // default dark
-        ),
+        | crate::app::Mode::MissionControl => (theme.status_fg(), theme.status_modal_bg()),
+        _ => (theme.status_fg(), theme.status_default_bg()),
     };
 
     let status_bar = Paragraph::new(format!(

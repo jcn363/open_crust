@@ -154,6 +154,8 @@ pub struct App {
     pub file_picker_selected: usize,
     pub file_picker_results: Vec<String>,
     pub file_picker_scroll: usize,
+    /// Cached full project file list (populated on file picker activation)
+    cached_project_files: Vec<String>,
     /// Custom commands manager (from .opencrust/commands/)
     pub custom_commands: crate::custom_commands::CustomCommandManager,
 }
@@ -178,13 +180,17 @@ impl App {
     }
 
     /// Activate the file picker with an initial query string.
-    /// Collects all project files and filters by the query.
+    /// Caches the full project file list and filters by the query.
     pub fn activate_file_picker(&mut self, query: String) {
         self.file_picker_active = true;
         self.file_picker_query = query.clone();
         self.file_picker_selected = 0;
         self.file_picker_scroll = 0;
-        self.file_picker_results = self.collect_project_files(&query);
+        // Cache the full file list on first activation
+        if self.cached_project_files.is_empty() {
+            self.cached_project_files = self.collect_all_project_files();
+        }
+        self.file_picker_results = self.filter_project_files(&query);
     }
 
     /// Deactivate the file picker without selecting a file.
@@ -218,8 +224,8 @@ impl App {
         }
     }
 
-    /// Collect all files in the project, filtered by query (fuzzy match).
-    pub(crate) fn collect_project_files(&self, query: &str) -> Vec<String> {
+    /// Collect all files in the project (no filter). Used to populate cache.
+    fn collect_all_project_files(&self) -> Vec<String> {
         let mut files = Vec::new();
         for entry in walkdir::WalkDir::new(".")
             .into_iter()
@@ -244,25 +250,31 @@ impl App {
                 }
             }
         }
+        files.sort();
+        files
+    }
 
-        // Fuzzy filter
+    /// Filter cached project files by query (fuzzy match). No filesystem access.
+    pub(crate) fn filter_project_files(&self, query: &str) -> Vec<String> {
         if query.is_empty() {
-            files.sort();
-            files.truncate(50);
-            files
-        } else {
-            let query_lower = query.to_lowercase();
-            let mut scored: Vec<_> = files
-                .into_iter()
-                .filter_map(|f| {
-                    let score = fuzzy_score(&f, &query_lower);
-                    if score > 0 { Some((score, f)) } else { None }
-                })
-                .collect();
-            scored.sort_by_key(|b| std::cmp::Reverse(b.0));
-            scored.truncate(50);
-            scored.into_iter().map(|(_, f)| f).collect()
+            return self.cached_project_files.iter().take(50).cloned().collect();
         }
+        let query_lower = query.to_lowercase();
+        let mut scored: Vec<_> = self
+            .cached_project_files
+            .iter()
+            .filter_map(|f| {
+                let score = fuzzy_score(f, &query_lower);
+                if score > 0 {
+                    Some((score, f.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        scored.sort_by_key(|b| std::cmp::Reverse(b.0));
+        scored.truncate(50);
+        scored.into_iter().map(|(_, f)| f).collect()
     }
 }
 
@@ -421,6 +433,7 @@ impl App {
             file_picker_selected: 0,
             file_picker_results: Vec::new(),
             file_picker_scroll: 0,
+            cached_project_files: Vec::new(),
             // Custom commands manager
             custom_commands: crate::custom_commands::CustomCommandManager::new(),
         };

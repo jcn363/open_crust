@@ -35,6 +35,46 @@ impl ThemeContext {
             border: parse_color(theme.map(|t| t.border.as_str()).unwrap_or("#3c3b3a")),
         }
     }
+
+    /// Derived error color — warm red derived from theme
+    pub fn error(&self) -> Color {
+        Color::Rgb(200, 80, 80)
+    }
+
+    /// Derived system notification color — warm amber
+    pub fn system(&self) -> Color {
+        Color::Rgb(180, 160, 80)
+    }
+
+    /// Derived dimmed ghost text color
+    pub fn ghost(&self) -> Color {
+        Color::Rgb(73, 72, 71)
+    }
+
+    /// Status bar mode-specific background for insert mode
+    pub fn status_insert_bg(&self) -> Color {
+        Color::Rgb(30, 50, 30)
+    }
+
+    /// Status bar mode-specific background for review mode
+    pub fn status_review_bg(&self) -> Color {
+        Color::Rgb(50, 40, 20)
+    }
+
+    /// Status bar mode-specific background for modal modes
+    pub fn status_modal_bg(&self) -> Color {
+        Color::Rgb(30, 30, 50)
+    }
+
+    /// Status bar default background
+    pub fn status_default_bg(&self) -> Color {
+        Color::Rgb(26, 25, 25)
+    }
+
+    /// Status bar foreground
+    pub fn status_fg(&self) -> Color {
+        Color::Rgb(240, 238, 238)
+    }
 }
 
 pub fn parse_color(s: &str) -> Color {

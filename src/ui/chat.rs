@@ -26,10 +26,10 @@ fn message_style(content: &str, theme: &ThemeContext) -> Style {
         Style::default().fg(theme.border)
     } else if content.starts_with("System: ") {
         // System notification - warm amber (subtle)
-        Style::default().fg(Color::Rgb(180, 160, 80))
+        Style::default().fg(theme.system())
     } else if content.starts_with("Error: ") {
         // Error messages - soft red
-        Style::default().fg(Color::Rgb(200, 80, 80))
+        Style::default().fg(theme.error())
     } else {
         // LLM response - use theme accent
         Style::default().fg(theme.accent)
@@ -157,11 +157,11 @@ pub fn draw_message_list(f: &mut Frame, app: &App, area: Rect, theme: &ThemeCont
 
 pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
     let input = Paragraph::new({
-        let mut line = Line::from(app.input.clone());
+        let mut line = Line::raw(app.input.as_str());
         if let Some(ref ghost) = app.ghost_text {
             line.spans.push(Span::styled(
-                ghost.clone(),
-                Style::default().fg(Color::Rgb(73, 72, 71)),
+                ghost.as_str(),
+                Style::default().fg(theme.ghost()),
             ));
         }
         line
@@ -185,12 +185,11 @@ pub fn draw_input_area(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         let cursor_pos = if app.vim_mode {
             app.vim_cursor_pos
         } else {
-            app.input.len()
+            app.input.chars().count()
         };
-        let input_len = app.input.len() as u16;
         let border_offset: u16 = 1;
         // Clamp cursor to input length to avoid out-of-bounds
-        let clamped_pos = (cursor_pos as u16).min(input_len);
+        let clamped_pos = (cursor_pos as u16).min(app.input.chars().count() as u16);
         f.set_cursor_position((area.x + border_offset + clamped_pos, area.y + border_offset));
     }
 }

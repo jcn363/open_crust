@@ -274,7 +274,10 @@ pub async fn run_tui(
             if skills.should_check_for_updates() {
                 let (added, removed, modified) = skills.discover_changes();
                 if !added.is_empty() {
-                    eprintln!("[Skills] Discovered new skills: {}", added.join(", "));
+                    app.tabs[0].messages.push(Message::new(format!(
+                        "System: Discovered new skills: {}",
+                        added.join(", ")
+                    )));
                     for name in &added {
                         if let Some(skill) = skills.get_skill(name) {
                             app.skill_browser_items.push((
@@ -286,12 +289,18 @@ pub async fn run_tui(
                     }
                 }
                 if !removed.is_empty() {
-                    eprintln!("[Skills] Removed skills: {}", removed.join(", "));
+                    app.tabs[0].messages.push(Message::new(format!(
+                        "System: Removed skills: {}",
+                        removed.join(", ")
+                    )));
                     app.skill_browser_items
                         .retain(|(name, _, _)| !removed.contains(name));
                 }
                 if !modified.is_empty() {
-                    eprintln!("[Skills] Modified skills: {}", modified.join(", "));
+                    app.tabs[0].messages.push(Message::new(format!(
+                        "System: Modified skills: {}",
+                        modified.join(", ")
+                    )));
                     for name in &modified {
                         if let Some(skill) = skills.get_skill(name) {
                             // Remove stale entry first, then re-add with updated data
@@ -320,9 +329,10 @@ pub async fn run_tui(
             // Check for Copy (Ctrl+C) - copy current input to clipboard
             if check_key_match(&key, &copy_key) {
                 if !app.input.is_empty() && clipboard.copy(&app.input) {
-                    app.tabs[0]
-                        .messages
-                        .push(Message::new(String::from("Copied to clipboard")));
+                    if let Some(tab) = app.tabs.get_mut(app.active_tab) {
+                        tab.messages
+                            .push(Message::new(String::from("Copied to clipboard")));
+                    }
                 }
                 continue;
             }
@@ -724,7 +734,7 @@ pub async fn run_tui(
                                             app.file_picker_selected = 0;
                                             app.file_picker_scroll = 0;
                                             app.file_picker_results =
-                                                app.collect_project_files(&app.file_picker_query);
+                                                app.filter_project_files(&app.file_picker_query);
                                         }
                                     }
                                     KeyCode::Char(c) => {
@@ -732,7 +742,7 @@ pub async fn run_tui(
                                         app.file_picker_selected = 0;
                                         app.file_picker_scroll = 0;
                                         app.file_picker_results =
-                                            app.collect_project_files(&app.file_picker_query);
+                                            app.filter_project_files(&app.file_picker_query);
                                     }
                                     _ => {}
                                 }
@@ -1218,11 +1228,10 @@ fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool 
     use crossterm::event::KeyModifiers;
 
     for combo in keybind_str.split(',') {
-        let parts: Vec<&str> = combo.trim().split('+').collect();
         let mut target_modifiers = KeyModifiers::empty();
         let mut target_code = None;
 
-        for part in parts {
+        for part in combo.trim().split('+') {
             match part.to_lowercase().as_str() {
                 "ctrl" => target_modifiers.insert(KeyModifiers::CONTROL),
                 "alt" => target_modifiers.insert(KeyModifiers::ALT),
