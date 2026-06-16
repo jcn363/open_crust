@@ -24,8 +24,8 @@ impl MissionControlUI {
         // their computed node positions. Since ratatui doesn't have a canvas,
         // we use a Paragraph with pre-formatted lines for the visible area.
 
-        let node_width: u16 = 22;
-        let node_height: u16 = 3;
+        let node_width: u16 = super::types::NODE_WIDTH;
+        let node_height: u16 = super::types::NODE_HEIGHT;
 
         // Build visible area based on scroll_offset
         let vis_height = area.height;
@@ -274,15 +274,6 @@ impl MissionControlUI {
         // --- Dashboard (bottom) ---
         let s = &self.stats;
 
-        // Title
-        let dash_title = Paragraph::new(" System Dashboard")
-            .block(Block::default().borders(Borders::ALL).title("Dashboard"))
-            .style(Style::default().fg(theme.accent));
-        // Render title block
-        f.render_widget(dash_title, chunks[1]);
-
-        let dash_inner = chunks[1]; // We'll use Paragraph with formatted text
-
         let total_bar = if s.total > 0 {
             s.completed as f64 / s.total as f64
         } else {
@@ -303,9 +294,9 @@ impl MissionControlUI {
         );
 
         let dash = Paragraph::new(dash_text)
-            .block(Block::default().borders(Borders::ALL).title("Stats"))
+            .block(Block::default().borders(Borders::ALL).title("Dashboard"))
             .style(Style::default().fg(theme.fg));
-        f.render_widget(dash, dash_inner);
+        f.render_widget(dash, chunks[1]);
     }
 
     /// Main render function

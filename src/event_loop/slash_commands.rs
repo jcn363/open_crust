@@ -1,0 +1,163 @@
+//! Slash command handling for the TUI event loop.
+//! Handles /init, /provider, /model, /undo, /redo, /goal, /goal-clear, /goal-status commands.
+
+use crate::{context, git, llm, rules};
+use serde_json::Value;
+use tokio::sync::mpsc;
+
+/// Handle slash commands entered by the user.
+/// Returns `true` if a command was handled (caller should continue),
+/// `false` if the input should be sent to the LLM.
+pub(crate) async fn handle_slash_command(
+    prompt_str: &str,
+    client: &llm::LlmClient,
+    response_tx: &mpsc::Sender<String>,
+    messages_history: &mut Vec<Value>,
+    approval_rx: &mut mpsc::Receiver<bool>,
+) -> bool {
+    if prompt_str == "/init" {
+        match rules::init_project_rules() {
+            Ok(msg) => {
+                let _ = response_tx.send(format!("opencrust: {}", msg)).await;
+            }
+            Err(e) => {
+                let _ = response_tx.send(format!("Error: {}", e)).await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str.starts_with("/provider ") {
+        let new_provider = prompt_str.trim_start_matches("/provider ").trim();
+        let mut new_config = (*client.config).clone();
+        match new_provider.to_lowercase().as_str() {
+            "ollama" => {
+                new_config.provider = crate::config::ProviderType::Ollama;
+                new_config.save();
+                let _ = response_tx
+                    .send("opencrust: Provider switched to Ollama".to_string())
+                    .await;
+            }
+            "openrouter" => {
+                new_config.provider = crate::config::ProviderType::OpenRouter;
+                new_config.save();
+                let _ = response_tx
+                    .send("opencrust: Provider switched to OpenRouter".to_string())
+                    .await;
+            }
+            _ => {
+                let _ = response_tx
+                    .send(format!("opencrust: Unknown provider '{}'", new_provider))
+                    .await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str.starts_with("/model ") {
+        let new_model = prompt_str.trim_start_matches("/model ").trim();
+        let mut new_config = (*client.config).clone();
+        new_config.model = new_model.to_string();
+        new_config.save();
+        let _ = response_tx
+            .send(format!("opencrust: Model switched to '{}'", new_model))
+            .await;
+        return true;
+    }
+
+    if prompt_str == "/undo" {
+        match git::undo() {
+            Ok(msg) => {
+                let _ = response_tx.send(format!("opencrust: {}", msg)).await;
+            }
+            Err(e) => {
+                let _ = response_tx.send(format!("Error: {}", e)).await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str == "/redo" {
+        match git::redo() {
+            Ok(msg) => {
+                let _ = response_tx.send(format!("opencrust: {}", msg)).await;
+            }
+            Err(e) => {
+                let _ = response_tx.send(format!("Error: {}", e)).await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str.starts_with("/goal ") {
+        let goal_desc = prompt_str.trim_start_matches("/goal ").trim();
+        if goal_desc.is_empty() {
+            let _ = response_tx
+                .send("opencrust: Usage: /goal <description>".to_string())
+                .await;
+        } else {
+            client.set_goal(goal_desc.to_string());
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: Goal set: '{}'. Agent will work autonomously until completed. Use /goal-clear to reset.",
+                    goal_desc
+                ))
+                .await;
+        }
+        return true;
+    }
+
+    if prompt_str == "/goal-clear" || prompt_str == "/goal clear" {
+        client.clear_goal();
+        let _ = response_tx
+            .send("opencrust: Goal cleared.".to_string())
+            .await;
+        return true;
+    }
+
+    if prompt_str == "/goal-status" || prompt_str == "/goal status" {
+        match client.get_goal() {
+            Some(goal) => {
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: Active goal: '{}' (set {})",
+                        goal.description,
+                        goal.created_at.format("%Y-%m-%d %H:%M")
+                    ))
+                    .await;
+            }
+            None => {
+                let _ = response_tx
+                    .send("opencrust: No active goal.".to_string())
+                    .await;
+            }
+        }
+        return true;
+    }
+
+    // Not a slash command - send to LLM
+    let _ = git::checkpoint();
+    let enriched_prompt = context::inject_file_context(prompt_str);
+    let _ = response_tx
+        .send(String::from("opencrust: Thinking..."))
+        .await;
+
+    let res = client
+        .send_message(
+            messages_history,
+            &enriched_prompt,
+            response_tx.clone(),
+            Some(approval_rx),
+        )
+        .await;
+    match res {
+        Ok(reply) => {
+            let _ = response_tx.send(format!("opencrust: {}", reply)).await;
+        }
+        Err(e) => {
+            let _ = response_tx.send(format!("Error: {}", e)).await;
+        }
+    }
+
+    true
+}
