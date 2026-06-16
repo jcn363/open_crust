@@ -133,6 +133,7 @@ impl CinnamonTheme {
 #[derive(Debug, Clone)]
 pub struct CinnamonInfo {
     /// Desktop environment variant
+    #[expect(dead_code, reason = "Used in startup.rs for theme detection")]
     pub desktop: DesktopEnvironment,
     /// Display server protocol (X11/Wayland)
     pub display_server: DisplayServer,

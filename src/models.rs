@@ -5,6 +5,7 @@
 //! Supports automatic periodic refresh for up-to-date model lists.
 
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -370,6 +371,7 @@ impl Default for ModelFetcher {
 }
 
 /// A bundled default model list used when no cache exists
+#[cfg(test)]
 pub fn bundled_default_models() -> HashMap<String, Vec<ProviderModel>> {
     let mut map = HashMap::new();
 

@@ -40,7 +40,7 @@ pub struct Args {
     pub model: Option<String>,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     /// Start in ACP mode (JSON-RPC over stdio)
     Acp,
@@ -89,7 +89,7 @@ pub enum Commands {
     },
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum McpCommands {
     /// List available MCP servers
     List,
@@ -112,7 +112,7 @@ pub enum McpCommands {
     Tools,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum DesktopCommands {
     /// Open file picker dialog
     FilePicker {
@@ -142,7 +142,7 @@ pub enum DesktopCommands {
     Detect,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum SessionCommands {
     /// List all sessions
     List,
@@ -164,7 +164,7 @@ pub enum SessionCommands {
     },
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum SkillsCommands {
     /// List all skills with their status
     List,
@@ -174,7 +174,7 @@ pub enum SkillsCommands {
     Deactivate { name: String },
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum AuditCommands {
     /// Export audit logs to CSV or JSON
     Export {
@@ -231,7 +231,7 @@ pub enum AuditCommands {
     },
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum BackgroundCommands {
     /// List all background agents
     List,
@@ -263,7 +263,7 @@ pub enum BackgroundCommands {
     },
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum PluginCommands {
     /// List all discovered plugins
     List,
@@ -296,7 +296,7 @@ pub enum PluginCommands {
     Stats,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum RepoCommands {
     /// List all registered repositories
     List,
