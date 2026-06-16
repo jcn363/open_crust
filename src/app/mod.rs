@@ -94,10 +94,13 @@ pub struct App {
     pub file_picker_results: Vec<String>,
     pub file_picker_scroll: usize,
     /// Cached full project file list (populated on file picker activation)
+    #[allow(dead_code)]
     cached_project_files: Vec<String>,
     /// Nucleo matcher for fast fuzzy matching
+    #[allow(dead_code)]
     file_matcher: Option<Matcher>,
     /// Debounce timer for file picker input
+    #[allow(dead_code)]
     file_picker_last_input: Option<std::time::Instant>,
     /// Custom commands manager (from .opencrust/commands/)
     pub custom_commands: crate::custom_commands::CustomCommandManager,

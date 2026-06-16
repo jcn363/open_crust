@@ -49,6 +49,7 @@ impl App {
         }
     }
 
+    #[allow(dead_code)]
     pub fn handle_char(&mut self, c: char) {
         self.input.push(c);
     }

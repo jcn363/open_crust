@@ -8,6 +8,7 @@ use walkdir::WalkDir;
 impl App {
     /// Activate the file picker with an initial query string.
     /// Caches the full project file list and filters by the query.
+    #[allow(dead_code)]
     pub fn activate_file_picker(&mut self, query: String) {
         self.file_picker_active = true;
         self.file_picker_query = query.clone();
@@ -25,6 +26,7 @@ impl App {
     }
 
     /// Deactivate the file picker without selecting a file.
+    #[allow(dead_code)]
     pub fn cancel_file_picker(&mut self) {
         self.file_picker_active = false;
         self.file_picker_query.clear();
@@ -32,6 +34,7 @@ impl App {
     }
 
     /// Confirm the current selection and insert the file path into input.
+    #[allow(dead_code)]
     pub fn confirm_file_picker(&mut self) -> Option<String> {
         if let Some(path) = self.file_picker_results.get(self.file_picker_selected) {
             let selected = path.clone();
@@ -43,6 +46,7 @@ impl App {
     }
 
     /// Collect all files in the project (no filter). Used to populate cache.
+    #[allow(dead_code)]
     fn collect_all_project_files(&self) -> Vec<String> {
         let mut files = Vec::new();
         for entry in WalkDir::new(".")
@@ -74,6 +78,7 @@ impl App {
 
     /// Filter cached project files by query (fuzzy match). No filesystem access.
     /// Uses nucleo for fast fuzzy matching with parallel processing.
+    #[allow(dead_code)]
     pub(crate) fn filter_project_files(&mut self, query: &str) -> Vec<String> {
         if query.is_empty() {
             return self
