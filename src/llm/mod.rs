@@ -5,6 +5,12 @@
 //! messages, handles tool calls, enforces permissions, records audit logs, and
 //! supports streaming responses. Central orchestrator for all LLM interactions.
 
+mod goals;
+mod plan_mode;
+pub mod types;
+
+pub use types::{BASE_SYSTEM_PROMPT, Goal, PlanModeState};
+
 use crate::config::{Config, PermissionAction, ProviderType};
 use crate::orchestrator::Orchestrator;
 use crate::rules;
@@ -14,25 +20,6 @@ use reqwest::Client;
 use serde_json::{Value, json};
 use std::error::Error;
 use tokio::sync::mpsc;
-
-/// Plan mode state for read-only analysis
-#[derive(Clone, Copy, Debug, PartialEq, Default)]
-pub enum PlanModeState {
-    #[default]
-    Disabled,
-    Planning,
-}
-
-/// Persistent goal for autonomous agent execution
-#[derive(Clone, Debug)]
-pub struct Goal {
-    pub description: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-}
-
-const BASE_SYSTEM_PROMPT: &str = "You are opencrust, a pure Rust terminal-based AI coding agent. 
-You have access to tools to interact with the local filesystem and execute bash commands.
-Always follow the project's rules and guidelines provided below.";
 
 use crate::audit::AuditLogger;
 use crate::custom_tools::CustomToolManager;
@@ -152,68 +139,6 @@ impl LlmClient {
             plan_mode: Arc::new(std::sync::Mutex::new(PlanModeState::default())),
             goal: Arc::new(std::sync::Mutex::new(None)),
             orchestrator_tasks,
-        })
-    }
-
-    /// Set plan mode state
-    pub fn set_plan_mode(&self, mode: PlanModeState) {
-        if let Ok(mut guard) = self.plan_mode.lock() {
-            *guard = mode;
-        }
-    }
-
-    /// Get current plan mode state
-    pub fn get_plan_mode(&self) -> PlanModeState {
-        self.plan_mode
-            .lock()
-            .map(|g| *g)
-            .unwrap_or(PlanModeState::Disabled)
-    }
-
-    /// Check if a tool is blocked in plan mode
-    fn is_tool_blocked_in_plan_mode(&self, tool_name: &str) -> bool {
-        if self.get_plan_mode() != PlanModeState::Planning {
-            return false;
-        }
-        // Block all write/modify tools in plan mode
-        matches!(
-            tool_name,
-            "write" | "edit" | "bash" | "global_search_replace" | "create_plan"
-        )
-    }
-
-    /// Set a persistent goal for autonomous execution
-    pub fn set_goal(&self, description: String) {
-        if let Ok(mut guard) = self.goal.lock() {
-            *guard = Some(Goal {
-                description,
-                created_at: chrono::Utc::now(),
-            });
-        }
-    }
-
-    /// Clear the active goal
-    pub fn clear_goal(&self) {
-        if let Ok(mut guard) = self.goal.lock() {
-            *guard = None;
-        }
-    }
-
-    /// Get the current goal if any
-    pub fn get_goal(&self) -> Option<Goal> {
-        self.goal.lock().ok().and_then(|g| g.clone())
-    }
-
-    /// Get goal description for system prompt injection
-    pub fn get_goal_prompt(&self) -> Option<String> {
-        self.goal.lock().ok().and_then(|g| {
-            g.as_ref().map(|goal| {
-                format!(
-                    "\n\n## Active Goal\nYou have an active goal: '{}'. Work autonomously toward completing this goal. The goal was set at {}.",
-                    goal.description,
-                    goal.created_at.format("%Y-%m-%d %H:%M UTC")
-                )
-            })
         })
     }
 

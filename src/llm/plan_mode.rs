@@ -20,7 +20,7 @@ impl LlmClient {
     }
 
     /// Check if a tool is blocked in plan mode
-    fn is_tool_blocked_in_plan_mode(&self, tool_name: &str) -> bool {
+    pub(crate) fn is_tool_blocked_in_plan_mode(&self, tool_name: &str) -> bool {
         if self.get_plan_mode() != PlanModeState::Planning {
             return false;
         }

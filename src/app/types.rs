@@ -9,10 +9,10 @@ pub enum Mode {
     Review,
     Servers,
     SkillBrowser,   // Ctrl+Shift+K skill browser
-    PluginBrowser ,  // Ctrl+P plugin browser
+    PluginBrowser,  // Ctrl+P plugin browser
     CommandPalette, // Ctrl+K command palette
-    Help          , // ? key help
-    McpShowcase   , // Ctrl+M MCP Showcase
+    Help,           // ? key help
+    McpShowcase,    // Ctrl+M MCP Showcase
     MissionControl, // Ctrl+G Mission Control
 }
 

@@ -36,7 +36,7 @@ impl App {
             .join(".config/opencrust/history.txt")
     }
 
-    fn load_history(&mut self) {
+    pub(crate) fn load_history(&mut self) {
         let path = Self::history_path();
         if path.exists()
             && let Ok(content) = std::fs::read_to_string(path)

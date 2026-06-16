@@ -44,19 +44,17 @@ impl App {
             if parts.len() == 2 {
                 let task_id = parts[0].to_string();
                 let result = parts[1].to_string();
-                if let Some(task) = self
-                    .background_tasks
-                    .iter_mut()
-                    .find(|t| t.id == task_id)
-                {
+                if let Some(task) = self.background_tasks.iter_mut().find(|t| t.id == task_id) {
                     task.status = crate::app::TaskStatus::Completed;
                     task.result = Some(result.clone());
                 }
                 let tab_idx = self.active_tab.min(self.tabs.len().saturating_sub(1));
-                self.tabs[tab_idx].messages.push(crate::app::Message::new(format!(
-                    "Task {} completed: {}",
-                    task_id, result
-                )));
+                self.tabs[tab_idx]
+                    .messages
+                    .push(crate::app::Message::new(format!(
+                        "Task {} completed: {}",
+                        task_id, result
+                    )));
                 return Some(tab_idx);
             }
         } else if notification.starts_with("[TASK_FAILED]") {
@@ -67,11 +65,7 @@ impl App {
             if parts.len() == 2 {
                 let task_id = parts[0].to_string();
                 let error = parts[1].to_string();
-                if let Some(task) = self
-                    .background_tasks
-                    .iter_mut()
-                    .find(|t| t.id == task_id)
-                {
+                if let Some(task) = self.background_tasks.iter_mut().find(|t| t.id == task_id) {
                     task.status = crate::app::TaskStatus::Failed;
                     task.result = Some(error.clone());
                 }
