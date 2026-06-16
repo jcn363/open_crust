@@ -6,6 +6,19 @@ For how to extend modules, see **docs/DEVELOPMENT.md**.
 For coding standards, see **AGENTS.md**.  
 For architecture context, see **docs/ARCHITECTURE.md**.
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ## Core Application Modules
@@ -22,6 +35,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `app.rs`, `config.rs`, `ui.rs`  
 **Lines of code:** ~500
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### app.rs
@@ -35,6 +61,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `ui.rs`, `events.rs`, `sessions.rs`  
 **Lines of code:** ~800
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -50,6 +89,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `app.rs`, `events.rs`, `markdown.rs`, `status_bar.rs`  
 **Lines of code:** ~1200
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### llm.rs
@@ -63,6 +115,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `tools.rs`, `context.rs`, `config.rs`, `permissions.rs`  
 **Lines of code:** ~1000
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -80,6 +145,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `llm.rs`, `mcp.rs`, `lsp.rs`, `custom_tools.rs`  
 **Lines of code:** ~600
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### mcp.rs
@@ -93,6 +171,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `tools.rs`, `jsonrpc.rs`, `config.rs`  
 **Lines of code:** ~800
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -108,6 +199,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `tools.rs`, `config.rs`  
 **Lines of code:** ~600
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### custom_tools.rs
@@ -122,6 +226,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `tools.rs`, `config.rs`, `permissions.rs`  
 **Lines of code:** ~400
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### tool_executor.rs
@@ -135,6 +252,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `tools.rs`, `llm.rs`  
 **Lines of code:** ~300
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -156,6 +286,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Lines of code:** ~627
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 ### acp.rs
 **Purpose:** Agent Communication Protocol (ACP) stdio interface for multi-agent interop  
@@ -168,6 +311,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `llm.rs`, `tools.rs`, `jsonrpc.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -185,6 +341,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `context.rs`, `web.rs`  
 **Lines of code:** ~500
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### skills.rs
@@ -199,6 +368,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `config.rs`, `rules.rs`  
 **Lines of code:** ~400
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### planner.rs
@@ -212,6 +394,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `llm.rs`, `app.rs`  
 **Lines of code:** ~500
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -229,6 +424,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `audit.rs`, `config.rs`, `security.rs`  
 **Lines of code:** ~600
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### audit.rs
@@ -242,6 +450,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `permissions.rs`, `config.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -257,6 +478,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `permissions.rs`, `audit.rs`  
 **Lines of code:** ~350
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### config.rs
@@ -270,6 +504,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `permissions.rs`, `security.rs`  
 **Lines of code:** ~700
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -287,6 +534,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `app.rs`, `ui.rs`  
 **Lines of code:** ~400
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ## UX & Rendering Modules
@@ -303,6 +563,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `ui.rs`  
 **Lines of code:** ~300
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### status_bar.rs
@@ -316,6 +589,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `ui.rs`  
 **Lines of code:** ~200
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -333,6 +619,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `tools.rs`, `web.rs`  
 **Lines of code:** ~500
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### web.rs
@@ -346,6 +645,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `config.rs`, `permissions.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -361,6 +673,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `tools.rs`, `config.rs`  
 **Lines of code:** ~300
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### context.rs
@@ -375,6 +700,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `llm.rs`, `config.rs`  
 **Lines of code:** ~400
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### rules.rs
@@ -388,6 +726,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `context.rs`, `llm.rs`  
 **Lines of code:** ~300
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -405,6 +756,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `tools.rs`, `config.rs`  
 **Lines of code:** ~200
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### jsonrpc.rs
@@ -419,6 +783,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `mcp.rs`, `acp.rs`  
 **Lines of code:** ~250
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### clipboard.rs
@@ -432,6 +809,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `ui.rs`, `app.rs`  
 **Lines of code:** ~150
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -449,6 +839,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `desktop/detection.rs`, `desktop/notifications.rs`, `desktop/file_picker.rs`  
 **Lines of code:** ~200
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### desktop/detection.rs
@@ -462,6 +865,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `desktop/mod.rs`  
 **Lines of code:** ~300
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -477,6 +893,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `desktop/mod.rs`  
 **Lines of code:** ~300
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### desktop/file_picker.rs
@@ -490,6 +919,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `desktop/mod.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -507,6 +949,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `mcp_showcase/tui.rs`, `mcp.rs`, `ui.rs`  
 **Lines of code:** ~300
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### mcp_showcase/tui.rs
@@ -520,6 +975,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `mcp_showcase/mod.rs`, `ui.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -535,6 +1003,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `mission_control/tui.rs`, `llm.rs`, `events.rs`  
 **Lines of code:** ~300
 
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
+
 ---
 
 ### mission_control/tui.rs
@@ -548,6 +1029,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `mission_control/mod.rs`, `ui.rs`  
 **Lines of code:** ~400
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -564,6 +1058,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `app.rs`, `config.rs`  
 **Lines of code:** ~500
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 
@@ -589,6 +1096,19 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **"I want to support a new desktop"**
 → `desktop/detection.rs` (detection) → `desktop/notifications.rs` or `desktop/file_picker.rs` (features)
+
+## Event Loop Mode Handlers
+
+### src/event_loop/modes/
+**Purpose:** Separate handling of key events for each UI mode (Normal, Insert, Review, Servers, Skill Browser, Plugin Browser, Command Palette, Help, MCP Showcase, Mission Control).
+**Key types:** `ModeHandler` trait, `ModeAction` enum, `HandlerContext` struct, individual handler structs (`NormalHandler`, `InsertHandler`, etc.).
+**Key functions:** `dispatch_mode(app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction`.
+**When to modify:**
+- Adding a new UI mode or changing keybindings for an existing mode.
+- Updating shared context (clipboard, skill manager, plugin manager) used by handlers.
+- Refactoring handler logic for better separation or performance.
+**Related modules:** `event_loop/mod.rs`, `app.rs`, `ui.rs`.
+**Lines of code:** ~300 (distributed across 12 files).
 
 ---
 

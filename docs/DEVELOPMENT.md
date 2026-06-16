@@ -1,35 +1,37 @@
 # Development Guide
 
-## Mission Control Feature
+## Mode Handlers Implementation
 
 ### Overview
-The Mission Control view provides a real‑time visual dashboard for orchestrated multi‑agent workflows. It displays a directed acyclic graph (DAG) of tasks, live token/cost metrics per agent, and interactive controls.
-
-### Architecture
-- **UI Layer**: `ui/tabs/mission_control_tab.rs` implements the `Tab` trait and registers with the main UI dispatcher.
-- **Components**:
-  - `ui/components/graph.rs` – renders the DAG using Ratatui's `Canvas`.
-  - `ui/components/metrics.rs` – shows per‑agent statistics.
-  - `ui/components/controls.rs` – hotkey handling for pause/cancel/retry.
-- **Orchestrator**: `orchestrator/coordinator.rs` now emits `OrchestratorEvent` and accepts `ControlCommand` via a `crossbeam::channel`.
+The mode handlers system allows different UI states (Normal, Insert, Review, etc.) to handle key events independently. Each mode has its own handler module implementing the `ModeHandler` trait.
 
 ### Key Files
-- `src/orchestrator/coordinator.rs`
-- `src/ui/tabs/mission_control_tab.rs`
-- `src/ui/components/graph.rs`
-- `src/ui/components/metrics.rs`
-- `src/ui/components/controls.rs`
+- `src/event_loop/modes/types.rs` - Defines `ModeHandler` trait and `ModeAction` enum
+- `src/event_loop/modes/mod.rs` - Routes key events to appropriate handler
+- Individual handler modules (normal.rs, insert.rs, etc.)
 
-### Build & Test
-```bash
-cargo test --lib orchestrator --lib ui
+### Implementation Steps
+1. Create new handler module in `event_loop/modes/`
+2. Implement `ModeHandler` trait with `handle_key()` method
+3. Add mode to `dispatch_mode()` router in `mod.rs`
+4. Update keybindings in `ui.rs` if needed
+5. Add tests in `tests.rs` for new mode
+
+### Example: Insert Mode
+```rust
+// src/event_loop/modes/insert.rs
+use crate::event_loop::modes::types::ModeHandler;
+
+pub struct InsertHandler;
+
+impl ModeHandler for InsertHandler {
+    fn handle_key(&mut self, app: &mut App, key: KeyEvent, ctx: &mut HandlerContext) -> ModeAction {
+        // Handle insert mode key events
+        match key.code {
+            KeyCode::Char('i') => ModeAction::Continue,
+            KeyCode::Char('e') => ModeAction::SwitchMode(Mode::Normal),
+            _ => ModeAction::Continue
+        }
+    }
+}
 ```
-
-### Usage
-- Launch with `opencrust --mission-control`.
-- Toggle with `Ctrl+Shift+M` from any tab.
-- Hotkeys: `p` pause/resume, `c` cancel, `r` retry failed, `q` quit.
-
-### Documentation
-- Updated `README.md` with screenshots.
-- Added `docs/mission_control.md` for detailed usage.
