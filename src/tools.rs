@@ -1010,4 +1010,83 @@ mod tests {
         let result = execute_tool("md_quotes", &serde_json::json!({"markdown": md}));
         assert!(result.contains("A wise quote"));
     }
+
+    // --- bash tool: security integration ---
+
+    #[test]
+    fn bash_safe_command_executes() {
+        let result = execute_tool("bash", &serde_json::json!({"command": "echo hello"}));
+        assert!(
+            result.contains("hello"),
+            "Expected 'hello' in output: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn bash_dangerous_command_rejected() {
+        let result = execute_tool("bash", &serde_json::json!({"command": "rm -rf /"}));
+        assert!(
+            result.contains("Security error") || result.contains("error"),
+            "Expected security error for dangerous command: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn bash_command_injection_rejected() {
+        let result = execute_tool(
+            "bash",
+            &serde_json::json!({"command": "echo test; rm -rf /"}),
+        );
+        assert!(
+            result.contains("Security error") || result.contains("error"),
+            "Expected security error for command injection: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn bash_pipe_injection_rejected() {
+        let result = execute_tool("bash", &serde_json::json!({"command": "echo test | sh"}));
+        assert!(
+            result.contains("Security error") || result.contains("error"),
+            "Expected security error for pipe injection: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn bash_empty_command_returns_output() {
+        let result = execute_tool("bash", &serde_json::json!({"command": ""}));
+        // Empty command should either return an error or empty output, not panic
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn bash_missing_command_arg_returns_output() {
+        let result = execute_tool("bash", &serde_json::json!({}));
+        // Missing command arg defaults to empty string
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn bash_command_substitution_rejected() {
+        let result = execute_tool("bash", &serde_json::json!({"command": "echo $(whoami)"}));
+        assert!(
+            result.contains("Security error") || result.contains("error"),
+            "Expected security error for command substitution: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn bash_backtick_substitution_rejected() {
+        let result = execute_tool("bash", &serde_json::json!({"command": "echo `whoami`"}));
+        assert!(
+            result.contains("Security error") || result.contains("error"),
+            "Expected security error for backtick substitution: {}",
+            result
+        );
+    }
 }

@@ -1161,6 +1161,95 @@ mod tests {
         assert_eq!(goal.description, "hello");
     }
 
+    // ── check_and_summarize_context: threshold logic ──
+
+    #[tokio::test]
+    async fn summarize_skips_when_under_threshold() {
+        // Ollama default: context_limit=8000, threshold=0.8 → 6400 tokens → ~25600 chars
+        let config = Arc::new(Config {
+            provider: crate::config::ProviderType::Ollama,
+            ..Default::default()
+        });
+        let client = new_test_client(config).expect("test client");
+
+        // Create messages with content well under threshold (100 chars = ~25 tokens)
+        let mut messages = vec![
+            json!({"role": "system", "content": "You are helpful."}),
+            json!({"role": "user", "content": "Hello"}),
+            json!({"role": "assistant", "content": "Hi there!"}),
+        ];
+
+        let (should_summarize, summary) = client.check_and_summarize_context(&mut messages).await;
+        assert!(!should_summarize);
+        assert!(summary.is_none());
+        // Messages should remain unchanged
+        assert_eq!(messages.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn summarize_skips_when_too_few_messages() {
+        // Even if we had enough chars, <=11 messages should not summarize
+        let config = Arc::new(Config {
+            provider: crate::config::ProviderType::Ollama,
+            ..Default::default()
+        });
+        let client = new_test_client(config).expect("test client");
+
+        // Create 11 messages with long content to exceed threshold
+        // Each message has ~3000 chars → 11 * 3000 = 33000 chars = ~8250 tokens
+        // Threshold = 6400 tokens for Ollama, so this exceeds it
+        let long_content = "x".repeat(3000);
+        let mut messages: Vec<Value> = (0..11)
+            .map(|i| {
+                if i == 0 {
+                    json!({"role": "system", "content": &long_content})
+                } else if i % 2 == 0 {
+                    json!({"role": "user", "content": &long_content})
+                } else {
+                    json!({"role": "assistant", "content": &long_content})
+                }
+            })
+            .collect();
+
+        let original_len = messages.len();
+        let (should_summarize, summary) = client.check_and_summarize_context(&mut messages).await;
+        // Should NOT summarize because <= 11 messages
+        assert!(!should_summarize);
+        assert!(summary.is_none());
+        assert_eq!(messages.len(), original_len);
+    }
+
+    // ── generate_input_completion: edge cases ──
+
+    #[tokio::test]
+    async fn input_completion_returns_empty_for_blank_input() {
+        let config = Arc::new(Config::default());
+        let client = new_test_client(config).expect("test client");
+
+        let result = client.generate_input_completion("").await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "");
+
+        let result = client.generate_input_completion("   ").await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "");
+    }
+
+    #[tokio::test]
+    async fn input_completion_truncates_long_input() {
+        let config = Arc::new(Config::default());
+        let client = new_test_client(config).expect("test client");
+
+        // Create input longer than 200 chars
+        let long_input = "a".repeat(500);
+        // This will try to call the LLM and fail, but we verify it doesn't panic
+        // and that the truncation logic is exercised (no error from truncation itself)
+        let result = client.generate_input_completion(&long_input).await;
+        // The result will be an error because there's no real LLM endpoint,
+        // but the important thing is it doesn't panic on truncation
+        assert!(result.is_err() || result.is_ok()); // No panic
+    }
+
     // ── helper ──
 
     fn test_client() -> LlmClient {

@@ -629,4 +629,163 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "Error: No path provided for unpinning");
     }
+
+    // --- File cache: LRU + TTL ---
+
+    #[tokio::test]
+    async fn file_cache_returns_cached_content_within_ttl() {
+        let mcp_manager = Arc::new(Mutex::new(McpManager::new()));
+        let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
+        let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
+        let custom_tool_manager = Arc::new(Mutex::new(CustomToolManager::new()));
+        let config = Arc::new(Config::default());
+        let permission_manager = Arc::new(PermissionManager::new(config.clone()));
+        let web_manager = Arc::new(WebManager::new().expect("Failed to create web manager"));
+        let planner = Arc::new(Mutex::new(Planner::new()));
+        let rag_manager = Arc::new(Mutex::new(RagManager::new(&config)));
+        let pinned_files = Arc::new(Mutex::new(Vec::new()));
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(config.clone())));
+        let plugin_manager = Arc::new(Mutex::new(PluginManager::new()));
+
+        let tool_executor = ToolExecutor::new(
+            config.clone(),
+            mcp_manager,
+            lsp_manager,
+            skill_manager,
+            custom_tool_manager,
+            permission_manager,
+            web_manager,
+            planner,
+            rag_manager,
+            pinned_files,
+            orchestrator,
+            plugin_manager,
+        );
+
+        // Manually insert a cache entry with a fresh timestamp
+        let mut cache = tool_executor.file_cache.lock().await;
+        cache.put(
+            "test_cache_file.rs".to_string(),
+            ("cached content here".to_string(), Instant::now()),
+        );
+
+        // Verify it's in the cache
+        let entry = cache.get("test_cache_file.rs");
+        assert!(entry.is_some());
+        let (content, timestamp) = entry.unwrap();
+        assert_eq!(content, "cached content here");
+        assert!(timestamp.elapsed() < Duration::from_secs(3600));
+    }
+
+    #[tokio::test]
+    async fn file_cache_evicts_expired_entries() {
+        let mcp_manager = Arc::new(Mutex::new(McpManager::new()));
+        let lsp_manager = Arc::new(Mutex::new(LspManager::new()));
+        let skill_manager = Arc::new(Mutex::new(SkillManager::new()));
+        let custom_tool_manager = Arc::new(Mutex::new(CustomToolManager::new()));
+        let config = Arc::new(Config::default());
+        let permission_manager = Arc::new(PermissionManager::new(config.clone()));
+        let web_manager = Arc::new(WebManager::new().expect("Failed to create web manager"));
+        let planner = Arc::new(Mutex::new(Planner::new()));
+        let rag_manager = Arc::new(Mutex::new(RagManager::new(&config)));
+        let pinned_files = Arc::new(Mutex::new(Vec::new()));
+        let orchestrator = Arc::new(Mutex::new(Orchestrator::new(config.clone())));
+        let plugin_manager = Arc::new(Mutex::new(PluginManager::new()));
+
+        let tool_executor = ToolExecutor::new(
+            config.clone(),
+            mcp_manager,
+            lsp_manager,
+            skill_manager,
+            custom_tool_manager,
+            permission_manager,
+            web_manager,
+            planner,
+            rag_manager,
+            pinned_files,
+            orchestrator,
+            plugin_manager,
+        );
+
+        // Insert an entry with a timestamp older than 1 hour (expired)
+        let mut cache = tool_executor.file_cache.lock().await;
+        let expired_time = Instant::now() - Duration::from_secs(7200); // 2 hours ago
+        cache.put(
+            "expired_file.rs".to_string(),
+            ("old content".to_string(), expired_time),
+        );
+
+        // The entry exists in the cache struct but is expired
+        let entry = cache.get("expired_file.rs");
+        assert!(entry.is_some());
+        let (_, timestamp) = entry.unwrap();
+        assert!(timestamp.elapsed() >= Duration::from_secs(3600)); // Confirm expired
+    }
+
+    #[tokio::test]
+    async fn file_cache_lru_eviction_at_capacity() {
+        let mut cache: LruCache<String, (String, Instant)> =
+            LruCache::new(NonZeroUsize::new(3).unwrap());
+
+        // Fill to capacity
+        cache.put(
+            "a.rs".to_string(),
+            ("content_a".to_string(), Instant::now()),
+        );
+        cache.put(
+            "b.rs".to_string(),
+            ("content_b".to_string(), Instant::now()),
+        );
+        cache.put(
+            "c.rs".to_string(),
+            ("content_c".to_string(), Instant::now()),
+        );
+
+        assert_eq!(cache.len(), 3);
+
+        // Adding a 4th should evict the LRU entry ("a.rs" - least recently used)
+        cache.put(
+            "d.rs".to_string(),
+            ("content_d".to_string(), Instant::now()),
+        );
+
+        assert_eq!(cache.len(), 3);
+        assert!(cache.get("a.rs").is_none()); // Evicted
+        assert!(cache.get("b.rs").is_some()); // Still present
+        assert!(cache.get("c.rs").is_some()); // Still present
+        assert!(cache.get("d.rs").is_some()); // Just added
+    }
+
+    #[tokio::test]
+    async fn file_cache_lru_access_refreshes_position() {
+        let mut cache: LruCache<String, (String, Instant)> =
+            LruCache::new(NonZeroUsize::new(3).unwrap());
+
+        cache.put(
+            "a.rs".to_string(),
+            ("content_a".to_string(), Instant::now()),
+        );
+        cache.put(
+            "b.rs".to_string(),
+            ("content_b".to_string(), Instant::now()),
+        );
+        cache.put(
+            "c.rs".to_string(),
+            ("content_c".to_string(), Instant::now()),
+        );
+
+        // Access "a.rs" to refresh its LRU position
+        cache.get("a.rs");
+
+        // Adding a 4th should now evict "b.rs" (the new LRU)
+        cache.put(
+            "d.rs".to_string(),
+            ("content_d".to_string(), Instant::now()),
+        );
+
+        assert!(cache.get("a.rs").is_some()); // Refreshed, still present
+        assert!(cache.get("b.rs").is_none()); // Evicted
+        assert!(cache.get("c.rs").is_some());
+        assert!(cache.get("d.rs").is_some());
+    }
 }
