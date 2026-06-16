@@ -1,11 +1,8 @@
-use crate::app::{App, Message, Mode, ProposedChange, ChangeStatus};
+use crate::app::{App, ChangeStatus, Message, Mode, ProposedChange};
 use tokio::sync::mpsc;
 
 /// Handle incoming responses from the LLM task
-pub fn handle_responses(
-    app: &mut App,
-    response_rx: &mut mpsc::Receiver<String>,
-) {
+pub fn handle_responses(app: &mut App, response_rx: &mut mpsc::Receiver<String>) {
     while let Ok(response) = response_rx.try_recv() {
         if response.contains("[APPROVAL_REQUIRED]") {
             app.waiting_for_approval = true;

@@ -19,6 +19,15 @@ use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
 
+mod background_tasks;
+mod frame_limiter;
+mod input_prediction;
+mod keybinds;
+mod llm_task;
+mod response_handler;
+mod share;
+mod skill_hot_reload;
+
 /// Run the interactive TUI event loop.
 ///
 /// Sets up channels, spawns the LLM background task, initializes the terminal
@@ -187,9 +196,8 @@ pub async fn run_tui(
     app.orchestrator_tasks = Some(llm_client.orchestrator_tasks.clone());
     app.refresh_sidebar();
 
-    // Frame rate limiting for smoother UI
-    let mut last_frame = std::time::Instant::now();
-    let target_frame_duration = std::time::Duration::from_millis(16); // ~60 FPS
+    // Frame rate limiter for smoother UI
+    let mut frame_limiter = frame_limiter::FrameLimiter::new();
 
     // Populate skill browser items from skill manager
     {
@@ -231,103 +239,17 @@ pub async fn run_tui(
         .unwrap_or_else(|| "return".to_string());
 
     loop {
-        while let Ok(response) = response_rx.try_recv() {
-            if response.contains("[APPROVAL_REQUIRED]") {
-                app.waiting_for_approval = true;
-            } else if response.starts_with("[DIFF_REQUIRED]") {
-                let parts: Vec<&str> = response
-                    .strip_prefix("[DIFF_REQUIRED]")
-                    .map(|s| s.splitn(3, '|').collect())
-                    .unwrap_or_default();
-                if parts.len() == 3 {
-                    app.proposed_changes.push(crate::app::ProposedChange {
-                        path: parts[0].to_string(),
-                        original: parts[1].to_string(),
-                        proposed: parts[2].to_string(),
-                        status: crate::app::ChangeStatus::Pending,
-                    });
-                    app.mode = crate::app::Mode::Review;
-                }
-            }
-
-            let tab_idx = app.active_tab.min(app.tabs.len().saturating_sub(1));
-            let tab = &mut app.tabs[tab_idx];
-            if let Some(last) = tab.messages.last()
-                && (last.content == "opencrust: Thinking..."
-                    || last.content.starts_with("opencrust: Executing tool"))
-            {
-                tab.messages.pop();
-            }
-            tab.messages.push(Message::new(response));
-            // Auto-scroll to bottom on new messages
-            app.message_scroll = 0;
-            app.mark_dirty();
-        }
+        // Handle incoming responses from LLM task
+        response_handler::handle_responses(&mut app, &mut response_rx);
 
         // Handle background task notifications
-        while let Ok(notification) = background_task_rx.try_recv() {
-            app.handle_background_notification(&notification);
-            app.mark_dirty();
-        }
+        background_tasks::handle_background_tasks(&mut app, &mut background_task_rx);
 
         // Periodic skill hot-reload check
-        {
-            let mut skills = skill_manager.lock().await;
-            if skills.should_check_for_updates() {
-                let (added, removed, modified) = skills.discover_changes();
-                if !added.is_empty() {
-                    app.tabs[0].messages.push(Message::new(format!(
-                        "System: Discovered new skills: {}",
-                        added.join(", ")
-                    )));
-                    for name in &added {
-                        if let Some(skill) = skills.get_skill(name) {
-                            app.skill_browser_items.push((
-                                skill.metadata.name.clone(),
-                                skill.metadata.description.clone(),
-                                skill.active,
-                            ));
-                        }
-                    }
-                    app.mark_dirty();
-                }
-                if !removed.is_empty() {
-                    app.tabs[0].messages.push(Message::new(format!(
-                        "System: Removed skills: {}",
-                        removed.join(", ")
-                    )));
-                    app.skill_browser_items
-                        .retain(|(name, _, _)| !removed.contains(name));
-                    app.mark_dirty();
-                }
-                if !modified.is_empty() {
-                    app.tabs[0].messages.push(Message::new(format!(
-                        "System: Modified skills: {}",
-                        modified.join(", ")
-                    )));
-                    for name in &modified {
-                        if let Some(skill) = skills.get_skill(name) {
-                            // Remove stale entry first, then re-add with updated data
-                            app.skill_browser_items.retain(|(n, _, _)| n != name);
-                            app.skill_browser_items.push((
-                                skill.metadata.name.clone(),
-                                skill.metadata.description.clone(),
-                                skill.active,
-                            ));
-                        }
-                    }
-                    app.mark_dirty();
-                }
-            }
-        }
+        skill_hot_reload::check_skill_updates(&mut app, &skill_manager).await;
 
         // Frame rate limiting for smoother UI
-        let now = std::time::Instant::now();
-        let elapsed = now.duration_since(last_frame);
-        if elapsed < target_frame_duration {
-            tokio::time::sleep(target_frame_duration - elapsed).await;
-        }
-        last_frame = std::time::Instant::now();
+        frame_limiter.wait_for_next_frame().await;
         // Only redraw when state has changed (dirty flag)
         if app.dirty {
             terminal.draw(|f| ui::draw(f, &mut app))?;
@@ -337,7 +259,7 @@ pub async fn run_tui(
         if let Some(Event::Key(key)) = crate::events::next_event()? {
             app.mark_dirty();
             // Check for Copy (Ctrl+C) - copy current input to clipboard
-            if check_key_match(&key, &copy_key) {
+            if keybinds::check_key_match(&key, &copy_key) {
                 if !app.input.is_empty() && clipboard.copy(&app.input) {
                     if let Some(tab) = app.tabs.get_mut(app.active_tab) {
                         tab.messages
@@ -348,7 +270,7 @@ pub async fn run_tui(
             }
 
             // Check for Paste (Ctrl+V) - paste from clipboard to input
-            if check_key_match(&key, &paste_key) {
+            if keybinds::check_key_match(&key, &paste_key) {
                 if let Some(text) = clipboard.paste() {
                     app.input.push_str(&text);
                     // Update last input time for prediction
@@ -381,7 +303,7 @@ pub async fn run_tui(
                 }
             } else {
                 // Check for exit keys
-                if check_key_match(&key, &exit_keys) {
+                if keybinds::check_key_match(&key, &exit_keys) {
                     app.should_quit = true;
                 }
 
@@ -515,7 +437,7 @@ pub async fn run_tui(
                             // Spawn background task with current input
                             if !app.input.is_empty() {
                                 let prompt = app.input.clone();
-                                app.spawn_background_task(prompt);
+                                background_tasks::spawn_background_task(&mut app, prompt);
                                 app.input.clear();
                                 app.tabs[0].messages.push(Message::new(String::from(
                                     "Spawning background task...",
@@ -582,11 +504,11 @@ pub async fn run_tui(
                         _ => {}
                     },
                     Mode::Insert => {
-                        if check_key_match(&key, &submit_keys) {
+                        if keybinds::check_key_match(&key, &submit_keys) {
                             // Handle slash commands before submitting
                             let input_trimmed = app.input.trim();
                             if input_trimmed == "/share" {
-                                let share_path = share_conversation(&app);
+                                let share_path = share::share_conversation(&app);
                                 if let Some(path) = share_path {
                                     let _ = clipboard.copy(&path);
                                     app.tabs[0].messages.push(Message::new(format!(
@@ -1156,25 +1078,11 @@ pub async fn run_tui(
         }
 
         // Check for prediction results
-        if let Ok((input_text, prediction)) = prediction_rx.try_recv()
-            && input_text == app.input
-        {
-            app.ghost_text = Some(prediction);
-            app.mark_dirty();
-        }
+        input_prediction::handle_prediction_results(&mut app, &mut prediction_rx);
 
         // Trigger prediction if needed (after 300ms debounce)
-        if app.should_trigger_prediction() && app.ghost_text.is_none() && !app.input.is_empty() {
-            let llm_client_clone = app.llm_client.clone();
-            let input = app.input.clone();
-            let tx = prediction_tx.clone();
-            tokio::spawn(async move {
-                if let Ok(prediction) = llm_client_clone.generate_input_completion(&input).await {
-                    let _ = tx.send((input, prediction)).await;
-                }
-            });
-            app.last_input_time = None; // Reset to prevent re-triggering
-        }
+        let llm_client_clone = app.llm_client.clone();
+        input_prediction::trigger_prediction_if_needed(&mut app, &llm_client_clone, &prediction_tx);
 
         if app.should_quit {
             break;
@@ -1185,84 +1093,4 @@ pub async fn run_tui(
     std::io::stdout().execute(LeaveAlternateScreen)?;
 
     Ok(())
-}
-
-/// Serialize the current tab's conversation to a shareable JSON file.
-/// Returns the file path on success.
-fn share_conversation(app: &App) -> Option<String> {
-    use chrono::Utc;
-    use serde_json::json;
-    use std::fs;
-
-    let tab = app.tabs.get(app.active_tab)?;
-    if tab.messages.is_empty() {
-        return None;
-    }
-
-    let share_data = json!({
-        "version": 1,
-        "project": std::env::current_dir().ok().map(|p| p.to_string_lossy().to_string()),
-        "provider": app.config.provider.to_string(),
-        "model": app.config.model,
-        "tab": tab.name,
-        "created_at": Utc::now().to_rfc3339(),
-        "messages": tab.messages.iter().map(|m| {
-            json!({
-                "timestamp": m.timestamp.to_rfc3339(),
-                "content": m.content,
-            })
-        }).collect::<Vec<_>>(),
-        "message_count": tab.messages.len(),
-    });
-
-    let share_dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join(".config/opencrust/shares");
-    if fs::create_dir_all(&share_dir).is_err() {
-        return None;
-    }
-
-    let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
-    let filename = format!("share-{}.json", timestamp);
-    let share_path = share_dir.join(&filename);
-
-    let content = serde_json::to_string_pretty(&share_data).ok()?;
-    fs::write(&share_path, content).ok()?;
-
-    share_path.to_str().map(|s| s.to_string())
-}
-
-fn check_key_match(key: &crossterm::event::KeyEvent, keybind_str: &str) -> bool {
-    use crossterm::event::KeyModifiers;
-
-    for combo in keybind_str.split(',') {
-        let mut target_modifiers = KeyModifiers::empty();
-        let mut target_code = None;
-
-        for part in combo.trim().split('+') {
-            match part.to_lowercase().as_str() {
-                "ctrl" => target_modifiers.insert(KeyModifiers::CONTROL),
-                "alt" => target_modifiers.insert(KeyModifiers::ALT),
-                "shift" => target_modifiers.insert(KeyModifiers::SHIFT),
-                "return" | "enter" => target_code = Some(KeyCode::Enter),
-                "backspace" => target_code = Some(KeyCode::Backspace),
-                "delete" => target_code = Some(KeyCode::Delete),
-                "esc" | "escape" => target_code = Some(KeyCode::Esc),
-                "up" => target_code = Some(KeyCode::Up),
-                "down" => target_code = Some(KeyCode::Down),
-                "left" => target_code = Some(KeyCode::Left),
-                "right" => target_code = Some(KeyCode::Right),
-                c if c.len() == 1 => target_code = c.chars().next().map(KeyCode::Char),
-                _ => {}
-            }
-        }
-
-        if let Some(code) = target_code
-            && key.code == code
-            && key.modifiers.contains(target_modifiers)
-        {
-            return true;
-        }
-    }
-    false
 }

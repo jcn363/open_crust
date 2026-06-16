@@ -4,10 +4,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 /// Check for skill updates and apply changes
-pub async fn check_skill_updates(
-    app: &mut App,
-    skill_manager: &Arc<Mutex<SkillManager>>,
-) {
+pub async fn check_skill_updates(app: &mut App, skill_manager: &Arc<Mutex<SkillManager>>) {
     let mut skills = skill_manager.lock().await;
     if skills.should_check_for_updates() {
         let (added, removed, modified) = skills.discover_changes();

@@ -1,14 +1,14 @@
-use crate::{config, git, rules, context, llm};
+use crate::{config, context, git, llm, rules};
 use serde_json::Value;
-use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
 
 /// Spawn the LLM background task that handles prompts and commands
+#[allow(dead_code)]
 pub fn spawn_llm_task(
     llm_client: llm::LlmClient,
-    prompt_rx: mpsc::Receiver<String>,
+    mut prompt_rx: mpsc::Receiver<String>,
     response_tx: mpsc::Sender<String>,
-    approval_rx: Arc<Mutex<mpsc::Receiver<bool>>>,
+    mut approval_rx: mpsc::Receiver<bool>,
 ) {
     tokio::spawn(async move {
         let mut messages_history: Vec<Value> = Vec::new();
@@ -132,7 +132,7 @@ pub fn spawn_llm_task(
                     &mut messages_history,
                     &enriched_prompt,
                     response_tx.clone(),
-                    Some(&mut approval_rx.lock().await),
+                    Some(&mut approval_rx),
                 )
                 .await;
             match res {
