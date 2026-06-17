@@ -44,6 +44,9 @@ lru = "0.12"
 nucleo = "0.5"
 rayon = "1.10"
 hostname = "0.3"
+ssh2 = "0.10"
+nix = "0.28"
+libc = "0.2"
 
 # macOS menu bar integration (only compiled on macOS)
 cocoa = { version = "0.26", optional = true }
