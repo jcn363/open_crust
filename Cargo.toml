@@ -1,6 +1,6 @@
 [package]
 name = "opencrust"
-version = "0.1.3"
+version = "1.0.0"
 edition = "2024"
 rust-version = "1.85"
 description = "Production TUI platform for AI-powered coding with MCP/LSP integration, multi-agent orchestration, and semantic code search"
@@ -43,6 +43,15 @@ similar = "2.6"
 lru = "0.12"
 nucleo = "0.5"
 rayon = "1.10"
+hostname = "0.3"
+
+# macOS menu bar integration (only compiled on macOS)
+cocoa = { version = "0.26", optional = true }
+objc = { version = "0.2", optional = true }
+
+[features]
+default = []
+macos-menu-bar = ["cocoa", "objc"]
 
 [[bin]]
 name = "opencrust"
