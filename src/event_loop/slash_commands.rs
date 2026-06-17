@@ -135,6 +135,94 @@ pub(crate) async fn handle_slash_command(
         return true;
     }
 
+    if prompt_str == "/cost" {
+        let budget_key = format!("{}:{}", client.config.provider, client.config.model);
+        let budget = client.token_budget_manager.get_budget(&budget_key).await;
+        match budget {
+            Some(b) => {
+                let pct = (b.usage_percentage() * 100.0) as u32;
+                let status = if b.at_stop_threshold() {
+                    "OVER BUDGET"
+                } else if b.at_warning_threshold() {
+                    "WARNING"
+                } else {
+                    "OK"
+                };
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: Session cost: ${:.4} | Tokens: {}/{} ({}%) | Status: {}",
+                        b.total_cost, b.current_tokens, b.max_tokens, pct, status
+                    ))
+                    .await;
+            }
+            None => {
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: No budget configured for {}:{}",
+                        client.config.provider, client.config.model
+                    ))
+                    .await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str.starts_with("/budget ") {
+        let amount_str = prompt_str.trim_start_matches("/budget ").trim();
+        match amount_str.parse::<u32>() {
+            Ok(max_tokens) => {
+                let budget_key = format!("{}:{}", client.config.provider, client.config.model);
+                let budget = client
+                    .token_budget_manager
+                    .create_budget(budget_key.clone(), max_tokens)
+                    .await;
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: Budget set to {} tokens for {}:{}",
+                        budget.max_tokens, client.config.provider, client.config.model
+                    ))
+                    .await;
+            }
+            Err(_) => {
+                let _ = response_tx
+                    .send(
+                        "opencrust: Usage: /budget <max_tokens> (e.g., /budget 1000000)"
+                            .to_string(),
+                    )
+                    .await;
+            }
+        }
+        return true;
+    }
+
+    if prompt_str.starts_with("/fallback ") {
+        let chain_str = prompt_str.trim_start_matches("/fallback ").trim();
+        if chain_str.is_empty() || chain_str == "clear" {
+            let mut new_config = (*client.config).clone();
+            new_config.fallback_chain = Vec::new();
+            new_config.save();
+            let _ = response_tx
+                .send("opencrust: Fallback chain cleared.".to_string())
+                .await;
+        } else {
+            let chain: Vec<String> = chain_str
+                .split(',')
+                .map(|s| s.trim().to_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect();
+            let mut new_config = (*client.config).clone();
+            new_config.fallback_chain = chain.clone();
+            new_config.save();
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: Fallback chain set: {}",
+                    chain.join(" → ")
+                ))
+                .await;
+        }
+        return true;
+    }
+
     // Not a slash command - send to LLM
     let _ = git::checkpoint();
     let enriched_prompt = context::inject_file_context(prompt_str);

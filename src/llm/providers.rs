@@ -30,6 +30,129 @@ impl LlmClient {
         }
     }
 
+    /// Dispatch with automatic fallback: tries primary provider, then each in fallback_chain.
+    pub(crate) async fn dispatch_with_fallback(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+        progress_tx: &tokio::sync::mpsc::Sender<String>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        // Try primary provider first
+        let result = self.dispatch_provider(messages, model_override).await;
+        if result.is_ok() {
+            return result;
+        }
+
+        // If fallback chain is empty, return the original error
+        if self.config.fallback_chain.is_empty() {
+            return result;
+        }
+
+        let primary_err = result.unwrap_err();
+        let _ = progress_tx
+            .send(format!(
+                "opencrust: Primary provider failed: {}. Trying fallback...",
+                primary_err
+            ))
+            .await;
+
+        // Try each fallback provider
+        for fallback_name in &self.config.fallback_chain {
+            let fallback_provider: ProviderType = match fallback_name.parse() {
+                Ok(p) => p,
+                Err(_) => continue,
+            };
+
+            // Skip if it's the same as primary
+            if fallback_provider == self.config.provider {
+                continue;
+            }
+
+            // Check if the fallback provider has required API keys
+            let has_key = match fallback_provider {
+                ProviderType::Ollama => true, // No key needed
+                ProviderType::OpenRouter => self.config.openrouter_key.is_some(),
+                ProviderType::OpenAI => self.config.openai_key.is_some(),
+                ProviderType::Gemini => self.config.gemini_api_key.is_some(),
+                ProviderType::Mistral => self.config.mistral_api_key.is_some(),
+                ProviderType::Anthropic => self.config.anthropic_api_key.is_some(),
+                ProviderType::Groq => self.config.groq_api_key.is_some(),
+                ProviderType::TogetherAi => self.config.together_api_key.is_some(),
+                ProviderType::Replicate => self.config.replicate_api_key.is_some(),
+                ProviderType::DeepSeek => self.config.deepseek_api_key.is_some(),
+                ProviderType::LocalAi => self.config.localai_url.is_some(),
+            };
+
+            if !has_key {
+                continue;
+            }
+
+            let _ = progress_tx
+                .send(format!(
+                    "opencrust: Trying fallback provider: {}",
+                    fallback_name
+                ))
+                .await;
+
+            // Create a temporary config with the fallback provider
+            let mut fallback_config = (*self.config).clone();
+            fallback_config.provider = fallback_provider;
+            // Don't change the model — use the same model for the fallback
+
+            // Try to generate with fallback config
+            // We can't easily swap the config mid-request, so we dispatch by name
+            let result = match self.config.fallback_chain.len() {
+                0 => unreachable!(),
+                _ => {
+                    // Use the provider-specific method directly
+                    match fallback_name.parse::<ProviderType>() {
+                        Ok(ProviderType::Ollama) => {
+                            self.generate_ollama(messages, model_override).await
+                        }
+                        Ok(ProviderType::OpenRouter) => {
+                            self.generate_openrouter(messages, model_override).await
+                        }
+                        Ok(ProviderType::OpenAI) => {
+                            self.generate_openai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Gemini) => {
+                            self.generate_gemini(messages, model_override).await
+                        }
+                        Ok(ProviderType::Mistral) => {
+                            self.generate_mistral(messages, model_override).await
+                        }
+                        Ok(ProviderType::Anthropic) => {
+                            self.generate_anthropic(messages, model_override).await
+                        }
+                        Ok(ProviderType::Groq) => {
+                            self.generate_groq(messages, model_override).await
+                        }
+                        Ok(ProviderType::TogetherAi) => {
+                            self.generate_together_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Replicate) => {
+                            self.generate_replicate(messages, model_override).await
+                        }
+                        Ok(ProviderType::DeepSeek) => {
+                            self.generate_deepseek(messages, model_override).await
+                        }
+                        Ok(ProviderType::LocalAi) => {
+                            self.generate_local_ai(messages, model_override).await
+                        }
+                        Err(_) => continue,
+                    }
+                }
+            };
+
+            if result.is_ok() {
+                return result;
+            }
+        }
+
+        // All fallbacks exhausted — return original error
+        Err(primary_err)
+    }
+
     /// Shared base: POST JSON to a provider endpoint, optionally with auth header.
     pub(crate) async fn generate_completion(
         &self,

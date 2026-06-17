@@ -38,6 +38,10 @@ fn default_audit_max_size() -> u64 {
     10_485_760
 }
 
+fn default_token_budget_max() -> u32 {
+    1_000_000
+}
+
 /// Top-level configuration for OpenCrust
 ///
 /// Loaded from a TOML file. Contains provider settings, model aliases,
@@ -115,6 +119,17 @@ pub struct Config {
     // --- Plugin system configuration ---
     #[serde(default)]
     pub plugins: PluginConfig,
+
+    // --- Token budget configuration ---
+    /// Maximum tokens per session (default: 1_000_000)
+    #[serde(default = "default_token_budget_max")]
+    pub token_budget_max_tokens: u32,
+    /// Whether token budget enforcement is enabled (default: true)
+    #[serde(default = "default_true")]
+    pub token_budget_enabled: bool,
+    /// Provider fallback chain (e.g., ["openai", "anthropic", "groq"])
+    #[serde(default)]
+    pub fallback_chain: Vec<String>,
 }
 
 impl Default for Config {
@@ -154,6 +169,9 @@ impl Default for Config {
             audit_retention_days: default_audit_retention(),
             audit_max_size_bytes: default_audit_max_size(),
             plugins: PluginConfig::default(),
+            token_budget_max_tokens: default_token_budget_max(),
+            token_budget_enabled: true,
+            fallback_chain: Vec::new(),
         }
     }
 }

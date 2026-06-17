@@ -85,8 +85,6 @@ pub struct App {
     pub message_scroll: usize,
     /// Token budget for current session
     pub token_budget: Option<crate::token_budget::TokenBudget>,
-    /// Current session ID for token tracking
-    pub current_session_id: Option<String>,
     // File picker state (@ fuzzy search)
     pub file_picker_active: bool,
     pub file_picker_query: String,
@@ -256,7 +254,6 @@ impl App {
             message_scroll: 0,
             // Token budget tracking
             token_budget: None,
-            current_session_id: None,
             // File picker state (@ fuzzy search)
             file_picker_active: false,
             file_picker_query: String::new(),
@@ -274,6 +271,30 @@ impl App {
         app.load_history();
         // Discover custom commands from .opencrust/commands/
         app.custom_commands.discover();
+        // Restore last session if available
+        if let Some(msg) = app.restore_session() {
+            app.tabs[0].messages.push(Message::new(msg));
+        }
+        // First-run onboarding: show setup guidance if no config file exists
+        {
+            let config_dir = dirs::home_dir()
+                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .join(".config/opencrust");
+            let config_file = config_dir.join("config.json");
+            if !config_file.exists() {
+                let onboarding_msg = Message::new(
+                    "Welcome to OpenCrust! First-time setup:\n\n\
+                     1. Set your provider: /provider <name> (ollama, openrouter, openai, etc.)\n\
+                     2. Set your model: /model <model-name>\n\
+                     3. Set a token budget: /budget <max_tokens> (e.g., /budget 1000000)\n\
+                     4. View costs: /cost\n\
+                     5. Set fallback providers: /fallback openai,anthropic,groq\n\n\
+                     Key bindings: i=Insert, Tab=Switch tabs, Ctrl+P=Plan Mode, Ctrl+G=Mission Control, ?=Help"
+                        .to_string(),
+                );
+                app.tabs[0].messages.push(onboarding_msg);
+            }
+        }
         app
     }
 }

@@ -15,6 +15,7 @@ pub enum SecurityError {
     UnsafePath(String),
     UnsafeCommand(String),
     AccessDenied(String),
+    PromptInjection(String),
 }
 
 impl std::fmt::Display for SecurityError {
@@ -24,6 +25,7 @@ impl std::fmt::Display for SecurityError {
             SecurityError::UnsafePath(p) => write!(f, "Unsafe path: {}", p),
             SecurityError::UnsafeCommand(c) => write!(f, "Unsafe command: {}", c),
             SecurityError::AccessDenied(p) => write!(f, "Access denied: {}", p),
+            SecurityError::PromptInjection(p) => write!(f, "Prompt injection detected: {}", p),
         }
     }
 }
@@ -200,6 +202,79 @@ pub fn execute_command_safely(command: &str) -> Result<std::process::Output, Sec
         .map_err(|e| SecurityError::UnsafeCommand(format!("Failed to execute command: {}", e)))?;
 
     Ok(output)
+}
+
+/// Check if a prompt contains potential injection attempts.
+///
+/// Detects common prompt injection patterns:
+/// - System prompt override attempts ("ignore previous instructions", "you are now...")
+/// - Role manipulation ("act as", "pretend to be")
+/// - Delimiter injection (XML/HTML tags, markdown code blocks)
+/// - Instruction leakage attempts
+///
+/// Returns Ok(()) if safe, Err(PromptInjection) if suspicious patterns detected.
+pub fn check_prompt_injection(prompt: &str) -> Result<(), SecurityError> {
+    let lower = prompt.to_lowercase();
+
+    // System prompt override attempts
+    let override_patterns = [
+        "ignore previous",
+        "ignore all previous",
+        "disregard previous",
+        "forget previous",
+        "override previous",
+        "new instructions:",
+        "system prompt:",
+        "you are now",
+        "you will now",
+        "from now on you",
+        "act as if",
+        "pretend you are",
+        "simulate being",
+        "roleplay as",
+    ];
+
+    for pattern in &override_patterns {
+        if lower.contains(pattern) {
+            return Err(SecurityError::PromptInjection(format!(
+                "Contains override pattern: '{}'",
+                pattern
+            )));
+        }
+    }
+
+    // Delimiter injection (XML/HTML tags that might confuse the parser)
+    let delimiter_patterns = ["<system>", "</system>", "<instruction>", "</instruction>"];
+
+    for pattern in &delimiter_patterns {
+        if lower.contains(pattern) {
+            return Err(SecurityError::PromptInjection(format!(
+                "Contains delimiter injection: '{}'",
+                pattern
+            )));
+        }
+    }
+
+    // Instruction leakage attempts
+    let leakage_patterns = [
+        "repeat your instructions",
+        "show me your prompt",
+        "what are your instructions",
+        "print your system prompt",
+        "output your instructions",
+        "reveal your instructions",
+    ];
+
+    for pattern in &leakage_patterns {
+        if lower.contains(pattern) {
+            return Err(SecurityError::PromptInjection(format!(
+                "Contains instruction leakage attempt: '{}'",
+                pattern
+            )));
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

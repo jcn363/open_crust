@@ -79,6 +79,17 @@ pub async fn run_tui(
     app.orchestrator_tasks = Some(llm_client.orchestrator_tasks.clone());
     app.refresh_sidebar();
 
+    // Auto-create token budget on startup
+    if app.config.token_budget_enabled {
+        let budget_key = format!("{}:{}", app.config.provider, app.config.model);
+        let max = app.config.token_budget_max_tokens;
+        let llm = app.llm_client.clone();
+        let key = budget_key;
+        tokio::spawn(async move {
+            llm.ensure_budget(&key, max).await;
+        });
+    }
+
     // Frame rate limiter for smoother UI
     let mut frame_limiter = frame_limiter::FrameLimiter::new();
 
@@ -234,6 +245,9 @@ pub async fn run_tui(
         input_prediction::trigger_prediction_if_needed(&mut app, &llm_client_clone, &prediction_tx);
 
         if app.should_quit {
+            // Auto-save session state on exit
+            app.save_session();
+            app.save_history();
             break;
         }
     }

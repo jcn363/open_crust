@@ -51,7 +51,6 @@ pub struct LlmClient {
     pub audit_logger: Arc<AuditLogger>,
     pub pinned_files: Arc<Mutex<Vec<String>>>,
     pub tool_executor: Arc<ToolExecutor>,
-    #[expect(dead_code, reason = "wired for future per-request token cost tracking")]
     pub token_budget_manager: Arc<TokenBudgetManager>,
     pub plugin_manager: Arc<Mutex<PluginManager>>,
     plan_mode: Arc<std::sync::Mutex<PlanModeState>>,
@@ -131,6 +130,34 @@ impl LlmClient {
         })
     }
 
+    /// Ensure a token budget exists for the given session, creating one if needed.
+    pub async fn ensure_budget(&self, session_id: &str, max_tokens: u32) {
+        if self
+            .token_budget_manager
+            .get_budget(session_id)
+            .await
+            .is_none()
+        {
+            self.token_budget_manager
+                .create_budget(session_id.to_string(), max_tokens)
+                .await;
+        }
+    }
+
+    /// Record token usage for the current session.
+    pub async fn record_usage(&self, session_id: &str, usage: crate::token_budget::TokenUsage) {
+        self.token_budget_manager.add_usage(session_id, usage).await;
+    }
+
+    /// Check if the session has exceeded its token budget.
+    #[expect(
+        dead_code,
+        reason = "public API for budget enforcement, consumed by /cost and UI"
+    )]
+    pub async fn is_over_budget(&self, session_id: &str) -> bool {
+        self.token_budget_manager.is_over_budget(session_id).await
+    }
+
     #[async_recursion]
     pub async fn send_message(
         &self,
@@ -139,6 +166,11 @@ impl LlmClient {
         progress_tx: mpsc::Sender<String>,
         mut approval_rx: Option<&mut mpsc::Receiver<bool>>,
     ) -> Result<String, Box<dyn Error + Send + Sync>> {
+        // Security: check for prompt injection attempts
+        if let Err(e) = crate::security::check_prompt_injection(prompt) {
+            return Err(format!("Security: {}", e).into());
+        }
+
         // Fire on_message hook
         {
             let plugins = self.plugin_manager.lock().await;
@@ -190,7 +222,22 @@ impl LlmClient {
 
         // Agentic tool-calling loop
         loop {
-            let res = self.dispatch_provider(messages_history, None).await?;
+            let res = self
+                .dispatch_with_fallback(messages_history, None, &progress_tx)
+                .await?;
+
+            // Track token usage from response
+            {
+                let usage = crate::token_budget::extract_usage_from_response(
+                    &self.config.provider.to_string(),
+                    &res,
+                );
+                if usage.total_tokens > 0 {
+                    // Use a session-level budget key derived from config
+                    let budget_key = format!("{}:{}", self.config.provider, self.config.model);
+                    self.record_usage(&budget_key, usage).await;
+                }
+            }
 
             if let Some(tool_calls) = res.get("tool_calls").and_then(|t| t.as_array()) {
                 messages_history.push(res.clone());

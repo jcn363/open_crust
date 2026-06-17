@@ -57,20 +57,25 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         app.config.model
     );
 
-    // Add token and cost information
-    let token_tag = if let Some(_session_id) = &app.current_session_id {
+    // Add token and cost information from live budget
+    let token_tag = {
         if let Some(budget) = app.token_budget.as_ref() {
             let usage_pct =
                 (budget.current_tokens as f64 / budget.max_tokens as f64 * 100.0) as u32;
+            let warning = if budget.at_stop_threshold() {
+                " [OVER]"
+            } else if budget.at_warning_threshold() {
+                " [WARN]"
+            } else {
+                ""
+            };
             format!(
-                " tokens:{}/{} ({}%) cost:${:.2} ",
-                budget.current_tokens, budget.max_tokens, usage_pct, budget.total_cost
+                " tokens:{}/{} ({}%)${:.4}{} ",
+                budget.current_tokens, budget.max_tokens, usage_pct, budget.total_cost, warning
             )
         } else {
             String::new()
         }
-    } else {
-        String::new()
     };
 
     let task_tag = format!(" tasks:{} ", app.background_tasks.len());
