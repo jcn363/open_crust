@@ -3,7 +3,7 @@
 use crate::app::App;
 
 impl App {
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests; dead in binary cfg
     pub fn history_up(&mut self) {
         if self.history.is_empty() {
             return;
@@ -17,7 +17,7 @@ impl App {
         self.input = self.history[idx].clone();
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests; dead in binary cfg
     pub fn history_down(&mut self) {
         match self.history_index {
             None => {}

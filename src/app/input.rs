@@ -49,7 +49,7 @@ impl App {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests; dead in binary cfg
     pub fn handle_char(&mut self, c: char) {
         self.input.push(c);
     }
