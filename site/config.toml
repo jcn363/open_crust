@@ -1,0 +1,73 @@
+# OpenCrust Documentation Site Configuration
+# https://www.getzola.org/documentation/getting-started/configuration/
+
+base_url = "https://opencrust.github.io/opencrust/"
+title = "OpenCrust Documentation"
+description = "The fastest, most secure AI coding agent — built in Rust for terminal-native development."
+default_language = "en"
+generate_feed = false
+generate_robots_txt = true
+check_external_links = true
+build_search_index = true
+use_cdn = false
+
+# Taxonomies
+taxonomies = [
+    {name = "tags", feed = true},
+    {name = "categories", feed = true},
+]
+
+# Markdown configuration
+[markdown]
+highlight_code = true
+highlight_theme = "base16-ocean.dark"
+render_emoji = true
+external_links_target_blank = true
+external_links_no_referrer = true
+smart_punctuation = true
+
+# Search configuration
+[search]
+include_title = true
+include_description = true
+include_path = true
+include_content = true
+truncate_content_length = 300
+index_format = "elasticlunr_json"
+
+# Extra configuration for templates
+[extra]
+# Repository info
+repository_url = "https://github.com/opencrust/opencrust"
+repository_branch = "main"
+edit_uri = "edit/main/docs/"
+
+# Social/SEO
+og_image = "https://opencrust.github.io/opencrust/crust.png"
+twitter_card = "summary_large_image"
+twitter_site = "@opencrust"
+
+# Navigation
+nav_items = [
+    {name = "Getting Started", url = "/getting-started/"},
+    {name = "Configuration", url = "/configuration/"},
+    {name = "Architecture", url = "/architecture/"},
+    {name = "MCP Ecosystem", url = "/mcp-ecosystem/"},
+    {name = "Skills", url = "/skills/"},
+    {name = "CLI Reference", url = "/cli-reference/"},
+    {name = "Security", url = "/security/"},
+    {name = "Performance", url = "/performance/"},
+    {name = "Examples", url = "/examples/"},
+    {name = "Troubleshooting", url = "/troubleshooting/"},
+]
+
+# Footer links
+footer_links = [
+    {name = "GitHub", url = "https://github.com/opencrust/opencrust"},
+    {name = "Issues", url = "https://github.com/opencrust/opencrust/issues"},
+    {name = "Discussions", url = "https://github.com/opencrust/opencrust/discussions"},
+    {name = "License", url = "https://github.com/opencrust/opencrust/blob/main/LICENSE"},
+]
+
+# Version info
+version = "0.1.0"
