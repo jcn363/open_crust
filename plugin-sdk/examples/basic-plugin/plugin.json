@@ -1,0 +1,27 @@
+{
+    "name": "basic-example",
+    "version": "0.1.0",
+    "description": "Example OpenCrust plugin demonstrating basic hook usage",
+    "author": "OpenCrust",
+    "hooks": ["on_startup", "on_shutdown", "on_message"],
+    "tools": [
+        {
+            "name": "example_tool",
+            "description": "An example tool that processes text input",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "input": {
+                        "type": "string",
+                        "description": "Input text to process"
+                    }
+                },
+                "required": ["input"]
+            }
+        }
+    ],
+    "permissions": ["read_files"],
+    "config": {
+        "greeting": "Hello from basic-example plugin!"
+    }
+}

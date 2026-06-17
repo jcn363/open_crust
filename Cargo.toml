@@ -7,9 +7,13 @@ description = "Production TUI platform for AI-powered coding with MCP/LSP integr
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/jcn363/open_crust"
 homepage = "https://github.com/jcn363/open_crust"
+documentation = "https://github.com/jcn363/open_crust/tree/main/docs"
 readme = "README.md"
-keywords = ["ai", "coding", "tui", "terminal", "mcp", "llm", "agent"]
+keywords = ["ai", "tui", "mcp", "llm", "agent"]
 categories = ["command-line-utilities", "development-tools", "ai"]
+
+[badges]
+github-actions = { repository = "jcn363/open_crust", workflow = "CI", branch = "main" }
 
 [dependencies]
 ratatui = "0.30.0"

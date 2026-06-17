@@ -11,9 +11,9 @@ use tokio::sync::RwLock;
 /// Token usage statistics for a single LLM request.
 #[derive(Debug, Clone, Default)]
 pub struct TokenUsage {
-    #[expect(dead_code, reason = "public API for detailed usage reporting")]
+    #[allow(dead_code, reason = "public API for detailed usage reporting")]
     pub prompt_tokens: u32,
-    #[expect(dead_code, reason = "public API for detailed usage reporting")]
+    #[allow(dead_code, reason = "public API for detailed usage reporting")]
     pub completion_tokens: u32,
     pub total_tokens: u32,
     pub cost: f64,
@@ -22,7 +22,7 @@ pub struct TokenUsage {
 /// Represents a token budget for a session.
 #[derive(Debug, Clone)]
 pub struct TokenBudget {
-    #[expect(dead_code, reason = "public API for session identification")]
+    #[allow(dead_code, reason = "public API for session identification")]
     pub session_id: String,
     pub max_tokens: u32,
     pub current_tokens: u32,
@@ -65,7 +65,7 @@ impl TokenBudget {
     }
 
     /// Get remaining tokens.
-    #[expect(dead_code, reason = "public API for budget display")]
+    #[allow(dead_code, reason = "public API for budget display")]
     pub fn remaining_tokens(&self) -> u32 {
         self.max_tokens.saturating_sub(self.current_tokens)
     }
@@ -107,7 +107,7 @@ impl TokenBudgetManager {
     }
 
     /// Get usage percentage for a session (0.0 - 1.0).
-    #[expect(dead_code, reason = "public API for external budget monitoring")]
+    #[allow(dead_code, reason = "public API for external budget monitoring")]
     pub async fn usage_percentage(&self, session_id: &str) -> f64 {
         if let Some(budget) = self.get_budget(session_id).await {
             budget.usage_percentage()
@@ -205,4 +205,224 @@ pub fn extract_usage_from_response(provider: &str, response: &serde_json::Value)
     }
 
     TokenUsage::default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn token_budget_new_sets_correct_defaults() {
+        let budget = TokenBudget::new("test-session".to_string(), 1000);
+        assert_eq!(budget.session_id, "test-session");
+        assert_eq!(budget.max_tokens, 1000);
+        assert_eq!(budget.current_tokens, 0);
+        assert_eq!(budget.total_cost, 0.0);
+        assert!((budget.warning_threshold - 0.75).abs() < f64::EPSILON);
+        assert!((budget.stop_threshold - 0.90).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn token_budget_add_usage_increments_tokens() {
+        let mut budget = TokenBudget::new("test".to_string(), 1000);
+        let usage = TokenUsage {
+            prompt_tokens: 100,
+            completion_tokens: 200,
+            total_tokens: 300,
+            cost: 0.05,
+        };
+        budget.add_usage(usage);
+        assert_eq!(budget.current_tokens, 300);
+        assert!((budget.total_cost - 0.05).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn token_budget_usage_percentage_calculation() {
+        let mut budget = TokenBudget::new("test".to_string(), 1000);
+        assert!((budget.usage_percentage()).abs() < f64::EPSILON);
+        budget.current_tokens = 500;
+        assert!((budget.usage_percentage() - 0.5).abs() < f64::EPSILON);
+        budget.current_tokens = 1000;
+        assert!((budget.usage_percentage() - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn token_budget_warning_threshold_at_75_percent() {
+        let mut budget = TokenBudget::new("test".to_string(), 1000);
+        assert!(!budget.at_warning_threshold());
+        budget.current_tokens = 749;
+        assert!(!budget.at_warning_threshold());
+        budget.current_tokens = 750;
+        assert!(budget.at_warning_threshold());
+    }
+
+    #[test]
+    fn token_budget_stop_threshold_at_90_percent() {
+        let mut budget = TokenBudget::new("test".to_string(), 1000);
+        assert!(!budget.at_stop_threshold());
+        budget.current_tokens = 899;
+        assert!(!budget.at_stop_threshold());
+        budget.current_tokens = 900;
+        assert!(budget.at_stop_threshold());
+    }
+
+    #[test]
+    fn token_budget_remaining_tokens_saturates_at_zero() {
+        let mut budget = TokenBudget::new("test".to_string(), 100);
+        assert_eq!(budget.remaining_tokens(), 100);
+        budget.current_tokens = 50;
+        assert_eq!(budget.remaining_tokens(), 50);
+        budget.current_tokens = 150;
+        assert_eq!(budget.remaining_tokens(), 0);
+    }
+
+    #[tokio::test]
+    async fn budget_manager_creates_and_retrieves() {
+        let manager = TokenBudgetManager::new();
+        manager.create_budget("session-1".to_string(), 5000).await;
+        let budget = manager.get_budget("session-1").await;
+        assert!(budget.is_some());
+        let budget = budget.unwrap();
+        assert_eq!(budget.max_tokens, 5000);
+        assert_eq!(budget.current_tokens, 0);
+    }
+
+    #[tokio::test]
+    async fn budget_manager_returns_none_for_unknown() {
+        let manager = TokenBudgetManager::new();
+        let budget = manager.get_budget("nonexistent").await;
+        assert!(budget.is_none());
+    }
+
+    #[tokio::test]
+    async fn budget_manager_adds_usage() {
+        let manager = TokenBudgetManager::new();
+        manager.create_budget("session-1".to_string(), 5000).await;
+        let usage = TokenUsage {
+            prompt_tokens: 100,
+            completion_tokens: 200,
+            total_tokens: 300,
+            cost: 0.01,
+        };
+        manager.add_usage("session-1", usage).await;
+        let budget = manager.get_budget("session-1").await.unwrap();
+        assert_eq!(budget.current_tokens, 300);
+    }
+
+    #[tokio::test]
+    async fn budget_manager_detects_over_budget() {
+        let manager = TokenBudgetManager::new();
+        manager.create_budget("session-1".to_string(), 100).await;
+        let usage = TokenUsage {
+            prompt_tokens: 40,
+            completion_tokens: 40,
+            total_tokens: 80,
+            cost: 0.0,
+        };
+        manager.add_usage("session-1", usage).await;
+        assert!(!manager.is_over_budget("session-1").await);
+        let usage = TokenUsage {
+            prompt_tokens: 10,
+            completion_tokens: 10,
+            total_tokens: 20,
+            cost: 0.0,
+        };
+        manager.add_usage("session-1", usage).await;
+        assert!(manager.is_over_budget("session-1").await);
+    }
+
+    #[tokio::test]
+    async fn budget_manager_usage_percentage() {
+        let manager = TokenBudgetManager::new();
+        manager.create_budget("session-1".to_string(), 1000).await;
+        assert!((manager.usage_percentage("session-1").await - 0.0).abs() < f64::EPSILON);
+        let usage = TokenUsage {
+            prompt_tokens: 250,
+            completion_tokens: 250,
+            total_tokens: 500,
+            cost: 0.0,
+        };
+        manager.add_usage("session-1", usage).await;
+        assert!((manager.usage_percentage("session-1").await - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[tokio::test]
+    async fn budget_manager_unknown_session_returns_zero() {
+        let manager = TokenBudgetManager::new();
+        assert!((manager.usage_percentage("nonexistent").await - 0.0).abs() < f64::EPSILON);
+        assert!(!manager.is_over_budget("nonexistent").await);
+    }
+
+    #[test]
+    fn provider_pricing_estimates_cost() {
+        let pricing = ProviderPricing::new("test", "model", 0.03, 0.06);
+        let cost = pricing.estimate_cost(1000, 500);
+        // prompt: 1000/1000 * 0.03 = 0.03, completion: 500/1000 * 0.06 = 0.03
+        assert!((cost - 0.06).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn provider_pricing_zero_tokens() {
+        let pricing = ProviderPricing::new("test", "model", 0.03, 0.06);
+        let cost = pricing.estimate_cost(0, 0);
+        assert!((cost - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn get_provider_pricing_openai_gpt4() {
+        let pricing = get_provider_pricing("openai", "gpt-4");
+        assert!((pricing.prompt_price - 0.03).abs() < f64::EPSILON);
+        assert!((pricing.completion_price - 0.06).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn get_provider_pricing_unknown_returns_zero() {
+        let pricing = get_provider_pricing("unknown", "unknown");
+        assert!((pricing.prompt_price - 0.0).abs() < f64::EPSILON);
+        assert!((pricing.completion_price - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn get_provider_pricing_ollama_is_free() {
+        let pricing = get_provider_pricing("ollama", "llama3");
+        assert!((pricing.prompt_price - 0.0).abs() < f64::EPSILON);
+        assert!((pricing.completion_price - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn extract_usage_from_response_openai_format() {
+        let response = serde_json::json!({
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150
+            }
+        });
+        let usage = extract_usage_from_response("openai", &response);
+        assert_eq!(usage.prompt_tokens, 100);
+        assert_eq!(usage.completion_tokens, 50);
+        assert_eq!(usage.total_tokens, 150);
+    }
+
+    #[test]
+    fn extract_usage_from_response_missing_usage() {
+        let response = serde_json::json!({});
+        let usage = extract_usage_from_response("openai", &response);
+        assert_eq!(usage.total_tokens, 0);
+        assert_eq!(usage.prompt_tokens, 0);
+        assert_eq!(usage.completion_tokens, 0);
+    }
+
+    #[test]
+    fn extract_usage_from_response_partial_usage() {
+        let response = serde_json::json!({
+            "usage": {
+                "prompt_tokens": 100
+            }
+        });
+        let usage = extract_usage_from_response("openai", &response);
+        assert_eq!(usage.prompt_tokens, 100);
+        assert_eq!(usage.completion_tokens, 0);
+        assert_eq!(usage.total_tokens, 100);
+    }
 }

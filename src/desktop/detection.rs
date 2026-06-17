@@ -1,7 +1,7 @@
-//! Linux Mint Cinnamon desktop environment detection
+//! Cross-platform desktop environment detection
 //!
-//! Detects if running on Linux Mint Cinnamon and extracts desktop-specific
-//! configuration like theme colors, icon paths, and system settings.
+//! Detects desktop environment on Linux (Cinnamon, MATE, Plasma, GNOME, Xfce),
+//! macOS, and Windows with platform-specific details.
 
 use std::env;
 use std::fs;
@@ -20,6 +20,26 @@ pub enum DesktopEnvironment {
     Gnome,
     /// Xfce desktop
     Xfce,
+    /// macOS desktop (not yet detected, reserved for future cross-platform support)
+    #[allow(dead_code, reason = "Reserved for future macOS support")]
+    MacOS {
+        /// macOS version (e.g., "14.5")
+        version: String,
+        /// Terminal emulator (e.g., "iTerm2", "Terminal.app", "Alacritty")
+        terminal: String,
+        /// User's shell (e.g., "/bin/zsh", "/bin/bash")
+        shell: String,
+    },
+    /// Windows desktop (not yet detected, reserved for future cross-platform support)
+    #[allow(dead_code, reason = "Reserved for future Windows support")]
+    Windows {
+        /// Windows version (e.g., "10.0.19045", "11.0.22631")
+        version: String,
+        /// Whether running in WSL
+        is_wsl: bool,
+        /// Terminal emulator (e.g., "Windows Terminal", "ConEmu", "cmd")
+        terminal: String,
+    },
     /// Unknown desktop environment
     Unknown,
 }
@@ -65,14 +85,28 @@ impl DesktopEnvironment {
         matches!(self, DesktopEnvironment::Cinnamon)
     }
 
+    /// Check if running on macOS (reserved for future cross-platform support)
+    #[allow(dead_code, reason = "Reserved for future macOS support")]
+    pub fn is_macos(&self) -> bool {
+        matches!(self, DesktopEnvironment::MacOS { .. })
+    }
+
+    /// Check if running on Windows (reserved for future cross-platform support)
+    #[allow(dead_code, reason = "Reserved for future Windows support")]
+    pub fn is_windows(&self) -> bool {
+        matches!(self, DesktopEnvironment::Windows { .. })
+    }
+
     /// Get desktop environment name as string
     pub fn name(&self) -> &str {
-        match self {
+        match *self {
             DesktopEnvironment::Cinnamon => "Cinnamon",
             DesktopEnvironment::Mate => "MATE",
             DesktopEnvironment::Plasma => "KDE Plasma",
             DesktopEnvironment::Gnome => "GNOME",
             DesktopEnvironment::Xfce => "Xfce",
+            DesktopEnvironment::MacOS { .. } => "macOS",
+            DesktopEnvironment::Windows { .. } => "Windows",
             DesktopEnvironment::Unknown => "Unknown",
         }
     }
@@ -375,6 +409,93 @@ pub fn get_cinnamon_info() -> CinnamonInfo {
     detect_cinnamon()
 }
 
+/// Detect macOS desktop environment (reserved for future cross-platform support)
+#[cfg(target_os = "macos")]
+#[expect(dead_code, reason = "Reserved for future macOS support")]
+pub fn detect_macos() -> DesktopEnvironment {
+    // Get macOS version via sw_vers
+    let version = std::process::Command::new("sw_vers")
+        .arg("-productVersion")
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Detect terminal emulator from TERM_PROGRAM
+    let terminal = env::var("TERM_PROGRAM")
+        .map(|s| match s.as_str() {
+            "iTerm.app" => "iTerm2".to_string(),
+            "Apple_Terminal" => "Terminal.app".to_string(),
+            "vscode" => "VS Code".to_string(),
+            _ => s,
+        })
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    // Detect shell from SHELL env var
+    let shell = env::var("SHELL").unwrap_or_else(|_| "unknown".to_string());
+
+    DesktopEnvironment::MacOS {
+        version,
+        terminal,
+        shell,
+    }
+}
+
+/// Detect Windows desktop environment (reserved for future cross-platform support)
+#[cfg(target_os = "windows")]
+#[expect(dead_code, reason = "Reserved for future Windows support")]
+pub fn detect_windows() -> DesktopEnvironment {
+    // Get Windows version via ver command or systeminfo
+    let version = std::process::Command::new("cmd")
+        .args(["/c", "ver"])
+        .output()
+        .ok()
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
+
+    // Check if running in WSL
+    let is_wsl = env::var("WSL_DISTRO_NAME").is_ok()
+        || fs::read_to_string("/proc/version")
+            .map(|s| s.to_lowercase().contains("microsoft"))
+            .unwrap_or(false);
+
+    // Detect terminal emulator
+    let terminal = if env::var("WT_SESSION").is_ok() {
+        "Windows Terminal".to_string()
+    } else if env::var("CONEMU_PID").is_ok() {
+        "ConEmu".to_string()
+    } else if env::var("TERM").is_ok() {
+        "Terminal".to_string()
+    } else {
+        "cmd.exe".to_string()
+    };
+
+    DesktopEnvironment::Windows {
+        version,
+        is_wsl,
+        terminal,
+    }
+}
+
+/// Cross-platform desktop detection entry point (reserved for future cross-platform support)
+#[expect(dead_code, reason = "Reserved for future cross-platform support")]
+pub fn detect_desktop_cross_platform() -> DesktopEnvironment {
+    #[cfg(target_os = "macos")]
+    {
+        return detect_macos();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return detect_windows();
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        detect_desktop()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -385,7 +506,14 @@ mod tests {
         // Just check it's a valid variant
         assert!(matches!(
             desktop,
-            DesktopEnvironment::Cinnamon | DesktopEnvironment::Unknown
+            DesktopEnvironment::Cinnamon
+                | DesktopEnvironment::Mate
+                | DesktopEnvironment::Plasma
+                | DesktopEnvironment::Gnome
+                | DesktopEnvironment::Xfce
+                | DesktopEnvironment::MacOS { .. }
+                | DesktopEnvironment::Windows { .. }
+                | DesktopEnvironment::Unknown
         ));
     }
 
@@ -397,5 +525,31 @@ mod tests {
 
         let light = CinnamonTheme::default_light();
         assert_eq!(light.background, "#f7f7f7");
+    }
+
+    #[test]
+    fn test_desktop_environment_name() {
+        assert_eq!(DesktopEnvironment::Cinnamon.name(), "Cinnamon");
+        assert_eq!(DesktopEnvironment::Mate.name(), "MATE");
+        assert_eq!(DesktopEnvironment::Plasma.name(), "KDE Plasma");
+        assert_eq!(DesktopEnvironment::Gnome.name(), "GNOME");
+        assert_eq!(DesktopEnvironment::Xfce.name(), "Xfce");
+        assert_eq!(DesktopEnvironment::Unknown.name(), "Unknown");
+
+        let macos = DesktopEnvironment::MacOS {
+            version: "14.5".to_string(),
+            terminal: "iTerm2".to_string(),
+            shell: "/bin/zsh".to_string(),
+        };
+        assert_eq!(macos.name(), "macOS");
+        assert!(macos.is_macos());
+
+        let windows = DesktopEnvironment::Windows {
+            version: "10.0.19045".to_string(),
+            is_wsl: false,
+            terminal: "Windows Terminal".to_string(),
+        };
+        assert_eq!(windows.name(), "Windows");
+        assert!(windows.is_windows());
     }
 }

@@ -271,6 +271,232 @@ impl PluginManager {
         Ok(())
     }
 
+    /// Install a plugin from a git repository.
+    ///
+    /// Clones the repository shallowly, validates the plugin manifest,
+    /// and copies it to the user's plugin directory.
+    #[allow(dead_code, reason = "public API for remote plugin installation")]
+    pub fn install_from_git(&mut self, git_url: &str) -> Result<String, PluginError> {
+        // 1. Create temp directory
+        let temp_dir = std::env::temp_dir().join(format!(
+            "opencrust-plugin-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|e| PluginError::InstallError(format!("time error: {}", e)))?
+                .as_millis()
+        ));
+
+        // 2. Clone the repository (shallow clone)
+        let output = Command::new("git")
+            .args([
+                "clone",
+                "--depth",
+                "1",
+                git_url,
+                temp_dir.to_str().unwrap_or(""),
+            ])
+            .output()
+            .map_err(|e| PluginError::InstallError(format!("git not available: {}", e)))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(PluginError::InstallError(format!(
+                "git clone failed: {}",
+                stderr
+            )));
+        }
+
+        // 3. Find plugin.json in the cloned repo
+        let manifest_path = temp_dir.join("plugin.json");
+        if !manifest_path.exists() {
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(
+                "no plugin.json found in repository".into(),
+            ));
+        }
+
+        // 4. Validate by loading
+        let plugin = self.load_plugin(&manifest_path)?;
+        let name = plugin.name.clone();
+
+        // 5. Copy to plugins directory
+        let target_dir = if let Some(config_dir) = dirs::config_dir() {
+            config_dir.join("opencrust/plugins").join(&name)
+        } else {
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(
+                "cannot determine config directory".into(),
+            ));
+        };
+
+        if target_dir.exists() {
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(format!(
+                "plugin '{}' already installed",
+                name
+            )));
+        }
+
+        fs::create_dir_all(&target_dir).map_err(|e| {
+            let _ = fs::remove_dir_all(&temp_dir);
+            PluginError::InstallError(format!("cannot create target directory: {}", e))
+        })?;
+
+        copy_dir_recursively(&temp_dir, &target_dir).map_err(|e| {
+            let _ = fs::remove_dir_all(&temp_dir);
+            PluginError::InstallError(format!("cannot copy plugin files: {}", e))
+        })?;
+
+        // 6. Clean up temp dir
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        // 7. Reload plugins
+        self.discover();
+
+        Ok(name)
+    }
+
+    /// Install a plugin from a direct URL (expects a zip/tarball archive).
+    #[allow(dead_code, reason = "public API for remote plugin installation")]
+    pub fn install_from_url(&mut self, url: &str) -> Result<String, PluginError> {
+        // 1. Download to temp file
+        let temp_file = std::env::temp_dir().join("opencrust-plugin-download.zip");
+        let output = Command::new("curl")
+            .args(["-sL", "-o", temp_file.to_str().unwrap_or(""), url])
+            .output()
+            .map_err(|e| PluginError::InstallError(format!("curl not available: {}", e)))?;
+
+        if !output.status.success() {
+            let _ = fs::remove_file(&temp_file);
+            return Err(PluginError::InstallError(format!(
+                "download failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
+        }
+
+        // 2. Extract archive
+        let temp_dir = std::env::temp_dir().join("opencrust-plugin-extract");
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        // Try unzip first, then tar
+        let output = Command::new("unzip")
+            .args([
+                "-o",
+                temp_file.to_str().unwrap_or(""),
+                "-d",
+                temp_dir.to_str().unwrap_or(""),
+            ])
+            .output();
+
+        let output = match output {
+            Ok(o) if o.status.success() => o,
+            _ => {
+                // Try tar
+                Command::new("tar")
+                    .args([
+                        "xzf",
+                        temp_file.to_str().unwrap_or(""),
+                        "-C",
+                        temp_dir.to_str().unwrap_or(""),
+                    ])
+                    .output()
+                    .map_err(|e| {
+                        let _ = fs::remove_file(&temp_file);
+                        let _ = fs::remove_dir_all(&temp_dir);
+                        PluginError::InstallError(format!("extraction failed: {}", e))
+                    })?
+            }
+        };
+
+        if !output.status.success() {
+            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(format!(
+                "extraction failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            )));
+        }
+
+        // 3. Find plugin.json
+        let manifest_path = temp_dir.join("plugin.json");
+        if !manifest_path.exists() {
+            // Try finding in subdirectories
+            if let Ok(entries) = fs::read_dir(&temp_dir) {
+                for entry in entries.flatten() {
+                    let candidate = entry.path().join("plugin.json");
+                    if candidate.exists() {
+                        // Install from subdirectory
+                        let plugin = self.load_plugin(&candidate)?;
+                        let name = plugin.name.clone();
+                        let target_dir = dirs::config_dir()
+                            .unwrap_or_else(|| PathBuf::from("."))
+                            .join("opencrust/plugins")
+                            .join(&name);
+                        if !target_dir.exists() {
+                            fs::create_dir_all(&target_dir).map_err(|e| {
+                                let _ = fs::remove_file(&temp_file);
+                                let _ = fs::remove_dir_all(&temp_dir);
+                                PluginError::InstallError(format!("cannot create dir: {}", e))
+                            })?;
+                            copy_dir_recursively(&entry.path(), &target_dir).map_err(|e| {
+                                let _ = fs::remove_file(&temp_file);
+                                let _ = fs::remove_dir_all(&temp_dir);
+                                PluginError::InstallError(format!("cannot copy: {}", e))
+                            })?;
+                        }
+                        let _ = fs::remove_file(&temp_file);
+                        let _ = fs::remove_dir_all(&temp_dir);
+                        self.discover();
+                        return Ok(name);
+                    }
+                }
+            }
+            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(
+                "no plugin.json found in archive".into(),
+            ));
+        }
+
+        // 4. Parse and install
+        let plugin = self.load_plugin(&manifest_path)?;
+        let name = plugin.name.clone();
+        let target_dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("opencrust/plugins")
+            .join(&name);
+
+        if target_dir.exists() {
+            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_dir_all(&temp_dir);
+            return Err(PluginError::InstallError(format!(
+                "plugin '{}' already installed",
+                name
+            )));
+        }
+
+        fs::create_dir_all(&target_dir).map_err(|e| {
+            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_dir_all(&temp_dir);
+            PluginError::InstallError(format!("cannot create target: {}", e))
+        })?;
+
+        copy_dir_recursively(&temp_dir, &target_dir).map_err(|e| {
+            let _ = fs::remove_file(&temp_file);
+            let _ = fs::remove_dir_all(&temp_dir);
+            PluginError::InstallError(format!("cannot copy: {}", e))
+        })?;
+
+        // 5. Clean up
+        let _ = fs::remove_file(&temp_file);
+        let _ = fs::remove_dir_all(&temp_dir);
+
+        // 6. Reload
+        self.discover();
+
+        Ok(name)
+    }
+
     /// Execute a hook across all enabled plugins that subscribe to it.
     /// Each plugin's entry script is called with the hook name and JSON context.
     pub fn execute_hook(&self, hook: &str, context: &str) -> Vec<(String, Result<String, String>)> {

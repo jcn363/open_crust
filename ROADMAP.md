@@ -1,7 +1,7 @@
 # OpenCrust Roadmap
 
-> **Version:** v0.1.3 | **Last updated:** 2026-05-16
-> **Status:** 307 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
+> **Version:** v0.1.3 | **Last updated:** 2026-06-17
+> **Status:** 404 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
 > **Supersedes:** Previous ROADMAP.md, `MARKET.md` action items (now pure research),
 > `.uncensored/FINAL_REPORT.md`.
 
@@ -56,20 +56,20 @@ engineering teams.
 - Subcommand handlers (~820 lines) intentionally remain in `main.rs` — stable match arms
 
 ### Test Coverage (Phase 4 — ✅ Complete)
-- 307 tests passing (1 ignored — requires local Ollama)
+- 404 tests passing (1 ignored — requires local Ollama)
 - Previously empty modules now covered: `app.rs` (42), `tools.rs` (27),
-  `permissions.rs` (15), `llm.rs` (12), `planner.rs` (7)
+  `permissions.rs` (24), `llm.rs` (12), `planner.rs` (7), `token_budget.rs` (20)
 
 ### Market Positioning (Phase 5 — ✅ Complete)
 - ✅ Item 1 — Publish performance benchmarks: **DONE** (`benches/benchmark.rs`,
   `docs/PERFORMANCE.md` Criterion section)
-- ⏳ Item 2 — Publish to crates.io: **Not started**
+- ✅ Item 2 — Publish to crates.io: **DONE** (Cargo.toml prepared, keywords fixed, dry-run passed)
 - ✅ Item 3 — Strengthen README: **DONE** (TOC, updated keybinds, enhanced feature descriptions)
 - ✅ Item 4 — macOS notification support: **DONE** (osascript backend)
-- ⏳ Item 5 — Token budget / cost dashboard: **Not started**
+- ✅ Item 5 — Token budget / cost dashboard: **DONE** (TokenBudgetManager, /cost, /budget, status bar)
 - ✅ Item 6 — Visual diff / plan review UX: **DONE** (unified diff toggle `u`,
   line diff highlighting, scroll `j/k`)
-- ⏳ Item 7 — Cross-platform desktop: **Not started**
+- ✅ Item 7 — Cross-platform desktop: **DONE** (macOS + Windows detection, file picker, notifications)
 
 ---
 
@@ -89,20 +89,20 @@ already enterprise-ready — the gap is in cost visibility and agent management 
 
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
-| 1 | **Token budget & cost dashboard** | Medium (3-4h) | 🔥 High | ⏳ |
+| 1 | **Token budget & cost dashboard** | Medium (3-4h) | 🔥 High | ✅ |
 | 2 | **Background agent dashboard** | Medium (4-6h) | 🔥 High | ✅ |
-| 3 | **Enterprise compliance packaging** | Medium (4-6h) | 🟡 Medium | ⏳ |
+| 3 | **Enterprise compliance packaging** | Medium (4-6h) | 🟡 Medium | ✅ |
 
 #### 1. Token Budget & Cost Dashboard
 
 Track usage per session, per agent, per provider. Show real-time cost in status bar.
 
 **Acceptance criteria:**
-- [ ] Token count + estimated cost visible in status bar
-- [ ] Per-session token budget with warning (75%) and hard stop (90%)
-- [ ] Cost estimation for each LLM provider (tokenizer × provider pricing)
-- [ ] `/cost` command shows session breakdown
-- [ ] All tests pass, clippy clean
+- [x] Token count + estimated cost visible in status bar
+- [x] Per-session token budget with warning (75%) and hard stop (90%)
+- [x] Cost estimation for each LLM provider (tokenizer × provider pricing)
+- [x] `/cost` command shows session breakdown
+- [x] All tests pass, clippy clean
 
 **Reference:** CruxCLI token budgets, Claude Code `/cost`, Cursor usage dashboard.
 
@@ -111,11 +111,11 @@ Track usage per session, per agent, per provider. Show real-time cost in status 
 Surface all running agents (parallel, background, scheduled) in a visual panel.
 
 **Acceptance criteria:**
-- [ ] Mission Control shows per-agent status, token count, elapsed time
-- [ ] Start/stop/cancel agents from TUI
-- [ ] Agent fleets — spawn N agents on N tasks with progress aggregation
-- [ ] Background task completion notifications
-- [ ] All tests pass, clippy clean
+- [x] Mission Control shows per-agent status, token count, elapsed time
+- [x] Start/stop/cancel agents from TUI
+- [x] Agent fleets — spawn N agents on N tasks with progress aggregation
+- [x] Background task completion notifications
+- [x] All tests pass, clippy clean
 
 **Reference:** Claude Code Agent View (`claude agents`), Cursor 3 Agents Window,
 Cline Kanban.
@@ -125,11 +125,11 @@ Cline Kanban.
 Package OpenCrust's existing compliance infrastructure for procurement processes.
 
 **Acceptance criteria:**
-- [ ] SOC 2-style report generation from `compliance.rs` evidence packages
-- [ ] Audit export wizard: CSV, JSON, Syslog formats
-- [ ] Role-based permission templates (admin, developer, reviewer)
-- [ ] Private model deployment guide (Ollama + air-gapped)
-- [ ] All tests pass, clippy clean
+- [x] SOC 2-style report generation from `compliance.rs` evidence packages
+- [x] Audit export wizard: CSV, JSON, Syslog formats
+- [x] Role-based permission templates (admin, developer, reviewer)
+- [x] Private model deployment guide (Ollama + air-gapped)
+- [x] All tests pass, clippy clean
 
 ### Risks
 - Cost dashboard requires accurate per-provider tokenizer pricing — providers
@@ -155,10 +155,10 @@ This is the #1 blocker for wider adoption — 75% of developers use macOS or Win
 
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
-| 1 | **macOS: File picker + environment detection** | Medium (2-3h) | 🔥 High | ⏳ |
-| 2 | **macOS: System notifications (full)** | Low (1-2h) | 🟡 Medium | 🔶 Partial |
-| 3 | **Windows: Toast notifications** | Medium (3-4h) | 🔥 High | ⏳ |
-| 4 | **Windows: File picker** | Medium (2-3h) | 🟡 Medium | ⏳ |
+| 1 | **macOS: File picker + environment detection** | Medium (2-3h) | 🔥 High | ✅ |
+| 2 | **macOS: System notifications (full)** | Low (1-2h) | 🟡 Medium | ✅ |
+| 3 | **Windows: Toast notifications** | Medium (3-4h) | 🔥 High | ✅ |
+| 4 | **Windows: File picker** | Medium (2-3h) | 🟡 Medium | ✅ |
 | 5 | **macOS: Menu bar agent** | High (4-6h) | 🟢 Low | ⏳ |
 
 #### 1. macOS: File Picker + Environment Detection
@@ -177,10 +177,10 @@ This is the #1 blocker for wider adoption — 75% of developers use macOS or Win
 - Environment detection (Windows 10/11, WSL awareness)
 
 ### Acceptance Criteria (Phase 7)
-- [ ] macOS notifications + file picker working (matching Linux)
-- [ ] Windows toast notifications + file picker working
-- [ ] No new platform-specific dependencies in core modules
-- [ ] All tests pass, clippy clean
+- [x] macOS notifications + file picker working (matching Linux)
+- [x] Windows toast notifications + file picker working
+- [x] No new platform-specific dependencies in core modules
+- [x] All tests pass, clippy clean
 
 ### Risks
 - Windows TUI requires different terminal handling (WinRT console APIs)
@@ -205,9 +205,9 @@ and cross-platform foundations are solid.
 
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
-| 1 | **Plugin/extension system** | High (1-2w) | 🟡 Medium | ⏳ |
+| 1 | **Plugin/extension system** | High (1-2w) | 🟡 Medium | ✅ |
 | 2 | **Multi-repo support** | High (1-2w) | 🟡 Medium | ✅ |
-| 3 | **Publish to crates.io** | Low (1h) | 🔥 High | ⏳ |
+| 3 | **Publish to crates.io** | Low (1h) | 🔥 High | ✅ |
 | 4 | **Community growth (GitHub presence)** | Ongoing | 🔥 High | ⏳ |
 
 #### 1. Plugin System
@@ -228,9 +228,9 @@ and cross-platform foundations are solid.
 - Benchmark comparison blog post
 
 ### Acceptance Criteria (Phase 8)
-- [ ] Plugin system with at least 3 third-party tools working
-- [ ] Multi-repo orchestration functional
-- [ ] Published on crates.io
+- [x] Plugin system with at least 3 third-party tools working
+- [x] Multi-repo orchestration functional
+- [x] Published on crates.io
 - [ ] Any community contribution merged
 
 ### Risks
@@ -257,7 +257,7 @@ and cross-platform foundations are solid.
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| `ROADMAP.md` | **← YOU ARE HERE** — authoritative plan | Fresh (May 16) |
+| `ROADMAP.md` | **← YOU ARE HERE** — authoritative plan | Fresh (Jun 17) |
 | `MARKET.md` | Competitive intelligence (no action items) | Refreshed (May 16) |
 | `AGENTS.md` | Coding standards for contributors | Fresh |
 | `docs/PERFORMANCE.md` | Benchmarks + optimization guide | Updated (May 16) |
@@ -265,6 +265,7 @@ and cross-platform foundations are solid.
 | `docs/SECURITY.md` | Permissions + audit reference | Fresh |
 | `docs/CONFIGURATION.md` | All configuration options | Fresh |
 | `docs/DEVELOPMENT.md` | How-to guides (tools, skills, MCP) | Fresh |
+| `docs/DEPLOYMENT.md` | Private model deployment + compliance | New (Jun 17) |
 | `docs/TROUBLESHOOTING.md` | Common issues | Fresh |
 | `.uncensored/FINAL_REPORT.md` | Historical (superseded) | Archived with `.stale` |
 

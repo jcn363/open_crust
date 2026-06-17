@@ -197,6 +197,179 @@ th {{ background-color: #f5f5f5; }}
         html.push_str("</body></html>");
         html
     }
+
+    /// Generate a SOC 2 Type II formatted report.
+    ///
+    /// This produces a report structured according to SOC 2 Type II requirements,
+    /// suitable for auditor review.
+    #[cfg_attr(not(test), expect(dead_code, reason = "CLI export command handler"))]
+    pub fn to_soc2_type2(&self) -> String {
+        let generated_at = Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
+        let (from, to) = self
+            .date_range
+            .clone()
+            .unwrap_or_else(|| ("N/A".to_string(), "N/A".to_string()));
+
+        let approval_rate = if self.total_calls > 0 {
+            self.approved as f64 / self.total_calls as f64 * 100.0
+        } else {
+            0.0
+        };
+
+        let overall_status = if self.violations.is_empty() || approval_rate > 95.0 {
+            "COMPLIANT"
+        } else {
+            "NON-COMPLIANT"
+        };
+
+        let mut report = String::new();
+
+        // Header
+        report.push_str("# SOC 2 Type II Compliance Report\n\n");
+        report.push_str("**Organization:** OpenCrust\n");
+        report.push_str(&format!("**Report Period:** {} to {}\n", from, to));
+        report.push_str(&format!("**Generated:** {}\n\n", generated_at));
+
+        // Executive Summary
+        report.push_str("## 1. Executive Summary\n\n");
+        report.push_str(&format!(
+            "This report covers the compliance status of OpenCrust for the period {} to {}.\n\n",
+            from, to
+        ));
+        report.push_str(&format!("**Overall Status:** {}\n\n", overall_status));
+        report.push_str(&format!(
+            "Total tool calls: {} | Approved: {} | Denied: {} | Approval Rate: {:.1}%\n\n",
+            self.total_calls, self.approved, self.denied, approval_rate
+        ));
+
+        // Control Objectives (mapped to SOC 2 Trust Service Criteria)
+        report.push_str("## 2. Control Objectives\n\n");
+
+        report.push_str("### CC1.1 - Control Environment\n");
+        report.push_str("- Role-based access control implemented (Admin, Developer, Reviewer)\n");
+        report.push_str("- Permission templates enforced per role\n");
+        report.push_str("- Configuration versioning maintained\n\n");
+
+        report.push_str("### CC2.1 - Communication & Information\n");
+        report.push_str("- Audit logging enabled with structured JSONL format\n");
+        report.push_str("- Security notifications available via system integration\n");
+        report.push_str("- Compliance reports generated for review\n\n");
+
+        report.push_str("### CC3.1 - Risk Assessment\n");
+        report.push_str("- Token budget enforcement prevents runaway costs\n");
+        report.push_str("- Network gating restricts external access\n");
+        report.push_str("- Prompt injection detection blocks malicious inputs\n\n");
+
+        report.push_str("### CC4.1 - Monitoring Activities\n");
+        report.push_str("- Real-time audit trail of all tool executions\n");
+        report.push_str("- Evidence packages with SHA-256 manifests\n");
+        report.push_str("- Chain-of-custody logging for all artifacts\n\n");
+
+        report.push_str("### CC5.1 - Control Activities\n");
+        report.push_str("- File permission enforcement via PermissionManager\n");
+        report.push_str("- Command execution gating with user approval\n");
+        report.push_str("- Glob-pattern matching for input validation\n\n");
+
+        report.push_str("### CC6.1 - Logical Access\n");
+        report.push_str("- Provider API key management via config\n");
+        report.push_str("- Session isolation between conversations\n");
+        report.push_str("- Role-based access restrictions\n\n");
+
+        report.push_str("### CC7.1 - System Operations\n");
+        report.push_str("- Error handling with Result types (no panics)\n");
+        report.push_str("- Resource usage monitoring via token budgets\n");
+        report.push_str("- Automatic session save/restore\n\n");
+
+        report.push_str("### CC8.1 - Change Management\n");
+        report.push_str("- Configuration file versioning\n");
+        report.push_str("- Audit trail for all configuration changes\n");
+        report.push_str("- Plugin manifest validation\n\n");
+
+        report.push_str("### CC9.1 - Risk Mitigation\n");
+        report.push_str("- Prompt injection detection in security module\n");
+        report.push_str("- Provider fallback chains for availability\n");
+        report.push_str("- Air-gapped deployment support\n\n");
+
+        // Testing Procedures
+        report.push_str("## 3. Testing Procedures & Results\n\n");
+        report.push_str("| Control | Status | Details |\n");
+        report.push_str("|---------|--------|--------|\n");
+        report.push_str(&format!(
+            "| Total Calls | {} | All tool executions logged |\n",
+            self.total_calls
+        ));
+        report.push_str(&format!(
+            "| Approval Rate | {:.1}% | {} approved, {} denied |\n",
+            approval_rate, self.approved, self.denied
+        ));
+        report.push_str(&format!(
+            "| Unique Sessions | {} | Isolated conversation tracking |\n",
+            self.session_count
+        ));
+
+        // Most used tools
+        if !self.most_used_tools.is_empty() {
+            report.push_str("\n### Tool Usage\n\n");
+            report.push_str("| Tool | Calls |\n");
+            report.push_str("|------|-------|\n");
+            for (tool, count) in &self.most_used_tools {
+                report.push_str(&format!("| {} | {} |\n", tool, count));
+            }
+        }
+
+        // Exceptions
+        report.push_str("\n## 4. Exceptions & Remediation\n\n");
+        if self.violations.is_empty() {
+            report.push_str("No exceptions identified during the reporting period.\n\n");
+        } else {
+            report.push_str(&format!(
+                "{} policy violations detected:\n\n",
+                self.violations.len()
+            ));
+            report.push_str("| Rule | Severity | Message | Enforced |\n");
+            report.push_str("|------|----------|---------|----------|\n");
+            for v in &self.violations {
+                report.push_str(&format!(
+                    "| {} | {} | {} | {} |\n",
+                    v.rule_id,
+                    v.severity,
+                    v.message,
+                    if v.enforced { "Yes" } else { "No" }
+                ));
+            }
+            report.push('\n');
+        }
+
+        // Profile Results
+        if let Some(results) = &self.profile_results {
+            report.push_str("## 5. Profile Control Evaluation\n\n");
+            for (control_id, indices) in results {
+                report.push_str(&format!(
+                    "- **{}**: {} matching audit entries\n",
+                    control_id,
+                    indices.len()
+                ));
+            }
+            report.push('\n');
+        }
+
+        // Conclusion
+        report.push_str("## 6. Conclusion\n\n");
+        if overall_status == "COMPLIANT" {
+            report.push_str("Based on the testing performed, OpenCrust meets the requirements for SOC 2 Type II compliance for the specified trust service criteria. All control objectives were satisfied during the reporting period.\n");
+        } else {
+            report.push_str("Based on the testing performed, OpenCrust does not fully meet SOC 2 Type II requirements. The exceptions noted in Section 4 require remediation before compliance can be confirmed.\n");
+        }
+
+        // Appendix
+        report.push_str("\n## Appendix A: Evidence Summary\n\n");
+        report.push_str(&format!("- Total audit entries: {}\n", self.total_calls));
+        report.push_str(&format!("- Reporting period: {} to {}\n", from, to));
+        report.push_str("- Evidence format: Structured JSONL with SHA-256 verification\n");
+        report.push_str("- Chain of custody: Maintained via compliance/evidence.rs\n");
+
+        report
+    }
 }
 
 impl std::fmt::Display for ComplianceReport {
@@ -375,5 +548,32 @@ mod tests {
         let json = report.to_json().unwrap();
         assert!(json.contains("total_calls"));
         assert!(json.contains("0"));
+    }
+
+    #[test]
+    fn test_report_to_soc2_type2() {
+        let entries = vec![AuditEntry {
+            timestamp: "2026-01-01T00:00:00Z".into(),
+            session_id: "sess-1".into(),
+            agent_type: "test".into(),
+            tool: "bash".into(),
+            input: "ls".into(),
+            duration_ms: 10,
+            approved: true,
+        }];
+        let report = ComplianceReport::generate(&entries);
+        let soc2 = report.to_soc2_type2();
+        assert!(soc2.contains("SOC 2 Type II Compliance Report"));
+        assert!(soc2.contains("CC1.1"));
+        assert!(soc2.contains("CC9.1"));
+        assert!(soc2.contains("COMPLIANT"));
+    }
+
+    #[test]
+    fn test_report_to_soc2_type2_empty() {
+        let report = ComplianceReport::generate(&[]);
+        let soc2 = report.to_soc2_type2();
+        assert!(soc2.contains("SOC 2 Type II Compliance Report"));
+        assert!(soc2.contains("No exceptions identified"));
     }
 }

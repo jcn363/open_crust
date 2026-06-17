@@ -130,6 +130,11 @@ pub struct Config {
     /// Provider fallback chain (e.g., ["openai", "anthropic", "groq"])
     #[serde(default)]
     pub fallback_chain: Vec<String>,
+
+    // --- Role-based access control ---
+    /// User role for permission templates (admin, developer, reviewer)
+    #[serde(default)]
+    pub role: crate::permissions::Role,
 }
 
 impl Default for Config {
@@ -172,6 +177,7 @@ impl Default for Config {
             token_budget_max_tokens: default_token_budget_max(),
             token_budget_enabled: true,
             fallback_chain: Vec::new(),
+            role: crate::permissions::Role::default(),
         }
     }
 }

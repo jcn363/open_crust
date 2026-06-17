@@ -6,8 +6,111 @@
 
 use crate::config::{Config, PermissionAction, PermissionRule};
 use glob::Pattern;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
+
+/// Role-based access control for OpenCrust operations.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum Role {
+    /// Full access to all operations
+    Admin,
+    /// Can read/write files, run tools, but no system-level changes
+    #[default]
+    Developer,
+    /// Read-only access, can review but not modify
+    Reviewer,
+}
+
+/// Permission template defining allowed operations per role.
+#[derive(Debug, Clone)]
+#[allow(dead_code, reason = "public API for role-based access control")]
+pub struct RoleTemplate {
+    pub role: Role,
+    pub can_write_files: bool,
+    pub can_execute_commands: bool,
+    pub can_manage_mcp: bool,
+    pub can_manage_plugins: bool,
+    pub can_modify_config: bool,
+    pub blocked_path_prefixes: Vec<String>,
+}
+
+impl RoleTemplate {
+    /// Create a default template for the given role.
+    #[allow(dead_code, reason = "public API for role-based access control")]
+    pub fn for_role(role: Role) -> Self {
+        match role {
+            Role::Admin => RoleTemplate {
+                role,
+                can_write_files: true,
+                can_execute_commands: true,
+                can_manage_mcp: true,
+                can_manage_plugins: true,
+                can_modify_config: true,
+                blocked_path_prefixes: vec!["/proc".to_string(), "/sys".to_string()],
+            },
+            Role::Developer => RoleTemplate {
+                role,
+                can_write_files: true,
+                can_execute_commands: true,
+                can_manage_mcp: false,
+                can_manage_plugins: false,
+                can_modify_config: false,
+                blocked_path_prefixes: vec![
+                    "/root".to_string(),
+                    "/etc/shadow".to_string(),
+                    "/etc/passwd".to_string(),
+                ],
+            },
+            Role::Reviewer => RoleTemplate {
+                role,
+                can_write_files: false,
+                can_execute_commands: false,
+                can_manage_mcp: false,
+                can_manage_plugins: false,
+                can_modify_config: false,
+                blocked_path_prefixes: vec![],
+            },
+        }
+    }
+
+    /// Check if an operation is allowed by this role template.
+    #[allow(dead_code, reason = "public API for role-based access control")]
+    pub fn check_operation(&self, operation: &str) -> Result<(), String> {
+        match operation {
+            "write_file" if !self.can_write_files => {
+                Err(format!("Role {:?} cannot write files", self.role))
+            }
+            "execute_command" if !self.can_execute_commands => {
+                Err(format!("Role {:?} cannot execute commands", self.role))
+            }
+            "manage_mcp" if !self.can_manage_mcp => {
+                Err(format!("Role {:?} cannot manage MCP servers", self.role))
+            }
+            "manage_plugins" if !self.can_manage_plugins => {
+                Err(format!("Role {:?} cannot manage plugins", self.role))
+            }
+            "modify_config" if !self.can_modify_config => {
+                Err(format!("Role {:?} cannot modify configuration", self.role))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Check if a file path is blocked by this role template.
+    #[allow(dead_code, reason = "public API for role-based access control")]
+    pub fn check_path(&self, path: &str) -> Result<(), String> {
+        for blocked in &self.blocked_path_prefixes {
+            if path.starts_with(blocked) {
+                return Err(format!(
+                    "Path '{}' is blocked for role {:?}",
+                    path, self.role
+                ));
+            }
+        }
+        Ok(())
+    }
+}
 
 /// Pre-compiled permission pattern for efficient matching
 struct CompiledPermissionRule {

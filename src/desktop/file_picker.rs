@@ -1,7 +1,7 @@
-//! Linux Mint Cinnamon native file picker
+//! Cross-platform native file picker
 //!
-//! Provides native file/folder picker dialogs for Linux Mint Cinnamon.
-//! Uses Nemo's DBus interface, with fallbacks to zenity or kde-file-dialog.
+//! Provides native file/folder picker dialogs for Linux (Nemo, Zenity, KDialog),
+//! macOS (osascript/Finder), and Windows (PowerShell/Windows Forms).
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -103,6 +103,12 @@ pub enum FilePickerBackend {
     Zenity,
     /// KDE file dialog
     KDialog,
+    /// macOS osascript/Finder (not yet implemented, reserved for future cross-platform support)
+    #[expect(dead_code, reason = "Reserved for future macOS support")]
+    Osascript,
+    /// Windows PowerShell/Windows Forms (not yet implemented, reserved for future cross-platform support)
+    #[expect(dead_code, reason = "Reserved for future Windows support")]
+    WindowsForms,
     /// None available
     #[default]
     None,
@@ -115,6 +121,8 @@ impl FilePickerBackend {
             FilePickerBackend::Nemo => "nemo",
             FilePickerBackend::Zenity => "zenity",
             FilePickerBackend::KDialog => "kdialog",
+            FilePickerBackend::Osascript => "osascript",
+            FilePickerBackend::WindowsForms => "windows-forms",
             FilePickerBackend::None => "none",
         }
     }
@@ -122,41 +130,72 @@ impl FilePickerBackend {
 
 /// Detect available file picker backends
 pub fn detect_file_picker_backend() -> FilePickerBackend {
-    // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
-    let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
-        || std::env::var("XDG_SESSION_TYPE")
-            .map(|v| v == "wayland")
-            .unwrap_or(false);
-
-    // Check for Nemo first (Cinnamon native) - but only on X11
-    if !is_wayland
-        && Command::new("which")
-            .arg("nemo")
+    // Platform-specific detection
+    #[cfg(target_os = "macos")]
+    {
+        // macOS always has osascript available
+        if Command::new("which")
+            .arg("osascript")
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false)
-    {
-        return FilePickerBackend::Nemo;
+        {
+            return FilePickerBackend::Osascript;
+        }
     }
 
-    // Check for Zenity (works on both X11 and Wayland)
-    if Command::new("which")
-        .arg("zenity")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    #[cfg(target_os = "windows")]
     {
-        return FilePickerBackend::Zenity;
+        // Windows has PowerShell with Windows Forms
+        if Command::new("powershell")
+            .args(["-Command", "exit"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return FilePickerBackend::WindowsForms;
+        }
     }
 
-    // Check for KDialog (works on both X11 and Wayland)
-    if Command::new("which")
-        .arg("kdialog")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
-        return FilePickerBackend::KDialog;
+        // Linux detection
+        // Check if we're on Wayland - Nemo is X11-only, so skip it on Wayland
+        let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
+            || std::env::var("XDG_SESSION_TYPE")
+                .map(|v| v == "wayland")
+                .unwrap_or(false);
+
+        // Check for Nemo first (Cinnamon native) - but only on X11
+        if !is_wayland
+            && Command::new("which")
+                .arg("nemo")
+                .output()
+                .map(|o| o.status.success())
+                .unwrap_or(false)
+        {
+            return FilePickerBackend::Nemo;
+        }
+
+        // Check for Zenity (works on both X11 and Wayland)
+        if Command::new("which")
+            .arg("zenity")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return FilePickerBackend::Zenity;
+        }
+
+        // Check for KDialog (works on both X11 and Wayland)
+        if Command::new("which")
+            .arg("kdialog")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return FilePickerBackend::KDialog;
+        }
     }
 
     FilePickerBackend::None
@@ -322,6 +361,13 @@ pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePic
         FilePickerBackend::Nemo => nemo_file_picker(mode, options),
         FilePickerBackend::Zenity => zenity_file_picker(mode, options),
         FilePickerBackend::KDialog => kdialog_file_picker(mode, options),
+        FilePickerBackend::Osascript | FilePickerBackend::WindowsForms => {
+            // Not yet implemented for macOS/Windows - fall back to cancelled
+            FilePickerResult {
+                paths: vec![],
+                cancelled: true,
+            }
+        }
         FilePickerBackend::None => FilePickerResult {
             paths: vec![],
             cancelled: true,
