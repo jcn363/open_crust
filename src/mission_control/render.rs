@@ -299,8 +299,132 @@ impl MissionControlUI {
         f.render_widget(dash, chunks[1]);
     }
 
+    /// Render the agent panel
+    pub(crate) fn render_agent_panel(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
+        let agents = &self.agent_panel.agents;
+        let selected = self.agent_panel.selected;
+        let show_logs = self.agent_panel.show_logs;
+
+        if agents.is_empty() {
+            let empty = Paragraph::new("No background agents\n\nPress 'n' to start a new agent")
+                .style(Style::default().fg(theme.dim()))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title(" Background Agents ")
+                        .border_style(Style::default().fg(theme.accent)),
+                );
+            f.render_widget(empty, area);
+            return;
+        }
+
+        // Split area: list on left, logs on right (if show_logs)
+        let chunks = if show_logs {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(area)
+        } else {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(100)])
+                .split(area)
+        };
+
+        // --- Agent List (left) ---
+        let list_area = chunks[0];
+        let list_block = Block::default()
+            .borders(Borders::ALL)
+            .title(" Background Agents ")
+            .border_style(if self.active_panel == 2 {
+                Style::default().fg(theme.accent)
+            } else {
+                Style::default().fg(theme.fg)
+            });
+        let list_inner = list_block.inner(list_area);
+        f.render_widget(list_block, list_area);
+
+        // Build agent list text
+        let mut list_text = String::new();
+        for (idx, agent) in agents.iter().enumerate() {
+            let is_selected = idx == selected && self.active_panel == 2;
+            let status_icon = match &agent.status {
+                crate::background_agents::AgentStatus::Pending => "⏳",
+                crate::background_agents::AgentStatus::Running => "▶",
+                crate::background_agents::AgentStatus::Completed { .. } => "✅",
+                crate::background_agents::AgentStatus::Failed { .. } => "❌",
+                crate::background_agents::AgentStatus::Cancelled => "⏸",
+            };
+            let _status_color = match &agent.status {
+                crate::background_agents::AgentStatus::Pending => theme.fg,
+                crate::background_agents::AgentStatus::Running => theme.warning(),
+                crate::background_agents::AgentStatus::Completed { .. } => theme.success(),
+                crate::background_agents::AgentStatus::Failed { .. } => theme.error(),
+                crate::background_agents::AgentStatus::Cancelled => theme.dim(),
+            };
+
+            let name = Self::truncate(&agent.name, 20);
+            let progress = format!("{}%", agent.progress);
+            let line = format!(
+                " {} {:<20} {:>4} {}",
+                status_icon, name, progress, agent.provider
+            );
+
+            if is_selected {
+                list_text.push_str(&format!("► {}\n", line));
+            } else {
+                list_text.push_str(&format!("  {}\n", line));
+            }
+        }
+
+        let list_style = if self.active_panel == 2 {
+            Style::default().fg(theme.fg)
+        } else {
+            Style::default().fg(theme.dim())
+        };
+        let list_para = Paragraph::new(list_text)
+            .style(list_style)
+            .wrap(Wrap { trim: true });
+        f.render_widget(list_para, list_inner);
+
+        // --- Agent Logs (right, if show_logs) ---
+        if show_logs && selected < agents.len() {
+            let log_area = chunks[1];
+            let agent = &agents[selected];
+            let log_block = Block::default()
+                .borders(Borders::ALL)
+                .title(format!(" Logs: {} ", agent.name))
+                .border_style(Style::default().fg(theme.accent));
+            let log_inner = log_block.inner(log_area);
+            f.render_widget(log_block, log_area);
+
+            let log_text = if agent.log.is_empty() {
+                "No logs yet".to_string()
+            } else {
+                agent.log.join("\n")
+            };
+            let log_para = Paragraph::new(log_text)
+                .style(Style::default().fg(theme.fg))
+                .wrap(Wrap { trim: true });
+            f.render_widget(log_para, log_inner);
+        }
+    }
+
     /// Main render function
     pub fn render(&mut self, f: &mut Frame, area: Rect, theme: &ThemeContext) {
+        // Handle agent panel (full screen)
+        if self.active_panel == 2 {
+            let agent_block = Block::default()
+                .borders(Borders::ALL)
+                .title(" Background Agents ")
+                .border_style(Style::default().fg(theme.accent));
+            let agent_inner = agent_block.inner(area);
+            f.render_widget(agent_block, area);
+            self.render_agent_panel(f, agent_inner, theme);
+            return;
+        }
+
+        // Normal DAG + Detail layout
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])

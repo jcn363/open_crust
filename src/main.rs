@@ -39,6 +39,7 @@ mod orchestrator;
 mod permissions;
 mod planner;
 mod plugins;
+mod pty;
 mod rag;
 mod rules;
 mod security;
