@@ -101,13 +101,11 @@ impl ComplianceReport {
     }
 
     /// Export report as JSON string.
-    #[cfg_attr(not(test), expect(dead_code, reason = "CLI export command handler"))]
     pub fn to_json(&self) -> Result<String, Box<dyn std::error::Error>> {
         Ok(serde_json::to_string_pretty(self)?)
     }
 
     /// Export report as CSV summary string.
-    #[cfg_attr(not(test), expect(dead_code, reason = "CLI export command handler"))]
     pub fn to_csv(&self) -> String {
         let mut csv = String::new();
         csv.push_str("metric,value\n");
@@ -127,7 +125,6 @@ impl ComplianceReport {
     }
 
     /// HTML report for browser viewing.
-    #[cfg_attr(not(test), expect(dead_code, reason = "CLI export command handler"))]
     pub fn to_html(&self) -> String {
         let approval_rate = if self.total_calls > 0 {
             self.approved as f64 / self.total_calls as f64 * 100.0
@@ -202,7 +199,6 @@ th {{ background-color: #f5f5f5; }}
     ///
     /// This produces a report structured according to SOC 2 Type II requirements,
     /// suitable for auditor review.
-    #[cfg_attr(not(test), expect(dead_code, reason = "CLI export command handler"))]
     pub fn to_soc2_type2(&self) -> String {
         let generated_at = Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
         let (from, to) = self

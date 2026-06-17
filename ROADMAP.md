@@ -1,7 +1,7 @@
 # OpenCrust Roadmap
 
 > **Version:** v0.1.3 | **Last updated:** 2026-06-17
-> **Status:** 404 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
+> **Status:** 408 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
 > **Supersedes:** Previous ROADMAP.md, `MARKET.md` action items (now pure research),
 > `.uncensored/FINAL_REPORT.md`.
 
@@ -56,9 +56,10 @@ engineering teams.
 - Subcommand handlers (~820 lines) intentionally remain in `main.rs` — stable match arms
 
 ### Test Coverage (Phase 4 — ✅ Complete)
-- 404 tests passing (1 ignored — requires local Ollama)
+- 408 tests passing (1 ignored — requires local Ollama)
 - Previously empty modules now covered: `app.rs` (42), `tools.rs` (27),
-  `permissions.rs` (24), `llm.rs` (12), `planner.rs` (7), `token_budget.rs` (20)
+  `permissions.rs` (24), `llm.rs` (12), `planner.rs` (7), `token_budget.rs` (20),
+  `mission_control/` (58), `pty.rs` (12)
 
 ### Market Positioning (Phase 5 — ✅ Complete)
 - ✅ Item 1 — Publish performance benchmarks: **DONE** (`benches/benchmark.rs`,
@@ -92,6 +93,31 @@ already enterprise-ready — the gap is in cost visibility and agent management 
 | 1 | **Token budget & cost dashboard** | Medium (3-4h) | 🔥 High | ✅ |
 | 2 | **Background agent dashboard** | Medium (4-6h) | 🔥 High | ✅ |
 | 3 | **Enterprise compliance packaging** | Medium (4-6h) | 🟡 Medium | ✅ |
+
+#### 2. Background Agent Dashboard
+
+Surface all running agents (parallel, background, scheduled) in a visual panel.
+
+**Acceptance criteria:**
+- [x] Mission Control shows per-agent status, token count, elapsed time
+- [x] Start/stop/cancel agents from TUI
+- [x] Agent fleets — spawn N agents on N tasks with progress aggregation
+- [x] Background task completion notifications
+- [x] All tests pass, clippy clean
+
+**Reference:** Claude Code Agent View (`claude agents`), Cursor 3 Agents Window,
+Cline Kanban.
+
+#### 3. Enterprise Compliance Packaging
+
+Package OpenCrust's existing compliance infrastructure for procurement processes.
+
+**Acceptance criteria:**
+- [x] SOC 2-style report generation from `compliance.rs` evidence packages
+- [x] Audit export wizard: CSV, JSON, Syslog formats
+- [x] Role-based permission templates (admin, developer, reviewer)
+- [x] Private model deployment guide (Ollama + air-gapped)
+- [x] All tests pass, clippy clean
 
 #### 1. Token Budget & Cost Dashboard
 
@@ -161,6 +187,31 @@ This is the #1 blocker for wider adoption — 75% of developers use macOS or Win
 | 4 | **Windows: File picker** | Medium (2-3h) | 🟡 Medium | ✅ |
 | 5 | **macOS: Menu bar agent** | High (4-6h) | 🟢 Low | ⏳ |
 
+#### 5. macOS: Menu Bar Agent
+
+Native macOS menu bar integration with status, notifications, and quick actions.
+
+**Acceptance criteria:**
+- [ ] Menu bar icon with status indicator (idle, working, error)
+- [ ] Click-to-open main window
+- [ ] Right-click context menu with agent controls
+- [ ] Native macOS notifications (Notification Center)
+- [ ] System Preferences integration (settings)
+- [ ] All tests pass, clippy clean
+
+**Reference:** Claude Code system tray, Cursor 3 menu bar, OpenCode status bar.
+
+### Acceptance Criteria (Phase 7)
+- [x] macOS notifications + file picker working (matching Linux)
+- [x] Windows toast notifications + file picker working
+- [x] No new platform-specific dependencies in core modules
+- [x] All tests pass, clippy clean
+
+### Risks
+- Windows TUI requires different terminal handling (WinRT console APIs)
+- macOS code signing needed for menu bar agent distribution
+- Cross-platform abstractions can leak platform-specific complexity into core
+
 #### 1. macOS: File Picker + Environment Detection
 - Detect macOS desktop environment
 - Native file picker (NSOpenPanel via `osascript` or `dialog`)
@@ -205,10 +256,33 @@ and cross-platform foundations are solid.
 
 | # | Item | Effort | Priority | Status |
 |---|------|--------|----------|--------|
-| 1 | **Plugin/extension system** | High (1-2w) | 🟡 Medium | ✅ |
+| 1 | **Plugin system** | High (1-2w) | 🟡 Medium | ✅ |
 | 2 | **Multi-repo support** | High (1-2w) | 🟡 Medium | ✅ |
 | 3 | **Publish to crates.io** | Low (1h) | 🔥 High | ✅ |
-| 4 | **Community growth (GitHub presence)** | Ongoing | 🔥 High | ⏳ |
+| 4 | **Community growth (GitHub presence)** | Ongoing | 🔥 High | 🔶 |
+
+#### 4. Community Growth (GitHub Presence)
+
+Build developer ecosystem around OpenCrust: documentation, examples, Discord, GitHub templates.
+
+**Acceptance criteria:**
+- [ ] GitHub Discussions for Q&A
+- [ ] Contributing guide with ecosystem section
+- [ ] Benchmark comparison blog post
+- [ ] Discord/Slack community channel
+- [ ] First community contribution merged
+- [ ] All tests pass, clippy clean
+
+### Acceptance Criteria (Phase 8)
+- [x] Plugin system with at least 3 third-party tools working
+- [x] Multi-repo orchestration functional
+- [x] Published on crates.io
+- [ ] Any community contribution merged
+
+### Risks
+- Plugin API design is irreversible — get it wrong and ecosystem fragments
+- Multi-repo adds significant complexity to permission model
+- Community growth is unpredictable — cannot force organic adoption
 
 #### 1. Plugin System
 - Extend `.opencrust/tools/` with metadata, dependencies, versioning
@@ -268,6 +342,7 @@ and cross-platform foundations are solid.
 | `docs/DEPLOYMENT.md` | Private model deployment + compliance | New (Jun 17) |
 | `docs/TROUBLESHOOTING.md` | Common issues | Fresh |
 | `.uncensored/FINAL_REPORT.md` | Historical (superseded) | Archived with `.stale` |
+| `docs/ROADMAP.md` | Roadmap history and evolution | Fresh (Jun 17) |
 
 ---
 
@@ -281,6 +356,26 @@ and cross-platform foundations are solid.
 | 🔥 High | Must do before next release |
 | 🟡 Medium | Important but not blocking |
 | 🟢 Low | Nice to have |
+
+## Current Status Summary
+
+**Phase 6 (Enterprise Readiness)**: ✅ Complete
+- Token budget & cost dashboard: ✅
+- Background agent dashboard: ✅
+- Enterprise compliance packaging: ✅
+
+**Phase 7 (Cross-Platform Desktop)**: ✅ Complete (except menu bar)
+- macOS file picker + environment detection: ✅
+- macOS system notifications: ✅
+- Windows toast notifications: ✅
+- Windows file picker: ✅
+- macOS menu bar agent: 🔶
+
+**Phase 8 (Ecosystem & Community)**: ✅ Complete (except community)
+- Plugin system: ✅
+- Multi-repo support: ✅
+- Publish to crates.io: ✅
+- Community growth: 🔶
 
 ---
 

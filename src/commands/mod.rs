@@ -5,6 +5,7 @@
 
 pub mod audit;
 pub mod background;
+pub mod compliance;
 pub mod desktop;
 pub mod mcp;
 pub mod plugin;
@@ -57,6 +58,10 @@ pub async fn dispatch(
         }
         Commands::Audit { cmd } => {
             audit::handle_audit(cmd, &config).await?;
+            Ok(true)
+        }
+        Commands::Compliance { cmd } => {
+            compliance::handle_compliance(cmd, &config).await?;
             Ok(true)
         }
         Commands::Background { cmd } => {

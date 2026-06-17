@@ -338,6 +338,7 @@ impl AuditQuery {
 pub enum ExportFormat {
     Csv,
     Json,
+    Syslog,
 }
 
 pub struct AuditExport;
@@ -385,6 +386,30 @@ impl AuditExport {
                     .collect();
                 let json_str = serde_json::to_string_pretty(&json_entries)?;
                 writeln!(writer, "{}", json_str)?;
+            }
+            ExportFormat::Syslog => {
+                // Output in a format suitable for syslog ingestion
+                // Each line: timestamp hostname app[pid]: tool=X session=Y agent=Z approved=W input=... duration=...
+                let hostname = hostname::get()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                let pid = std::process::id();
+                for entry in entries {
+                    writeln!(
+                        writer,
+                        "{} {} opencrust[{}]: tool={} session={} agent={} approved={} input={} duration={}",
+                        entry.timestamp,
+                        hostname,
+                        pid,
+                        entry.tool,
+                        entry.session_id,
+                        entry.agent_type,
+                        entry.approved,
+                        entry.input.replace(' ', "_"),
+                        entry.duration_ms
+                    )?;
+                }
             }
         }
         Ok(())

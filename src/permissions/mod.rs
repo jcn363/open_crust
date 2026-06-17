@@ -23,7 +23,7 @@ pub enum Role {
 }
 
 /// Permission template defining allowed operations per role.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 #[allow(dead_code, reason = "public API for role-based access control")]
 pub struct RoleTemplate {
     pub role: Role,

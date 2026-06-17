@@ -71,6 +71,11 @@ pub enum Commands {
         #[command(subcommand)]
         cmd: AuditCommands,
     },
+    /// Enterprise compliance packaging (SOC2 reports, evidence, export)
+    Compliance {
+        #[command(subcommand)]
+        cmd: ComplianceCommands,
+    },
     /// Background agent management and dashboard
     /// Agent dashboard TUI
     Background {
@@ -334,4 +339,94 @@ pub enum RepoCommands {
     },
     /// Refresh all repository metadata
     Refresh,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum ComplianceCommands {
+    /// Generate SOC 2 Type II compliance report from evidence packages
+    Generate {
+        /// Output directory for the report
+        #[arg(long, default_value = ".")]
+        output_dir: String,
+        /// Report format: text, json, html, soc2
+        #[arg(long, default_value = "soc2")]
+        format: String,
+        /// Include evidence package in output
+        #[arg(long)]
+        include_evidence: bool,
+        /// Compliance framework: soc2, hipaa, sox, pci-dss, iso27001
+        #[arg(long, default_value = "soc2")]
+        framework: String,
+    },
+    /// Export audit logs in multiple formats (CSV, JSON, Syslog)
+    Export {
+        /// Start date (YYYY-MM-DD)
+        #[arg(long)]
+        from: Option<String>,
+        /// End date (YYYY-MM-DD)
+        #[arg(long)]
+        to: Option<String>,
+        /// Filter by tool/action name
+        #[arg(long)]
+        action: Option<String>,
+        /// Filter by approval status (approved/denied)
+        #[arg(long)]
+        status: Option<String>,
+        /// Export format: csv, json, syslog
+        #[arg(long, default_value = "csv")]
+        format: String,
+        /// Output file path (stdout if not specified)
+        #[arg(long)]
+        output: Option<String>,
+        /// Syslog server address (for syslog format)
+        #[arg(long)]
+        syslog_server: Option<String>,
+        /// Syslog facility (for syslog format)
+        #[arg(long, default_value = "local0")]
+        syslog_facility: String,
+    },
+    /// Manage role-based permission templates
+    Permissions {
+        #[command(subcommand)]
+        cmd: PermissionCommands,
+    },
+    /// Build evidence package with SHA256 manifest
+    Evidence {
+        #[arg(long)]
+        output_dir: Option<String>,
+    },
+    /// Verify an existing evidence package integrity
+    Verify {
+        /// Path to the evidence package directory
+        path: String,
+    },
+    /// Run a full compliance check (policy + evidence + report)
+    Check {
+        #[arg(long, default_value = ".")]
+        output_dir: String,
+    },
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum PermissionCommands {
+    /// List available role templates
+    List,
+    /// Show details for a specific role template
+    Show {
+        /// Role name: admin, developer, reviewer
+        role: String,
+    },
+    /// Export role template as JSON
+    Export {
+        /// Role name: admin, developer, reviewer
+        role: String,
+        /// Output file path (stdout if not specified)
+        #[arg(long)]
+        output: Option<String>,
+    },
+    /// Apply a role template to current configuration
+    Apply {
+        /// Role name: admin, developer, reviewer
+        role: String,
+    },
 }
