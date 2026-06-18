@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-06-17
+## [1.2.0] - 2026-06-18
 
 ### Added
+- **Centralized Configuration (VllmConfig Pattern)**: Added `src/config/vllm_config.rs` following vLLM's VllmConfig pattern for unified configuration management with validation at startup.
+- **Service Locator / Dependency Injection**: Added `src/core/services.rs` with `ServiceRegistry` for lazy initialization and decoupled component initialization following vLLM Phase 1 approach.
+- **Enhanced CI/CD Pipeline**: Updated `.github/workflows/ci.yml` with multi-platform (Ubuntu/macOS/Windows), multi-version (stable/beta/nightly), scheduled nightly runs, integration tests, benchmarks, and release automation.
+- **Pre-commit Hooks & DCO**: Added `.pre-commit-config.yaml` with rustfmt, clippy, trailing-whitespace, end-of-file-fixer, YAML/TOML/JSON validation, merge conflict check, and DCO sign-off validation.
+- **Version Management System**: Added `version.txt` as single source of truth with automated scripts: `check_release_version.py`, `bump_patch_version.py`, `release.sh`.
+- **Centralized Logging**: Added `src/logging.rs` for structured logging setup.
 - **PTY/TTY Stability Improvements**: Enhanced interactive PTY session handling with robust process management, improved stdin/stdout/stderr piping, and reliable session cleanup on drop. Added comprehensive test coverage for PTY spawn, write, and lifecycle operations.
 - **Documentation Site Foundation**: Added Zola-based documentation site structure (`site/`) with configuration for OpenCrust documentation at https://opencrust.github.io/opencrust/. Includes navigation, search, theming, and SEO configuration.
 - **Audit Export UI Polish**: Improved audit export command with better formatting, CSV/JSON/Syslog format support, and enhanced evidence package generation with SHA256 manifests and chain-of-custody logging.
@@ -17,11 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `ssh2` dependency from 0.10 to 0.9 for improved compatibility
 - Updated `nix` to 0.28 with proper feature configuration
 - Enhanced audit log redaction with JWT token detection and Bearer token handling
+- Added `toml` dependency for configuration serialization
+- Updated AGENTS.md with new architecture patterns documentation
+- Updated CONTRIBUTING.md with pre-commit hooks, DCO, conventional commits
 
 ### Fixed
 - PTY session cleanup now properly joins reader/stderr threads on drop
 - Audit export handles empty entries gracefully
 - Compliance evidence package verification includes all exported audit.csv and.json exports
+- Fixed MODULES.md documentation duplication issue (Event Loop Mode Handlers section was duplicated 15+ times)
+- Updated README.md and ARCHITECTURE.md with new module structure
 
 ### Security
 - Audit log redaction now covers JWT tokens (three-part base64) and Authorization Bearer tokens

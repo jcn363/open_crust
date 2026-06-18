@@ -18,13 +18,13 @@ cargo test
 
 **Output:**
 ```
-running 47 tests
+running 418 tests
 test app::tests::test_tab_switching ... ok
 test config::tests::test_parse_config ... ok
 test permissions::tests::test_file_pattern_match ... ok
 ...
 
-test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured
+test result: ok. 418 passed; 0 failed; 0 ignored; 0 measured; finished in 2.02s
 ```
 
 ### Run Tests for One Module

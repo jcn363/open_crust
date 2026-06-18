@@ -222,6 +222,8 @@ opencrust/
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
 │   ├── config.rs          # Config loading/saving (11 providers, model_aliases, subagent cfg)
+│   ├── config/
+│   │   └── vllm_config.rs # Centralized configuration (VllmConfig pattern from vLLM)
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation
@@ -250,9 +252,37 @@ opencrust/
 │   ├── json_utils.rs      # JSON path utilities
 │   ├── jsonrpc.rs         # JSON-RPC protocol primitives
 │   ├── acp.rs             # Agent Communication Protocol (ACP) stdio interface
+│   ├── logging.rs         # Centralized logging setup
+│   │
+│   ├── core/              # Core services (Service Locator / DI pattern)
+│   │   ├── mod.rs
+│   │   └── services.rs    # Service registry for dependency injection
 │   │
 │   ├── models.rs          # Model list caching & fetcher
 │   ├── compliance.rs      # Compliance & evidence package generation
+│   │
+│   ├── event_loop/        # TUI event loop and mode handlers
+│   │   ├── mod.rs         # Main event loop, global key handling, mode dispatch
+│   │   ├── modes/         # Mode-specific key handlers
+│   │   │   ├── mod.rs     # dispatch_mode() router
+│   │   │   ├── types.rs   # ModeHandler trait, ModeAction, HandlerContext
+│   │   │   ├── normal.rs  # Normal mode navigation
+│   │   │   ├── insert.rs  # Insert mode editing
+│   │   │   ├── review.rs  # Review mode diff navigation
+│   │   │   ├── servers.rs # MCP server browser
+│   │   │   ├── skill_browser.rs # Skill browser
+│   │   │   ├── plugin_browser.rs # Plugin browser
+│   │   │   ├── command_palette.rs # Command palette
+│   │   │   ├── help.rs    # Help mode
+│   │   │   ├── mcp_showcase.rs # MCP showcase mode
+│   │   │   └── mission_control.rs # Mission control mode
+│   │   ├── keybinds.rs    # Keybind matching utilities
+│   │   ├── slash_commands.rs # Slash command handling
+│   │   ├── response_handler.rs # LLM response processing
+│   │   ├── background_tasks.rs # Background task notifications
+│   │   ├── input_prediction.rs # Input prediction (300ms debounce)
+│   │   ├── skill_hot_reload.rs # Skill hot-reload detection
+│   │   └── frame_limiter.rs # Frame rate limiting
 │   │
 │   ├── orchestrator/      # Multi-agent orchestration
 │   │   ├── mod.rs         # Coordinator entry point
