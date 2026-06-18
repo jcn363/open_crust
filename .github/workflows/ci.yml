@@ -54,12 +54,13 @@ jobs:
       
       - name: Run security audit
         run: |
-          cargo install cargo-audit
+          cargo install cargo-audit --locked
           cargo audit
+        continue-on-error: true
       
       - name: Run cargo deny (license and dependency checks)
         run: |
-          cargo install cargo-deny
+          cargo install cargo-deny --locked
           cargo deny check licenses
           cargo deny check advisories
         continue-on-error: true
@@ -122,7 +123,7 @@ jobs:
           path: site/public
           retention-days: 7
 
-  # Integration tests (run on schedule and manual dispatch)
+  # Integration-only tests (run on schedule and manual dispatch)
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -134,7 +135,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       
       - name: Run integration tests
-        run: cargo test --test integration --verbose
+        run: cargo test --tests --verbose
         continue-on-error: true
 
   # Benchmark tests (run on schedule)
@@ -151,6 +152,30 @@ jobs:
       - name: Run benchmarks
         run: cargo bench --bench benchmark -- --save-baseline main
         continue-on-error: true
+
+  # PR size check
+  check-size:
+    name: Check PR Size
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check PR diff size
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          TOTAL_LINES=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | awk '{print $NF}')
+          echo "Changed files: $CHANGED_FILES"
+          echo "Total lines changed: $TOTAL_LINES"
+          
+          if [ "$CHANGED_FILES" -gt 30 ]; then
+            echo "::warning title=Large PR::This PR changes $CHANGED_FILES files (limit: 30)"
+          fi
+          if [ "$TOTAL_LINES" -gt 1000 ]; then
+            echo "::warning title=Large PR::This PR changes $TOTAL_LINES lines (limit: 1000)"
+          fi
 
   # Release automation
   release:

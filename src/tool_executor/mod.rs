@@ -71,7 +71,8 @@ impl ToolExecutor {
         plugin_manager: Arc<Mutex<PluginManager>>,
     ) -> Self {
         // LRU cache with max 1000 entries (~100MB for typical file sizes)
-        let cache_capacity = NonZeroUsize::new(1000).unwrap();
+        let cache_capacity = NonZeroUsize::new(1000)
+            .unwrap_or_else(|| unreachable!("1000 > 0"));
         Self {
             config,
             mcp_manager,

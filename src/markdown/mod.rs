@@ -223,7 +223,8 @@ pub fn to_html(md: &str) -> String {
     // Headers
     for i in (1..=6).rev() {
         let pattern = format!(r"(?m)^{}\s+(.+)$", "#".repeat(i));
-        let re = Regex::new(&pattern).unwrap();
+        let re = Regex::new(&pattern)
+            .unwrap_or_else(|e| panic!("heading regex pattern should be valid: {e}"));
         html = re
             .replace(&html, |caps: &regex::Captures| {
                 format!("<h{}>{}</h{}>", i, &caps[1], i)

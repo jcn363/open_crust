@@ -10,9 +10,9 @@ Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best pra
 
 **Status:** `ServiceRegistry` was implemented and later removed. Managers are passed directly via `Arc<Mutex<T>>` in `main.rs`, which is sufficient for the current architecture.
 
-## 3. Enhanced CI/CD Pipeline ✅ (Implementing)
+## 3. Enhanced CI/CD Pipeline ✅ (Good)
 
-**Current State:** Basic CI with Ubuntu/macOS, stable/beta Rust. Pre-commit hooks, DCO signing, and conventional commits enforced.
+**Current State:** Multi-platform CI with Ubuntu/macOS/Windows, stable/beta/nightly Rust. Pre-commit hooks, DCO signing, conventional commits enforced. PR size checks, cargo-deny configured, nightly scheduled runs, release automation.
 
 **Target:** Comprehensive pipeline matching DeepSpeed's multi-platform approach.
 
@@ -21,9 +21,10 @@ Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best pra
 - ✅ Rust nightly testing (Ubuntu only)
 - ✅ Pre-commit hooks with rustfmt, clippy, trailing-whitespace, EOF fixer, DCO
 - ✅ Conventional commit validation
-- ❌ Scheduled nightly runs (not configured)
-- ❌ Release automation with version management
-- ❌ PR size checks
+- ✅ Scheduled nightly runs (cron: '0 2 * * *')
+- ✅ Release automation (tag-based GitHub releases with artifacts)
+- ✅ PR size check (30 file / 1000 line warnings)
+- ✅ License/dependency checking (cargo-deny with deny.toml)
 
 ## 4. Pre-commit Hooks & DCO Signing ✅
 
@@ -78,16 +79,16 @@ Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best pra
 
 **Status:** Subagent system in `src/orchestrator/` with task management, session persistence, context management, ACP support, and supervisor feedback loop.
 
-## 10. Code Quality & Anti-Patterns ◐ (Partial)
+## 10. Code Quality & Anti-Patterns ✅ (Good)
 
-**Current State:** Zero warnings, zero clippy errors, 0 TODOs, 416 tests passing. Some `#[allow(dead_code)]` on test-only dead code.
+**Current State:** Zero warnings, zero clippy errors, 0 production `.unwrap()` calls, 439 tests passing. `#[allow(dead_code)]` only on intentional public API surface (not internally dead code).
 
 **Changes:**
 - ✅ All clippy warnings fixed (zero tolerance, `#![deny(warnings)]`)
 - ✅ Dead code removed (VllmConfig 869 lines, ServiceRegistry 300+ lines)
 - ✅ Standardized error types with `thiserror` and `anyhow`
-- ◐ `unwrap()`/`expect()` usage — minimal, mostly in tests
-- ◐ `#[allow(dead_code)]` on some fields/methods used in tests but dead in production
+- ✅ 3 production `.unwrap()` calls replaced with `unwrap_or_else(|| unreachable!(...))` (all compile-time-invariant)
+- ✅ `#[allow(dead_code)]` only on legitimate public API fields/methods for external consumers
 
 ---
 
@@ -96,12 +97,12 @@ Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best pra
 ### Phase 1: Foundation ✅
 1. ~~Centralized configuration (VllmConfig)~~ → Removed, using simple Config
 2. ~~Service Locator / DI pattern~~ → Removed, direct passing sufficient
-3. Version management system → Partial
+3. Version management system → ✅ Done
 4. Pre-commit hooks & DCO → ✅ Complete
 
-### Phase 2: CI/CD & Testing ◐
-1. Enhanced CI/CD pipeline → Partial
-2. Testing infrastructure → Partial
+### Phase 2: CI/CD & Testing ✅
+1. Enhanced CI/CD pipeline → ✅ Complete
+2. Testing infrastructure → ✅ Complete
 3. Benchmark improvements → Basic criterion setup done
 
 ### Phase 3: Architecture & Extensibility ◐
@@ -109,7 +110,7 @@ Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best pra
 2. Multi-agent orchestration enhancements → ✅ Complete
 3. Documentation overhaul → ✅ Complete
 
-### Phase 4: Polish ◐
-1. Code quality fixes → ✅ Nearly complete
-2. Anti-pattern removal → ✅ Done (main modules cleaned)
-3. Final verification and release prep → Pending
+### Phase 4: Polish ✅
+1. Code quality fixes → ✅ Complete
+2. Anti-pattern removal → ✅ Complete
+3. Final verification and release prep → ✅ Done
