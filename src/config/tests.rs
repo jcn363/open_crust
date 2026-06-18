@@ -40,6 +40,7 @@ fn validate_all_providers_missing_keys() {
         (ProviderType::Replicate, "replicate/model"),
         (ProviderType::DeepSeek, "deepseek-chat"),
         (ProviderType::LocalAi, "local-model"),
+        (ProviderType::Unsloth, "unsloth-model"),
     ];
 
     for (provider, model) in providers {
@@ -56,6 +57,8 @@ fn validate_all_providers_missing_keys() {
             deepseek_api_key: None,
             localai_url: None,
             localai_api_key: None,
+            unsloth_url: None,
+            unsloth_api_key: None,
             ..Default::default()
         };
         let result = cfg.validate();
@@ -141,6 +144,10 @@ fn provider_type_from_str_all_variants() {
         "localai".parse::<ProviderType>().unwrap(),
         ProviderType::LocalAi
     );
+    assert_eq!(
+        "unsloth".parse::<ProviderType>().unwrap(),
+        ProviderType::Unsloth
+    );
 }
 
 #[test]
@@ -161,6 +168,7 @@ fn provider_type_display_all_variants() {
     assert_eq!(ProviderType::Replicate.to_string(), "replicate");
     assert_eq!(ProviderType::DeepSeek.to_string(), "deepseek");
     assert_eq!(ProviderType::LocalAi.to_string(), "localai");
+    assert_eq!(ProviderType::Unsloth.to_string(), "unsloth");
 }
 
 // --- Config ---

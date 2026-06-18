@@ -22,6 +22,10 @@ pub enum ProviderType {
     Replicate,
     DeepSeek,
     LocalAi,
+    /// Unsloth Studio — OpenAI-compatible local inference API
+    /// Supports 500+ models with 2x faster training, 70% less VRAM
+    /// Default URL: http://localhost:8000/v1
+    Unsloth,
 }
 
 impl fmt::Display for ProviderType {
@@ -38,6 +42,7 @@ impl fmt::Display for ProviderType {
             ProviderType::Replicate => write!(f, "replicate"),
             ProviderType::DeepSeek => write!(f, "deepseek"),
             ProviderType::LocalAi => write!(f, "localai"),
+            ProviderType::Unsloth => write!(f, "unsloth"),
         }
     }
 }
@@ -58,6 +63,7 @@ impl FromStr for ProviderType {
             "replicate" => Ok(ProviderType::Replicate),
             "deepseek" => Ok(ProviderType::DeepSeek),
             "localai" | "local_ai" | "local-ai" => Ok(ProviderType::LocalAi),
+            "unsloth" => Ok(ProviderType::Unsloth),
             _ => Err(format!("Unknown provider: {}", s)),
         }
     }

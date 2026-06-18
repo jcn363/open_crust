@@ -9,7 +9,7 @@ opencrust/
 │   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
-│   ├── config.rs          # Config loading/saving (11 providers, model_aliases, subagent cfg)
+│   ├── config.rs          # Config loading/saving (12 providers, model_aliases, subagent cfg)
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation

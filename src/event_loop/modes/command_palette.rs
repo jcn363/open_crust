@@ -46,6 +46,7 @@ impl ModeHandler for CommandPaletteHandler {
                             ProviderType::Replicate,
                             ProviderType::DeepSeek,
                             ProviderType::LocalAi,
+                            ProviderType::Unsloth,
                         ];
                         let current_idx = providers
                             .iter()

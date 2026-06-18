@@ -361,6 +361,26 @@ docker run -p 8080:8080 -e GALLERIES='[{"name":"ollama","url":"https://raw.githu
 # Then configure OpenCrust to use localhost:8080
 ```
 
+### 12. Unsloth Studio
+
+[Unsloth Studio](https://unsloth.ai/docs/new/studio) provides an OpenAI-compatible local inference API. Supports 500+ models with 2x faster training and 70% less VRAM usage.
+
+```json
+{
+  "unsloth_url": "http://localhost:8000",
+  "unsloth_api_key": "your-api-key-if-configured"
+}
+```
+
+**Available models:**
+- Any Unsloth-optimized model from HuggingFace (500+ models)
+
+**Setup:**
+
+1. Install Unsloth: `pip install unsloth`
+2. Start the Studio: `python -m unsloth.studio`
+3. Configure OpenCrust to use the Unsloth endpoint
+
 ### Choosing a Provider
 
 | Use Case | Recommended | Why |
@@ -369,6 +389,7 @@ docker run -p 8080:8080 -e GALLERIES='[{"name":"ollama","url":"https://raw.githu
 | **Balanced** | OpenRouter | Access to many models, good pricing |
 | **Fast & cheap** | Groq / Together AI | Very fast inference |
 | **Local only** | Ollama | On-device, no API needed, privacy |
+| **Local training** | Unsloth Studio | 2x faster training, 70% less VRAM, 500+ models |
 | **Cost-sensitive** | Ollama (free) or Groq (fast + free tier) | Minimize API spend |
 | **Production** | Multiple providers with fallback | Redundancy, avoid downtime |
 

@@ -24,7 +24,7 @@ engineering teams.
 ### Core Platform (Phases 1-2 — ✅ Complete)
 - Rust TUI with Ratatui: tabbed chat/tasks views, file tree sidebar, command palette
 - LLM client loop with 11 provider integrations (Ollama, OpenRouter, OpenAI, Gemini,
-  Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI)
+  Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI, Unsloth)
 - Tool system: MCP servers (JSON-RPC), LSP integration (code completion + diagnostics),
   custom script tools (auto-discovered from `.opencrust/tools/`)
 - RAG semantic search (vector-based, Ollama embeddings)

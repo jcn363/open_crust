@@ -497,9 +497,14 @@ impl ToolExecutor {
         use std::fs;
         use walkdir::WalkDir;
 
-        // Simple implementation - in production, use a proper regex library
+        // Use current working directory with path validation
+        let root = std::env::current_dir()
+            .map_err(|e| format!("Failed to get current directory: {}", e))?;
+        let validated_root = crate::security::validate_path(&*root.to_string_lossy())
+            .map_err(|e| format!("Invalid root path: {}", e))?;
+
         let mut count = 0;
-        for entry in WalkDir::new(".").into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(&validated_root).into_iter().filter_map(|e| e.ok()) {
             let path = entry.path();
             if include != "*" {
                 let ext = path

@@ -45,6 +45,7 @@ fn provider_str(provider: &ProviderType) -> &'static str {
         ProviderType::Replicate => "Replicate",
         ProviderType::DeepSeek => "DeepSeek",
         ProviderType::LocalAi => "LocalAI",
+        ProviderType::Unsloth => "Unsloth",
     }
 }
 

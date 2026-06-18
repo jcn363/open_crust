@@ -117,7 +117,8 @@ impl LlmClient {
             | ProviderType::TogetherAi
             | ProviderType::Replicate
             | ProviderType::DeepSeek
-            | ProviderType::LocalAi => self.generate_openai(&messages, None).await,
+            | ProviderType::LocalAi
+            | ProviderType::Unsloth => self.generate_openai(&messages, None).await,
         };
 
         let summary = match summary_result {

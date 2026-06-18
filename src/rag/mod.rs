@@ -324,15 +324,14 @@ impl RagManager {
         } else {
             let mut output = format!("Semantic search results for '{}':\n", query);
             for (emb, similarity) in results {
-                output.push_str(&format!(
-                    "\n[{}] {} (lines {}-{}, similarity: {:.3})\n{}\n",
-                    emb.file_path,
-                    emb.file_path,
-                    emb.line_start,
-                    emb.line_end,
-                    similarity,
-                    emb.content.lines().take(5).collect::<Vec<_>>().join("\n")
-                ));
+                    output.push_str(&format!(
+                        "\n[{}] (lines {}-{}, similarity: {:.3})\n{}\n",
+                        emb.file_path,
+                        emb.line_start,
+                        emb.line_end,
+                        similarity,
+                        emb.content.lines().take(5).collect::<Vec<_>>().join("\n")
+                    ));
             }
             output
         }
@@ -357,6 +356,8 @@ fn is_code_file(path: &str) -> bool {
     let code_extensions = [
         "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp", "rb", "php",
         "swift", "kt", "cs", "sh", "bash", "zsh", "toml", "yaml", "yml", "json", "md",
+        "zig", "dart", "lua", "r", "scala", "elm", "clj", "cljs", "ex", "exs", "gleam",
+        "wgsl", "roc", "mojo", "typst",
     ];
 
     Path::new(path)

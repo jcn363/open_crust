@@ -27,6 +27,7 @@ impl LlmClient {
             ProviderType::Replicate => self.generate_replicate(messages, model_override).await,
             ProviderType::DeepSeek => self.generate_deepseek(messages, model_override).await,
             ProviderType::LocalAi => self.generate_local_ai(messages, model_override).await,
+            ProviderType::Unsloth => self.generate_unsloth(messages, model_override).await,
         }
     }
 
@@ -81,6 +82,7 @@ impl LlmClient {
                 ProviderType::Replicate => self.config.replicate_api_key.is_some(),
                 ProviderType::DeepSeek => self.config.deepseek_api_key.is_some(),
                 ProviderType::LocalAi => self.config.localai_url.is_some(),
+            ProviderType::Unsloth => self.config.unsloth_url.is_some(),
             };
 
             if !has_key {
@@ -138,6 +140,9 @@ impl LlmClient {
                         }
                         Ok(ProviderType::LocalAi) => {
                             self.generate_local_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Unsloth) => {
+                            self.generate_unsloth(messages, model_override).await
                         }
                         Err(_) => continue,
                     }
@@ -455,6 +460,40 @@ impl LlmClient {
             .cloned()
             .unwrap_or(json!({})))
     }
+
+    /// Generate via Unsloth Studio (OpenAI-compatible local inference API)
+    /// Default URL: http://localhost:8000/v1
+    pub(crate) async fn generate_unsloth(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let base_url = self
+            .config
+            .unsloth_url
+            .as_deref()
+            .unwrap_or("http://localhost:8000");
+        let api_key = self.config.unsloth_api_key.as_deref().unwrap_or("");
+        let auth = if api_key.is_empty() {
+            None
+        } else {
+            Some(("Authorization", format!("Bearer {}", api_key)))
+        };
+        let res_json = self
+            .generate_completion(
+                messages,
+                &format!("{}/v1/chat/completions", base_url),
+                auth,
+                model_override,
+            )
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
 }
 
 /// Extract content from a provider response, handling multiple response formats.
@@ -472,7 +511,8 @@ pub(crate) fn extract_content(provider: &ProviderType, res: &Value) -> Option<St
         | ProviderType::TogetherAi
         | ProviderType::Replicate
         | ProviderType::DeepSeek
-        | ProviderType::LocalAi => res
+        | ProviderType::LocalAi
+        | ProviderType::Unsloth => res
             .get("choices")
             .and_then(|c| c.get(0))
             .and_then(|c| c.get("message"))

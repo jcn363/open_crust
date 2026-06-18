@@ -314,7 +314,15 @@ impl LlmClient {
 
                         match self.tool_executor.execute(name, &args).await {
                             Ok(res) => res,
-                            Err(e) => format!("Error executing tool '{}': {}", name, e),
+                            Err(e) => {
+                                // Self-healing: structured error with original args
+                                // lets the LLM retry with corrected parameters
+                                format!(
+                                    "Tool '{}' failed: {}\n\nOriginal arguments: {}\n\n{}",
+                                    name, e, args_str,
+                                    "Suggestions:\n- Check argument spelling and types\n- Ensure paths exist and are valid\n- Use correct parameter names shown in the tool schema"
+                                )
+                            }
                         }
                     } else {
                         let _ = progress_tx

@@ -91,6 +91,12 @@ pub struct Config {
     #[serde(default)]
     pub localai_api_key: Option<String>,
 
+    // --- Unsloth Studio configuration ---
+    #[serde(default)]
+    pub unsloth_url: Option<String>,
+    #[serde(default)]
+    pub unsloth_api_key: Option<String>,
+
     // --- Orchestrator configuration ---
     #[serde(default)]
     pub subagent_max_concurrent: Option<usize>,
@@ -165,6 +171,8 @@ impl Default for Config {
             deepseek_api_key: None,
             localai_url: None,
             localai_api_key: None,
+            unsloth_url: Some("http://localhost:8000".to_string()),
+            unsloth_api_key: None,
             subagent_max_concurrent: None,
             subagent_timeout_secs: None,
             model_auto_refresh: Some(ModelAutoRefreshConfig::default()),
@@ -310,6 +318,12 @@ impl Config {
                         .push("LocalAi provider selected but localai_url is not set".to_string());
                 }
             }
+            ProviderType::Unsloth => {
+                if self.unsloth_url.as_ref().is_none_or(|v| v.is_empty()) {
+                    warnings
+                        .push("Unsloth provider selected but unsloth_url is not set".to_string());
+                }
+            }
         }
 
         // Check model is not empty
@@ -388,6 +402,7 @@ impl Config {
             ProviderType::Replicate => 8_000,
             ProviderType::DeepSeek => 128_000,
             ProviderType::LocalAi => 8_000,
+            ProviderType::Unsloth => 32_000, // local models, generous default
         }
     }
 
