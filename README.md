@@ -175,7 +175,7 @@ Configure your environment at `~/.config/opencrust/config.json`:
 }
 ```
 
-**Supported providers (11):** `ollama`, `openrouter`, `openai`, `gemini`, `mistral`, `anthropic`, `groq`, `togetherai`, `replicate`, `deepseek`, `localai`.
+**Supported providers (12):** `ollama`, `openrouter`, `openai`, `gemini`, `mistral`, `anthropic`, `groq`, `togetherai`, `replicate`, `deepseek`, `localai`, `unsloth`.
 
 Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via the `model_aliases` config section. Subagent-specific provider configs are also supported for multi-agent routing.
 
@@ -221,7 +221,7 @@ opencrust/
 │   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
-│   ├── config.rs          # Config loading/saving (11 providers, model_aliases, subagent cfg)
+│   ├── config.rs          # Config loading/saving (12 providers, model_aliases, subagent cfg)
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation
@@ -288,12 +288,20 @@ opencrust/
 │   │   ├── mod.rs
 │   │   └── tui.rs
 │   │
+│   ├── providers/         # Provider abstraction layer
+│   │   ├── mod.rs         # Generic Provider trait & ProviderRegistry
+│   │   ├── desktop.rs     # DesktopProvider trait & DefaultDesktopProvider
+│   │   ├── notifications.rs # NotificationProvider trait
+│   │   ├── file_picker.rs # FilePickerProvider trait
+│   │   ├── tool.rs        # ToolProvider trait
+│   │   └── plugin.rs      # PluginProvider trait & PluginWrapper
+│   │
 │   ├── ui/                # TUI rendering (ratatui)
 │   │   ├── chat.rs        # Chat sidebar & message list
 │   │   ├── layout.rs      # Layout splitting
 │   │   └── popups.rs      # Review/servers/skills/command palette popups
 │   │
-│   └── desktop/           # Desktop integration
+│   └── desktop/           # Desktop integration (legacy, being migrated to providers/)
 │       ├── mod.rs
 │       ├── detection.rs   # Desktop environment detection
 │       ├── notifications.rs # System notifications (DBus + notify-send)
