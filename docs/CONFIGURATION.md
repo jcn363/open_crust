@@ -17,13 +17,9 @@ OpenCrust works with no config file. Create one to customize:
 mkdir -p ~/.config/opencrust
 cat > ~/.config/opencrust/config.json << 'EOF'
 {
-  "default_model": "gpt-4",
-  "default_provider": "openai",
-  "providers": {
-    "openai": {
-      "api_key": "sk-YOUR_KEY_HERE"
-    }
-  }
+  "provider": "openai",
+  "model": "gpt-4",
+  "openai_key": "sk-YOUR_KEY_HERE"
 }
 EOF
 chmod 600 ~/.config/opencrust/config.json
@@ -36,15 +32,15 @@ chmod 600 ~/.config/opencrust/config.json
 Options are resolved in this order (first match wins):
 
 1. **CLI flags** — `opencrust --model gpt-4-turbo`
-2. **Environment variables** — `OPENCRUST_MODEL=gpt-4-turbo`
+2. **Environment variables** — `OPENCRUST_MODEL=gpt-4-turbo` (maps to the `model` field)
 3. **config.json** — JSON file contents
 4. **Defaults** — Built-in hardcoded values
 
 **Example:**
 
 ```bash
-# Built-in default: gpt-3.5-turbo
-# Set in config: "default_model": "gpt-4"
+# Built-in default: "openrouter/free" via OpenRouter
+# Set in config: "model": "gpt-4", "openai_key": "sk-..."
 # Set environment: export OPENCRUST_MODEL=claude-3-opus
 # CLI flag: opencrust --model gemini-pro
 
@@ -59,14 +55,20 @@ Options are resolved in this order (first match wins):
 
 ```json
 {
-  "default_model": "gpt-4",                    // Default LLM model
-  "default_provider": "openai",                // Default provider
+  "provider": "openai",                        // LLM provider (see below)
+  "model": "gpt-4",                            // Model name for the provider
   "context_budget": 8000,                      // Max tokens for context
-  "max_retries": 3,                            // Tool retry attempts
-  "timeout_seconds": 30,                       // Default timeout
-  "auto_save_session": true,                   // Save session on exit
-  "offline_mode": false,                       // Disable network
-  "theme": "dark"                              // TUI theme (dark/light)
+  "summarization_threshold": 0.75,             // Context pressure for auto-summarize
+  "auto_summarize": true,                      // Auto-summarize when near token limit
+  "allowed_domains": [],                       // Allowed network domains
+  "instructions": [],                          // Custom system prompt additions
+  "token_budget_max_tokens": 1000000,          // Max tokens per session
+  "token_budget_enabled": true,                // Enforce token budget
+  "fallback_chain": [],                        // Provider failover order
+  "role": "developer",                         // Role-based access (admin/developer/reviewer)
+  "compliance_mode": false,                    // Enable compliance logging
+  "audit_retention_days": 365,                 // Audit log retention
+  "audit_max_size_bytes": 104857600            // Max audit log size (100MB)
 }
 ```
 
@@ -74,14 +76,20 @@ Options are resolved in this order (first match wins):
 
 | Setting | Type | Default | Notes |
 |---------|------|---------|-------|
-| `default_model` | string | `"gpt-4"` | Model to use if not specified |
-| `default_provider` | string | `"openai"` | Provider to use if not specified |
-| `context_budget` | number | `8000` | Max tokens to include in context (reduce for smaller models) |
-| `max_retries` | number | `3` | How many times to retry failed tools |
-| `timeout_seconds` | number | `30` | How long to wait for LLM/tools before timeout |
-| `auto_save_session` | boolean | `true` | Automatically save session on exit |
-| `offline_mode` | boolean | `false` | If true, disable all network access |
-| `theme` | string | `"dark"` | TUI color scheme |
+| `provider` | string | `"openrouter"` | LLM provider name (see provider list below) |
+| `model` | string | `"openrouter/free"` | Model to use with the selected provider |
+| `context_budget` | number (optional) | auto | Max tokens for context (provider-dependent) |
+| `summarization_threshold` | float (optional) | `0.75` | Context pressure (0.0-1.0) to trigger summarization |
+| `auto_summarize` | boolean | `true` | Automatically summarize context when approaching token limit |
+| `allowed_domains` | string[] | `[]` | Whitelist of network domains for tool access |
+| `instructions` | string[] | `[]` | Custom instructions added to system prompt |
+| `token_budget_max_tokens` | number | `1000000` | Hard cap on tokens per session |
+| `token_budget_enabled` | boolean | `true` | Enable/disable token budget enforcement |
+| `fallback_chain` | string[] | `[]` | Ordered provider names for failover (e.g. `["openai", "anthropic"]`) |
+| `role` | string | `"developer"` | RBAC role: `"admin"`, `"developer"`, `"reviewer"` |
+| `compliance_mode` | boolean | `false` | Enable structured compliance evidence logging |
+| `audit_retention_days` | number | `365` | Days to keep audit log events |
+| `audit_max_size_bytes` | number | `104857600` | Max audit log file size (100MB) |
 
 ---
 
@@ -89,29 +97,27 @@ Options are resolved in this order (first match wins):
 
 ### Configuration Structure
 
+OpenCrust uses a flat config layout — each provider's API key/URL is a top-level field:
+
 ```json
 {
-  "providers": {
-    "provider_name": {
-      "api_key": "...",        // or env var
-      "base_url": "...",       // (optional)
-      "organization": "...",   // (optional)
-      "models": ["model1", "model2"]
-    }
-  }
+  "provider": "openai",
+  "model": "gpt-4",
+  "openai_key": "sk-...",
+  "anthropic_api_key": "sk-ant-..."
 }
 ```
+
+Some providers need a URL field instead of (or in addition to) a key: `ollama_url`,
+`localai_url`, `unsloth_url`.
 
 ### 1. OpenAI
 
 ```json
 {
-  "providers": {
-    "openai": {
-      "api_key": "sk-YOUR_KEY_HERE",
-      "organization": "org-xyz"  // Optional
-    }
-  }
+  "provider": "openai",
+  "model": "gpt-4",
+  "openai_key": "sk-YOUR_KEY_HERE"
 }
 ```
 
@@ -129,11 +135,9 @@ Options are resolved in this order (first match wins):
 
 ```json
 {
-  "providers": {
-    "anthropic": {
-      "api_key": "sk-ant-YOUR_KEY_HERE"
-    }
-  }
+  "provider": "anthropic",
+  "model": "claude-3-opus-20240229",
+  "anthropic_api_key": "sk-ant-YOUR_KEY_HERE"
 }
 ```
 
@@ -150,11 +154,9 @@ Options are resolved in this order (first match wins):
 
 ```json
 {
-  "providers": {
-    "gemini": {
-      "api_key": "YOUR_GEMINI_API_KEY"
-    }
-  }
+  "provider": "gemini",
+  "model": "gemini-1.5-pro",
+  "gemini_api_key": "YOUR_GEMINI_API_KEY"
 }
 ```
 
@@ -172,11 +174,9 @@ Options are resolved in this order (first match wins):
 
 ```json
 {
-  "providers": {
-    "ollama": {
-      "base_url": "http://localhost:11434"
-    }
-  }
+  "provider": "ollama",
+  "model": "mistral",
+  "ollama_url": "http://localhost:11434"
 }
 ```
 
@@ -213,11 +213,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "openrouter": {
-      "api_key": "sk-or-YOUR_KEY_HERE"
-    }
-  }
+  "provider": "openrouter",
+  "model": "openrouter/free",
+  "openrouter_key": "sk-or-YOUR_KEY_HERE"
 }
 ```
 
@@ -237,11 +235,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "mistral": {
-      "api_key": "YOUR_MISTRAL_API_KEY"
-    }
-  }
+  "provider": "mistral",
+  "model": "mistral-large",
+  "mistral_api_key": "YOUR_MISTRAL_API_KEY"
 }
 ```
 
@@ -258,11 +254,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "groq": {
-      "api_key": "YOUR_GROQ_API_KEY"
-    }
-  }
+  "provider": "groq",
+  "model": "mixtral-8x7b-32768",
+  "groq_api_key": "YOUR_GROQ_API_KEY"
 }
 ```
 
@@ -280,11 +274,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "togetherai": {
-      "api_key": "YOUR_TOGETHER_API_KEY"
-    }
-  }
+  "provider": "togetherai",
+  "model": "meta-llama/Llama-2-70b-chat-hf",
+  "together_api_key": "YOUR_TOGETHER_API_KEY"
 }
 ```
 
@@ -301,11 +293,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "replicate": {
-      "api_key": "YOUR_REPLICATE_API_KEY"
-    }
-  }
+  "provider": "replicate",
+  "model": "meta/llama-2-70b-chat",
+  "replicate_api_key": "YOUR_REPLICATE_API_KEY"
 }
 ```
 
@@ -322,11 +312,9 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "deepseek": {
-      "api_key": "YOUR_DEEPSEEK_API_KEY"
-    }
-  }
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "deepseek_api_key": "YOUR_DEEPSEEK_API_KEY"
 }
 ```
 
@@ -342,11 +330,10 @@ curl http://localhost:11434/api/tags
 
 ```json
 {
-  "providers": {
-    "localai": {
-      "base_url": "http://localhost:8080"
-    }
-  }
+  "provider": "localai",
+  "model": "any-ggml-model",
+  "localai_url": "http://localhost:8080",
+  "localai_api_key": "optional-api-key"
 }
 ```
 
@@ -367,6 +354,8 @@ docker run -p 8080:8080 -e GALLERIES='[{"name":"ollama","url":"https://raw.githu
 
 ```json
 {
+  "provider": "unsloth",
+  "model": "any-huggingface-model",
   "unsloth_url": "http://localhost:8000",
   "unsloth_api_key": "your-api-key-if-configured"
 }
@@ -383,15 +372,15 @@ docker run -p 8080:8080 -e GALLERIES='[{"name":"ollama","url":"https://raw.githu
 
 ### Choosing a Provider
 
-| Use Case | Recommended | Why |
-|----------|-------------|-----|
-| **Best quality** | OpenAI (gpt-4) / Anthropic (Claude-3-opus) | Most capable, best reasoning |
-| **Balanced** | OpenRouter | Access to many models, good pricing |
-| **Fast & cheap** | Groq / Together AI | Very fast inference |
-| **Local only** | Ollama | On-device, no API needed, privacy |
-| **Local training** | Unsloth Studio | 2x faster training, 70% less VRAM, 500+ models |
-| **Cost-sensitive** | Ollama (free) or Groq (fast + free tier) | Minimize API spend |
-| **Production** | Multiple providers with fallback | Redundancy, avoid downtime |
+| Use Case | Provider | Config Field | Why |
+|----------|----------|-------------|-----|
+| **Best quality** | `openai` / `anthropic` | `openai_key` / `anthropic_api_key` | Most capable, best reasoning |
+| **Balanced** | `openrouter` | `openrouter_key` | Access to many models, good pricing |
+| **Fast & cheap** | `groq` / `togetherai` | `groq_api_key` / `together_api_key` | Very fast inference |
+| **Local only** | `ollama` | `ollama_url` | On-device, no API needed, privacy |
+| **Local training** | `unsloth` | `unsloth_url` | 2x faster training, 70% less VRAM |
+| **Cost-sensitive** | `ollama` (free) / `groq` (free tier) | `ollama_url` / `groq_api_key` | Minimize API spend |
+| **Production** | Any with `fallback_chain` | Multiple key fields | Redundancy, avoid downtime |
 
 ---
 
@@ -615,7 +604,7 @@ opencrust
 
 ```json
 {
-  "permissions": {
+  "permission": {
     "file_patterns": [
       "src/**",
       "tests/**",
@@ -666,28 +655,23 @@ opencrust
 
 ```json
 {
-  "theme": "dark",              // or "light"
+  "theme": {
+    "name": "dark",              // or "light"
+    "colors": {
+      "background": "#1e1e1e",
+      "foreground": "#e0e0e0",
+      "accent": "#0091ff",
+      "error": "#ff6b6b",
+      "success": "#51cf66",
+      "warning": "#ffd93d"
+    }
+  },
   "tui": {
     "animations": true,          // Enable smooth transitions
     "border_style": "rounded",    // "rounded", "double", "thick"
     "show_line_numbers": true,
     "tab_size": 2,
     "font_size": 12
-  }
-}
-```
-
-### Colors (Dark Theme)
-
-```json
-{
-  "colors": {
-    "background": "#1e1e1e",
-    "foreground": "#e0e0e0",
-    "accent": "#0091ff",
-    "error": "#ff6b6b",
-    "success": "#51cf66",
-    "warning": "#ffd93d"
   }
 }
 ```
@@ -729,14 +713,10 @@ opencrust
 
 ```json
 {
-  "audit": {
-    "enabled": true,
-    "retention_events": 100000,       // Keep last 100K events
-    "retention_days": 365,            // Keep 1 year
-    "verbose": false,                 // Log all tool outputs
-    "export_url": "",                 // SIEM export URL (optional)
-    "export_interval_hours": 24       // Export frequency
-  }
+  "audit_retention_days": 365,        // Keep 1 year
+  "audit_max_size_bytes": 104857600,  // Max audit log size (100MB)
+  "compliance_mode": false,           // Enable structured compliance logging
+  "compliance_log_path": null         // Optional path for compliance exports
 }
 ```
 
@@ -750,11 +730,9 @@ opencrust
 
 ```json
 {
-  "providers": {
-    "openai": { "api_key": "..." },
-    "anthropic": { "api_key": "..." }
-  },
-  "provider_fallback": [
+  "openai_key": "...",
+  "anthropic_api_key": "...",
+  "fallback_chain": [
     "openai",        // Try OpenAI first
     "anthropic"      // Fall back to Claude if OpenAI unavailable
   ]
@@ -765,7 +743,10 @@ opencrust
 
 ```json
 {
-  "system_prompt": "You are an expert Rust developer. Help the user write idiomatic, performant Rust code following best practices..."
+  "instructions": [
+    "You are an expert Rust developer.",
+    "Help the user write idiomatic, performant Rust code following best practices..."
+  ]
 }
 ```
 
@@ -773,10 +754,9 @@ opencrust
 
 ```json
 {
-  "context_budget": 4096,             // For GPT-3.5-turbo
-  "context_budget": 8000,             // For gpt-4
-  "context_budget": 100000,           // For claude-3-opus
-  "context_budget": 2000              // For local Ollama
+  "token_budget_max_tokens": 1000000,  // Max tokens per session
+  "token_budget_enabled": true,        // Enforce budget
+  "context_budget": 8000               // Context window per request (provider-dependent)
 }
 ```
 
@@ -784,26 +764,20 @@ opencrust
 
 ```json
 {
-  "cache": {
-    "semantic_index": true,            // Cache embeddings
-    "tool_results": true,              // Cache tool outputs
-    "cache_dir": "~/.cache/opencrust"
+  "model_auto_refresh": {
+    "enabled": true,
+    "interval_hours": 24
   }
 }
 ```
 
 ### Session Management
 
-```json
-{
-  "sessions": {
-    "auto_save": true,
-    "auto_save_interval_seconds": 60,
-    "max_history": 100,                // Max messages per session
-    "retention_days": 30                // Delete old sessions after 30d
-  }
-}
-```
+Session persistence is automatic. Configure via CLI:
+- `opencrust session save --name "name"` — save current session
+- `opencrust session list` — list saved sessions
+- `opencrust session show <id>` — show session details
+- `opencrust session delete <id>` — delete a session
 
 ---
 
@@ -813,18 +787,10 @@ opencrust
 
 ```json
 {
-  "default_model": "mistral",
-  "default_provider": "ollama",
-  "providers": {
-    "ollama": {
-      "base_url": "http://localhost:11434"
-    }
-  },
-  "permissions": {
-    "network": {
-      "enabled": false
-    }
-  }
+  "provider": "ollama",
+  "model": "mistral",
+  "ollama_url": "http://localhost:11434",
+  "allowed_domains": []
 }
 ```
 
@@ -832,14 +798,12 @@ opencrust
 
 ```json
 {
-  "default_model": "gpt-4",
-  "default_provider": "openai",
-  "provider_fallback": ["openai", "anthropic", "ollama"],
-  "providers": {
-    "openai": { "api_key": "sk-..." },
-    "anthropic": { "api_key": "sk-ant-..." },
-    "ollama": { "base_url": "http://localhost:11434" }
-  },
+  "provider": "openai",
+  "model": "gpt-4",
+  "openai_key": "sk-...",
+  "anthropic_api_key": "sk-ant-...",
+  "ollama_url": "http://localhost:11434",
+  "fallback_chain": ["openai", "anthropic", "ollama"],
   "mcp": {
     "github": {
       "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
@@ -847,7 +811,7 @@ opencrust
       "enabled": true
     }
   },
-  "permissions": {
+  "permission": {
     "file_patterns": ["src/**", "tests/**", "docs/**"],
     "deny_patterns": [".env"]
   }
@@ -858,12 +822,10 @@ opencrust
 
 ```json
 {
-  "default_model": "gpt-4",
-  "default_provider": "openai",
-  "providers": {
-    "openai": { "api_key": "sk-..." }
-  },
-  "permissions": {
+  "provider": "openai",
+  "model": "gpt-4",
+  "openai_key": "sk-...",
+  "permission": {
     "file_patterns": ["src/**", "tests/**"],
     "deny_patterns": ["infra/**", "*.prod.*", ".env"],
     "cli_commands": {
@@ -876,11 +838,10 @@ opencrust
       "deny_hosts": ["internal.company.com"]
     }
   },
-  "audit": {
-    "enabled": true,
-    "retention_days": 365,
-    "export_url": "https://audit.company.com/upload"
-  }
+  "audit_retention_days": 365,
+  "compliance_mode": true,
+  "compliance_log_path": "/var/log/opencrust/compliance.json",
+  "role": "admin"
 }
 ```
 
@@ -905,10 +866,10 @@ jq . ~/.config/opencrust/config.json
 
 ```bash
 # Check config has correct provider name
-grep "default_provider" ~/.config/opencrust/config.json
+grep '"provider"' ~/.config/opencrust/config.json
 
-# Verify API key is set
-grep "api_key" ~/.config/opencrust/config.json | head -1
+# Verify API key is set (field name depends on provider)
+grep -E '(openai_key|anthropic_api_key|gemini_api_key|groq_api_key|together_api_key|replicate_api_key|deepseek_api_key|localai_api_key|unsloth_api_key|openrouter_key)' ~/.config/opencrust/config.json | head -1
 
 # Test provider directly
 opencrust -p "Hello" --provider openai
@@ -929,8 +890,8 @@ npm install -g @modelcontextprotocol/server-github
 ### Permission denied errors
 
 ```bash
-# Check file pattern
-grep "file_patterns" ~/.config/opencrust/config.json
+# Check file pattern (under "permission" key)
+grep -A 10 '"permission"' ~/.config/opencrust/config.json | grep file_patterns
 
 # Check audit log for denied path
 grep "permission_denied" ~/.config/opencrust/audit.json | tail -1

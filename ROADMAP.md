@@ -1,7 +1,7 @@
 # OpenCrust Roadmap
 
-> **Version:** v0.1.3 | **Last updated:** 2026-06-17
-> **Status:** 408 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
+> **Version:** v1.2.0 | **Last updated:** 2026-06-18
+> **Status:** 439 tests pass, 0 fail, 1 ignored (Ollama). Build/clippy/fmt: clean.
 > **Supersedes:** Previous ROADMAP.md, `MARKET.md` action items (now pure research),
 > `.uncensored/FINAL_REPORT.md`.
 
@@ -23,7 +23,7 @@ engineering teams.
 
 ### Core Platform (Phases 1-2 — ✅ Complete)
 - Rust TUI with Ratatui: tabbed chat/tasks views, file tree sidebar, command palette
-- LLM client loop with 11 provider integrations (Ollama, OpenRouter, OpenAI, Gemini,
+- LLM client loop with 12 provider integrations (Ollama, OpenRouter, OpenAI, Gemini,
   Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI, Unsloth)
 - Tool system: MCP servers (JSON-RPC), LSP integration (code completion + diagnostics),
   custom script tools (auto-discovered from `.opencrust/tools/`)
@@ -56,7 +56,7 @@ engineering teams.
 - Subcommand handlers (~820 lines) intentionally remain in `main.rs` — stable match arms
 
 ### Test Coverage (Phase 4 — ✅ Complete)
-- 408 tests passing (1 ignored — requires local Ollama)
+- 439 tests passing (1 ignored — requires local Ollama)
 - Previously empty modules now covered: `app.rs` (42), `tools.rs` (27),
   `permissions.rs` (24), `llm.rs` (12), `planner.rs` (7), `token_budget.rs` (20),
   `mission_control/` (58), `pty.rs` (12)

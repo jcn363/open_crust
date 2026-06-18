@@ -179,7 +179,7 @@
 | **MCP support** | ✅ (Showcase TUI) | ✅ | ✅ | ✅ (Marketplace) | ✅ | ❌ |
 | **Security-first** | ✅ (unique) | ❌ | ❌ | ⚠️ | ❌ | ❌ |
 | **Compliance/audit** | ✅ (unique) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Model flexibility** | ✅ (11) | ⚠️ (Claude) | ✅ (5+) | ✅ (BYOK) | ✅ (75+) | ✅ (9) |
+| **Model flexibility** | ✅ (12) | ⚠️ (Claude) | ✅ (5+) | ✅ (BYOK) | ✅ (75+) | ✅ (9) |
 | **Built-in skills** | ✅ (11) | ✅ (SKILL.md) | ❌ | ❌ | ✅ (plugins) | ❌ |
 | **Interactive diff** | ✅ (side+unified) | ✅ | ✅ | ✅ | ✅ | ⚠️ |
 | **Published benchmarks** | ✅ | ❌ | ❌ | ✅ (TBench) | ❌ | ✅ |
