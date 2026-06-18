@@ -220,6 +220,8 @@ jobs:
     needs: [test, build]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -233,3 +235,16 @@ jobs:
           files: |
             target/release/open_crust
           generate_release_notes: true
+      
+      - name: Bump patch version for next development cycle
+        run: |
+          python3 scripts/bump_patch_version.py
+      
+      - name: Commit and push version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          NEW_VERSION=$(cat version.txt | tr -d '\n')
+          git add version.txt Cargo.toml
+          git commit -m "chore: bump version to ${NEW_VERSION} for next development cycle"
+          git push origin HEAD:${{ github.ref_name }}
