@@ -38,6 +38,7 @@ pub mod orchestrator;
 pub mod permissions;
 pub mod planner;
 pub mod plugins;
+pub mod providers;
 pub mod pty;
 pub mod rag;
 pub mod rules;
