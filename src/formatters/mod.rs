@@ -117,7 +117,7 @@ pub fn format_file(path: &Path) -> Result<(), String> {
 }
 
 /// Get the list of supported file extensions
-#[allow(dead_code)] // used by tests; dead in binary cfg
+#[cfg(test)]
 pub fn supported_extensions() -> Vec<&'static str> {
     let mut exts: Vec<_> = default_formatters().into_keys().collect();
     exts.sort_by_key(|e| e.to_lowercase());
@@ -125,7 +125,7 @@ pub fn supported_extensions() -> Vec<&'static str> {
 }
 
 /// Check if a file extension has a configured formatter
-#[allow(dead_code)] // used by tests; dead in binary cfg
+#[cfg(test)]
 pub fn has_formatter(extension: &str) -> bool {
     default_formatters().contains_key(extension)
 }

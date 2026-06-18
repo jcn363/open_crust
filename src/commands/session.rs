@@ -77,7 +77,10 @@ pub async fn handle_session(
         SessionCommands::Checkpoint { id, name } => {
             match session_manager.create_checkpoint(&id, name.as_deref()) {
                 Ok(checkpoint) => {
-                    println!("Checkpoint '{}' created for session '{}'", checkpoint.name, id);
+                    println!(
+                        "Checkpoint '{}' created for session '{}'",
+                        checkpoint.name, id
+                    );
                     println!("Timestamp: {}", checkpoint.timestamp);
                     println!("Messages: {}", checkpoint.messages.len());
                 }

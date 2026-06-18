@@ -7,7 +7,7 @@
 use chrono::Utc;
 use std::fs;
 use std::fs::OpenOptions;
-use std::io::{BufRead, BufReader, Write};
+use std::io::Write;
 use std::path::PathBuf;
 
 /// Get the log directory path
@@ -63,10 +63,7 @@ pub fn log_fallback_attempt(error_msg: &str) {
         .split(". Trying fallback...")
         .next()
         .unwrap_or(error_msg);
-    let log_entry = format!(
-        "[{}] FALLBACK_ATTEMPT error={}\n",
-        timestamp, error
-    );
+    let log_entry = format!("[{}] FALLBACK_ATTEMPT error={}\n", timestamp, error);
 
     if let Ok(mut file) = OpenOptions::new()
         .create(true)
@@ -78,7 +75,7 @@ pub fn log_fallback_attempt(error_msg: &str) {
 }
 
 /// Log a fallback exhaustion event (all fallbacks failed)
-#[allow(dead_code, reason = "Used for logging fallback exhaustion events")]
+#[cfg(test)]
 pub fn log_fallback_exhausted(providers_tried: &[String]) {
     ensure_log_dir();
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ");
@@ -98,8 +95,10 @@ pub fn log_fallback_exhausted(providers_tried: &[String]) {
 }
 
 /// Read recent fallback log entries
-#[allow(dead_code, reason = "Used for reading fallback log entries")]
+#[cfg(test)]
 pub fn read_fallback_log(limit: usize) -> Result<Vec<String>, std::io::Error> {
+    use std::io::{BufRead, BufReader};
+
     let path = fallback_log_path();
     if !path.exists() {
         return Ok(Vec::new());
@@ -134,7 +133,8 @@ mod tests {
 
     #[test]
     fn test_log_fallback_attempt_creates_file() {
-        let test_error = "opencrust: Primary provider failed: connection timeout. Trying fallback...";
+        let test_error =
+            "opencrust: Primary provider failed: connection timeout. Trying fallback...";
         log_fallback_attempt(test_error);
 
         let path = fallback_log_path();

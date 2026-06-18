@@ -18,15 +18,11 @@ pub enum MissionControlAction {
     ExitMode,
 }
 
-/// Actions for agent panel
-#[allow(dead_code)] // wired for agent dashboard TUI
-#[derive(Debug, PartialEq)]
-pub enum AgentAction {
-    None,
-    StartAgent(String),
-    StopAgent(usize),
-    ViewAgentLogs(usize),
-    ExitMode,
+/// Agent panel state
+pub struct AgentPanel {
+    pub agents: Vec<crate::background_agents::BackgroundAgent>,
+    pub selected: usize,
+    pub show_logs: bool,
 }
 
 /// Dashboard statistics snapshot
@@ -44,12 +40,4 @@ pub struct DashboardStats {
 pub(crate) struct NodePosition {
     pub x: u16,
     pub y: u16,
-}
-
-/// Agent panel state
-#[allow(dead_code)] // wired for agent dashboard TUI
-pub struct AgentPanel {
-    pub agents: Vec<crate::background_agents::BackgroundAgent>,
-    pub selected: usize,
-    pub show_logs: bool,
 }

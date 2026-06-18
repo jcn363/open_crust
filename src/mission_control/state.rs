@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::types::{AgentAction, DashboardStats, MissionControlAction, NodePosition};
+use super::types::{AgentPanel, DashboardStats, MissionControlAction, NodePosition};
 
 /// Mission Control TUI state
 pub struct MissionControlUI {
@@ -21,12 +21,12 @@ pub struct MissionControlUI {
     pub selected_index: usize,
     /// Vertical scroll offset for DAG panel
     pub scroll_offset: usize,
-    /// Active panel: 0 = DAG, 1 = detail, 2 = agents
+    /// Active panel: 0 = DAG, 1 = detail
     pub active_panel: usize,
     /// Dashboard stats
     pub stats: DashboardStats,
     /// Agent panel state
-    pub agent_panel: super::types::AgentPanel,
+    pub agent_panel: AgentPanel,
 }
 
 impl MissionControlUI {
@@ -41,7 +41,7 @@ impl MissionControlUI {
             scroll_offset: 0,
             active_panel: 0,
             stats: DashboardStats::default(),
-            agent_panel: super::types::AgentPanel {
+            agent_panel: AgentPanel {
                 agents: Vec::new(),
                 selected: 0,
                 show_logs: false,
@@ -281,68 +281,7 @@ impl MissionControlUI {
         MissionControlAction::None
     }
 
-    /// Refresh agent snapshot from background agent manager
-    #[allow(dead_code)] // wired for agent dashboard TUI
-    pub fn refresh_agents(&mut self, agents: &[crate::background_agents::BackgroundAgent]) {
-        self.agent_panel.agents = agents.to_vec();
-        // Clamp selected index after refresh
-        if !self.agent_panel.agents.is_empty()
-            && self.agent_panel.selected >= self.agent_panel.agents.len()
-        {
-            self.agent_panel.selected = self.agent_panel.agents.len() - 1;
-        }
-    }
 
-    /// Handle key events for agent panel navigation
-    #[allow(dead_code)] // wired for agent dashboard TUI
-    pub fn handle_agent_key(&mut self, key: crossterm::event::KeyCode) -> AgentAction {
-        if self.agent_panel.agents.is_empty() {
-            match key {
-                crossterm::event::KeyCode::Esc => return AgentAction::ExitMode,
-                crossterm::event::KeyCode::Char('n') => {
-                    return AgentAction::StartAgent(String::new());
-                }
-                _ => {}
-            }
-            return AgentAction::None;
-        }
-
-        match key {
-            crossterm::event::KeyCode::Esc => {
-                if self.agent_panel.show_logs {
-                    self.agent_panel.show_logs = false;
-                    return AgentAction::None;
-                }
-                return AgentAction::ExitMode;
-            }
-            crossterm::event::KeyCode::Up if self.agent_panel.selected > 0 => {
-                self.agent_panel.selected -= 1;
-            }
-            crossterm::event::KeyCode::Down
-                if self.agent_panel.selected + 1 < self.agent_panel.agents.len() =>
-            {
-                self.agent_panel.selected += 1;
-            }
-            crossterm::event::KeyCode::Enter => {
-                if self.agent_panel.show_logs {
-                    self.agent_panel.show_logs = false;
-                } else {
-                    self.agent_panel.show_logs = true;
-                    return AgentAction::ViewAgentLogs(self.agent_panel.selected);
-                }
-            }
-            crossterm::event::KeyCode::Char('s') => {
-                // Stop selected agent
-                return AgentAction::StopAgent(self.agent_panel.selected);
-            }
-            crossterm::event::KeyCode::Char('n') => {
-                // Start new agent
-                return AgentAction::StartAgent(String::new());
-            }
-            _ => {}
-        }
-        AgentAction::None
-    }
 
     /// Navigate up within the current layer
     fn navigate_up_in_layer(&mut self) {

@@ -525,32 +525,6 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ---
 
-## New Architecture Modules (v1.2.0+)
-
-### src/config/vllm_config.rs
-**Purpose:** Centralized configuration management following vLLM's VllmConfig pattern  
-**Key types:** `VllmConfig`, `ProviderConfig`, `ModelConfig`  
-**Key functions:** `load()`, `validate()`, `merge_defaults()`  
-**When to modify:**
-- Adding new configuration options
-- Changing provider configuration
-- Modifying validation rules
-
-**Related modules:** `config.rs`, `core/services.rs`  
-**Lines of code:** ~400
-
-### src/core/services.rs
-**Purpose:** Service Locator / Dependency Injection pattern for decoupled component initialization  
-**Key types:** `ServiceRegistry`, `ServiceError`  
-**Key functions:** `register_service!()`, `get_service!()`, `get_or_init_service!()`  
-**When to modify:**
-- Adding new services
-- Changing service initialization
-- Modifying dependency injection
-
-**Related modules:** `config/vllm_config.rs`, `main.rs`  
-**Lines of code:** ~300
-
 ### src/logging.rs
 **Purpose:** Centralized logging setup with structured output  
 **Key types:** `LogLevel`, `LogFormat`  

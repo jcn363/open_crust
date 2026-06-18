@@ -132,8 +132,7 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
     );
     let status_text_len = status_text.len();
 
-    let status_bar = Paragraph::new(status_text)
-        .style(Style::default().fg(mode_fg).bg(mode_bg));
+    let status_bar = Paragraph::new(status_text).style(Style::default().fg(mode_fg).bg(mode_bg));
     f.render_widget(status_bar, area);
 
     // Render hints separately with fallback tooltip if active
@@ -152,8 +151,7 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
             height: 1,
         };
         if hints_area.width > 0 {
-            let hints_widget = Paragraph::new(hints_with_tooltip)
-                .style(fallback_style);
+            let hints_widget = Paragraph::new(hints_with_tooltip).style(fallback_style);
             f.render_widget(hints_widget, hints_area);
         }
     }

@@ -24,7 +24,6 @@ pub enum Role {
 
 /// Permission template defining allowed operations per role.
 #[derive(Debug, Clone, serde::Serialize)]
-#[allow(dead_code, reason = "public API for role-based access control")]
 pub struct RoleTemplate {
     pub role: Role,
     pub can_write_files: bool,
@@ -37,7 +36,6 @@ pub struct RoleTemplate {
 
 impl RoleTemplate {
     /// Create a default template for the given role.
-    #[allow(dead_code, reason = "public API for role-based access control")]
     pub fn for_role(role: Role) -> Self {
         match role {
             Role::Admin => RoleTemplate {
@@ -74,42 +72,7 @@ impl RoleTemplate {
         }
     }
 
-    /// Check if an operation is allowed by this role template.
-    #[allow(dead_code, reason = "public API for role-based access control")]
-    pub fn check_operation(&self, operation: &str) -> Result<(), String> {
-        match operation {
-            "write_file" if !self.can_write_files => {
-                Err(format!("Role {:?} cannot write files", self.role))
-            }
-            "execute_command" if !self.can_execute_commands => {
-                Err(format!("Role {:?} cannot execute commands", self.role))
-            }
-            "manage_mcp" if !self.can_manage_mcp => {
-                Err(format!("Role {:?} cannot manage MCP servers", self.role))
-            }
-            "manage_plugins" if !self.can_manage_plugins => {
-                Err(format!("Role {:?} cannot manage plugins", self.role))
-            }
-            "modify_config" if !self.can_modify_config => {
-                Err(format!("Role {:?} cannot modify configuration", self.role))
-            }
-            _ => Ok(()),
-        }
-    }
 
-    /// Check if a file path is blocked by this role template.
-    #[allow(dead_code, reason = "public API for role-based access control")]
-    pub fn check_path(&self, path: &str) -> Result<(), String> {
-        for blocked in &self.blocked_path_prefixes {
-            if path.starts_with(blocked) {
-                return Err(format!(
-                    "Path '{}' is blocked for role {:?}",
-                    path, self.role
-                ));
-            }
-        }
-        Ok(())
-    }
 }
 
 /// Pre-compiled permission pattern for efficient matching

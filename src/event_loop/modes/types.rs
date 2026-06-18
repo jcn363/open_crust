@@ -16,12 +16,12 @@ pub enum ModeAction {
     /// Continue in the current mode
     Continue,
     /// Exit the current mode, return to Normal
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     ExitMode,
     /// Switch to a different mode
     SwitchMode(Mode),
     /// Quit the application
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     Quit,
 }
 
@@ -30,9 +30,9 @@ pub struct HandlerContext<'a> {
     pub skill_manager: Arc<Mutex<SkillManager>>,
     pub plugin_manager: Arc<Mutex<PluginManager>>,
     pub clipboard: Arc<Mutex<ClipboardManager>>,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub llm_client: &'a LlmClient,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub orchestrator_tasks: Option<Arc<RwLock<Vec<Task>>>>,
 }
 

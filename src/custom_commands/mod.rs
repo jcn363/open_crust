@@ -23,10 +23,8 @@ pub struct CustomCommand {
     /// Command name (used as `/name` in the input)
     pub name: String,
     /// Human-readable description
+    #[allow(dead_code)]
     pub description: String,
-    /// Optional keybind (e.g., "Ctrl+Shift+M")
-    #[allow(dead_code)] // wired for future keybind handling
-    pub keybind: Option<String>,
     /// Path to the executable script
     pub path: PathBuf,
 }
@@ -74,15 +72,12 @@ impl CustomCommandManager {
         let content = fs::read_to_string(path).ok()?;
         let mut name = None;
         let mut description = String::new();
-        let mut keybind = None;
 
         for line in content.lines() {
             if line.starts_with("# name:") {
                 name = Some(line.trim_start_matches("# name:").trim().to_string());
             } else if line.starts_with("# description:") {
                 description = line.trim_start_matches("# description:").trim().to_string();
-            } else if line.starts_with("# keybind:") {
-                keybind = Some(line.trim_start_matches("# keybind:").trim().to_string());
             }
         }
 
@@ -95,7 +90,6 @@ impl CustomCommandManager {
         Some(CustomCommand {
             name,
             description,
-            keybind,
             path: path.to_path_buf(),
         })
     }
@@ -129,7 +123,7 @@ impl CustomCommandManager {
     }
 
     /// Get a list of all registered custom command names and descriptions.
-    #[allow(dead_code)] // used by tests; dead in binary cfg
+    #[cfg(test)]
     pub fn list_commands(&self) -> Vec<(String, String)> {
         self.commands
             .values()

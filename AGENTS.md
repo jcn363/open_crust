@@ -253,19 +253,13 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `bui
 
 ---
 
-## New Architecture Patterns (v1.2.0+)
+## Architecture Patterns (v1.2.0+)
 
-### Centralized Configuration (VllmConfig Pattern)
-- **Location**: `src/config/vllm_config.rs`
-- **Pattern**: Single unified configuration object following vLLM's VllmConfig
-- **Usage**: All subsystems read from `VllmConfig` instead of scattered config
-- **Validation**: Configuration validated at startup with `validate()` method
-
-### Service Locator / Dependency Injection (vLLM Phase 1)
-- **Location**: `src/core/services.rs`
-- **Pattern**: Central service registry with `get_or_init<T>()` for lazy initialization
-- **Usage**: Register services with `register_service!()` macro, retrieve with `get_service!()`
-- **Benefits**: Easy testing with mock services, decoupled component initialization
+### Configuration
+- **Location**: `src/config.rs` + `src/config/mod.rs`
+- **Pattern**: Unified `Config` struct in a single file with provider configs, model aliases, and subagent configuration
+- **Usage**: All subsystems read from the shared `Config` loaded at startup
+- **Validation**: Configuration validated at startup
 
 ### Version Management (DeepSpeed Pattern)
 - **Location**: `version.txt` (single source of truth), `scripts/`

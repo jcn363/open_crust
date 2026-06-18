@@ -10,8 +10,6 @@ opencrust/
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
 │   ├── config.rs          # Config loading/saving (11 providers, model_aliases, subagent cfg)
-│   ├── config/
-│   │   └── vllm_config.rs # Centralized configuration (VllmConfig pattern from vLLM)
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation
@@ -41,10 +39,6 @@ opencrust/
 │   ├── jsonrpc.rs         # JSON-RPC protocol primitives
 │   ├── acp.rs             # Agent Communication Protocol (ACP) stdio interface
 │   ├── logging.rs         # Centralized logging setup
-│   │
-│   ├── core/              # Core services (Service Locator / DI pattern)
-│   │   ├── mod.rs
-│   │   └── services.rs    # Service registry for dependency injection
 │   │
 │   ├── models.rs          # Model list caching & fetcher
 │   ├── compliance.rs      # Compliance & evidence package generation

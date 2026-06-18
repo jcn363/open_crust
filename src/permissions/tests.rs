@@ -209,61 +209,54 @@ fn role_default_is_developer() {
 #[test]
 fn admin_can_do_everything() {
     let template = RoleTemplate::for_role(Role::Admin);
-    assert!(template.check_operation("write_file").is_ok());
-    assert!(template.check_operation("execute_command").is_ok());
-    assert!(template.check_operation("manage_mcp").is_ok());
-    assert!(template.check_operation("manage_plugins").is_ok());
-    assert!(template.check_operation("modify_config").is_ok());
+    assert!(template.can_write_files);
+    assert!(template.can_execute_commands);
+    assert!(template.can_manage_mcp);
+    assert!(template.can_manage_plugins);
+    assert!(template.can_modify_config);
 }
 
 #[test]
 fn developer_cannot_manage_system() {
     let template = RoleTemplate::for_role(Role::Developer);
-    assert!(template.check_operation("write_file").is_ok());
-    assert!(template.check_operation("execute_command").is_ok());
-    assert!(template.check_operation("manage_mcp").is_err());
-    assert!(template.check_operation("manage_plugins").is_err());
-    assert!(template.check_operation("modify_config").is_err());
+    assert!(template.can_write_files);
+    assert!(template.can_execute_commands);
+    assert!(!template.can_manage_mcp);
+    assert!(!template.can_manage_plugins);
+    assert!(!template.can_modify_config);
 }
 
 #[test]
 fn reviewer_is_read_only() {
     let template = RoleTemplate::for_role(Role::Reviewer);
-    assert!(template.check_operation("write_file").is_err());
-    assert!(template.check_operation("execute_command").is_err());
-    assert!(template.check_operation("manage_mcp").is_err());
-    assert!(template.check_operation("manage_plugins").is_err());
-    assert!(template.check_operation("modify_config").is_err());
+    assert!(!template.can_write_files);
+    assert!(!template.can_execute_commands);
+    assert!(!template.can_manage_mcp);
+    assert!(!template.can_manage_plugins);
+    assert!(!template.can_modify_config);
 }
 
 #[test]
 fn admin_blocked_paths_enforced() {
     let template = RoleTemplate::for_role(Role::Admin);
-    assert!(template.check_path("/home/user/file.txt").is_ok());
-    assert!(template.check_path("/proc/1/status").is_err());
-    assert!(template.check_path("/sys/kernel/hostname").is_err());
+    assert!(!template.blocked_path_prefixes.iter().any(|p| "/home/user/file.txt".starts_with(p)));
+    assert!(template.blocked_path_prefixes.iter().any(|p| "/proc/1/status".starts_with(p)));
+    assert!(template.blocked_path_prefixes.iter().any(|p| "/sys/kernel/hostname".starts_with(p)));
 }
 
 #[test]
 fn developer_blocked_paths_enforced() {
     let template = RoleTemplate::for_role(Role::Developer);
-    assert!(template.check_path("/home/user/file.txt").is_ok());
-    assert!(template.check_path("/root/secret.txt").is_err());
-    assert!(template.check_path("/etc/shadow").is_err());
-    assert!(template.check_path("/etc/passwd").is_err());
+    assert!(!template.blocked_path_prefixes.iter().any(|p| "/home/user/file.txt".starts_with(p)));
+    assert!(template.blocked_path_prefixes.iter().any(|p| "/root/secret.txt".starts_with(p)));
+    assert!(template.blocked_path_prefixes.iter().any(|p| "/etc/shadow".starts_with(p)));
+    assert!(template.blocked_path_prefixes.iter().any(|p| "/etc/passwd".starts_with(p)));
 }
 
 #[test]
 fn reviewer_has_no_path_blocks() {
     let template = RoleTemplate::for_role(Role::Reviewer);
-    assert!(template.check_path("/home/user/file.txt").is_ok());
-    assert!(template.check_path("/any/path").is_ok());
-}
-
-#[test]
-fn role_template_unknown_operation_allowed() {
-    let template = RoleTemplate::for_role(Role::Developer);
-    assert!(template.check_operation("unknown_op").is_ok());
+    assert!(template.blocked_path_prefixes.is_empty());
 }
 
 #[test]

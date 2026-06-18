@@ -11,9 +11,9 @@ use tokio::sync::RwLock;
 /// Token usage statistics for a single LLM request.
 #[derive(Debug, Clone, Default)]
 pub struct TokenUsage {
-    #[allow(dead_code, reason = "public API for detailed usage reporting")]
+    #[allow(dead_code)]
     pub prompt_tokens: u32,
-    #[allow(dead_code, reason = "public API for detailed usage reporting")]
+    #[allow(dead_code)]
     pub completion_tokens: u32,
     pub total_tokens: u32,
     pub cost: f64,
@@ -22,7 +22,7 @@ pub struct TokenUsage {
 /// Represents a token budget for a session.
 #[derive(Debug, Clone)]
 pub struct TokenBudget {
-    #[allow(dead_code, reason = "public API for session identification")]
+    #[allow(dead_code)]
     pub session_id: String,
     pub max_tokens: u32,
     pub current_tokens: u32,
@@ -65,7 +65,7 @@ impl TokenBudget {
     }
 
     /// Get remaining tokens.
-    #[allow(dead_code, reason = "public API for budget display")]
+    #[allow(dead_code)]
     pub fn remaining_tokens(&self) -> u32 {
         self.max_tokens.saturating_sub(self.current_tokens)
     }
@@ -107,7 +107,7 @@ impl TokenBudgetManager {
     }
 
     /// Get usage percentage for a session (0.0 - 1.0).
-    #[allow(dead_code, reason = "public API for external budget monitoring")]
+    #[allow(dead_code)]
     pub async fn usage_percentage(&self, session_id: &str) -> f64 {
         if let Some(budget) = self.get_budget(session_id).await {
             budget.usage_percentage()
@@ -129,9 +129,9 @@ impl TokenBudgetManager {
 /// Pricing information for a provider/model.
 #[derive(Debug, Clone)]
 pub struct ProviderPricing {
-    #[expect(dead_code, reason = "public API for pricing identification")]
+    #[expect(dead_code)]
     pub provider: String,
-    #[expect(dead_code, reason = "public API for pricing identification")]
+    #[expect(dead_code)]
     pub model: String,
     pub prompt_price: f64,
     pub completion_price: f64,

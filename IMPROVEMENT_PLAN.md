@@ -2,154 +2,114 @@
 
 Based on analysis of DeepSpeed, OpenCode (anomalyco/opencode), and vLLM best practices.
 
-## 1. Configuration Management (vLLM VllmConfig Pattern)
+## 1. Configuration Management ✅ (Removed)
 
-**Current State**: Config scattered across multiple files, no centralized configuration object.
+**Status:** VllmConfig centralized configuration was implemented and later removed. Configuration is now handled by a single `Config` struct in `src/config.rs` with provider configs, model aliases, and subagent configuration, loaded at startup and validated. No further work planned.
 
-**Target**: Single `VllmConfig`-style configuration object passed throughout the application.
+## 2. Dependency Injection / Service Locator ❌ (Removed)
 
-**Changes**:
-- Create `src/config/vllm_config.rs` with unified `AppConfig` struct
-- All subsystems read from this central config
-- Configuration validation at startup
-- Support for config file (TOML/JSON) + environment variables + CLI args
+**Status:** `ServiceRegistry` was implemented and later removed. Managers are passed directly via `Arc<Mutex<T>>` in `main.rs`, which is sufficient for the current architecture.
 
-## 2. Dependency Injection / Service Locator (vLLM Phase 1)
+## 3. Enhanced CI/CD Pipeline ✅ (Implementing)
 
-**Current State**: Managers created ad-hoc in `main.rs` and passed around.
+**Current State:** Basic CI with Ubuntu/macOS, stable/beta Rust. Pre-commit hooks, DCO signing, and conventional commits enforced.
 
-**Target**: Central service registry (`src/core/services.rs`) with lazy initialization.
+**Target:** Comprehensive pipeline matching DeepSpeed's multi-platform approach.
 
-**Changes**:
-- Create `ServiceRegistry` with `get_or_init<T>()`
-- Register all managers (MCP, LSP, Skills, Tools, Plugins, Permissions, Audit)
-- Replace direct `Arc<Mutex<T>>` passing with service lookups
-- Enable easy testing with mock services
+**Changes:**
+- ✅ Basic CI with fmt, clippy, test on Ubuntu/macOS/Windows
+- ✅ Rust nightly testing (Ubuntu only)
+- ✅ Pre-commit hooks with rustfmt, clippy, trailing-whitespace, EOF fixer, DCO
+- ✅ Conventional commit validation
+- ❌ Scheduled nightly runs (not configured)
+- ❌ Release automation with version management
+- ❌ PR size checks
 
-## 3. Enhanced CI/CD Pipeline (DeepSpeed Pattern)
+## 4. Pre-commit Hooks & DCO Signing ✅
 
-**Current State**: Basic CI with Ubuntu/macOS, stable/beta Rust.
+**Status:** Fully implemented. `.pre-commit-config.yaml` with rustfmt, clippy, trailing-whitespace, end-of-file-fixer, YAML/TOML/JSON validation, merge conflict check, DCO sign-off, and commit-msg hook for conventional commit format.
 
-**Target**: Comprehensive pipeline matching DeepSpeed's multi-platform approach.
+## 5. Testing Infrastructure ◐ (Partial)
 
-**Changes**:
-- Add Windows testing
-- Add Rust nightly testing
-- Add scheduled nightly runs
-- Add hardware-specific test categories (if applicable)
-- Add code quality gates (fmt, clippy, audit, deny)
-- Add release automation with version management
-- Add PR size checks and conventional commit enforcement
+**Current State:** Inline unit tests (416 passing). No integration tests, basic benchmarks.
 
-## 4. Pre-commit Hooks & DCO Signing (DeepSpeed/vLLM)
+**Target:** Multi-layer testing strategy.
 
-**Current State**: No pre-commit, no DCO enforcement.
+**Changes:**
+- ✅ Unit tests in `#[cfg(test)]` modules (416 tests, 0 failures)
+- ✅ Criterion benchmarks
+- ❌ `tests/` integration tests directory
+- ❌ Property-based testing with `proptest`
+- ❌ Snapshot testing with `insta`
+- ❌ Test coverage reporting
 
-**Target**: Automated formatting, linting, and DCO signing on commit.
+## 6. Documentation ✅ (Good)
 
-**Changes**:
-- Add `.pre-commit-config.yaml` with rustfmt, clippy, cargo-check
-- Add `commit-msg` hook for DCO sign-off verification
-- Add conventional commit message validation
-- Document in CONTRIBUTING.md
+**Current State:** AGENTS.md, README.md, docs/ with MODULES.md, ARCHITECTURE.md, DEVELOPMENT.md, TESTING.md, SECURITY.md, CONFIGURATION.md, etc.
 
-## 5. Testing Infrastructure (vLLM/DeepSpeed)
+**Target:** Comprehensive documentation for AI assistants and humans.
 
-**Current State**: Inline unit tests only, no integration tests, basic benchmarks.
+**Changes:**
+- ✅ AGENTS.md with module map, conventions, workflows
+- ✅ docs/ARCHITECTURE.md with component layout
+- ✅ docs/MODULES.md with detailed module descriptions
+- ✅ docs/CONFIGURATION.md with config reference
+- ✅ docs/DEVELOPMENT.md with extension patterns
+- ❌ RFC template for major changes
 
-**Target**: Multi-layer testing strategy.
+## 7. Provider-Based Architecture ◐ (Partial)
 
-**Changes**:
-- Create `tests/` directory for integration tests
-- Add property-based testing with `proptest`
-- Add snapshot testing with `insta`
-- Enhance benchmarks with Criterion (statistically rigorous)
-- Add test categories: unit, integration, e2e
-- Add test coverage reporting
+**Current State:** Desktop integration uses trait-based providers (detection, notifications, file_picker). Other integrations are hardcoded.
 
-## 6. Documentation (OpenCode AGENTS.md + vLLM Architecture)
+**Target:** Extensible provider system for tools, desktop, notifications, file pickers.
 
-**Current State**: Basic README, AGENTS.md exists but could be enhanced.
+**Changes:**
+- ✅ Desktop environment detection with `DesktopEnvironment` enum
+- ✅ System notifications via `notify-send` / `cinnamon-sendto`
+- ✅ Native file picker via `zenity` / `cinnamon-file-dialog`
+- ❌ Generic `Provider` trait for each integration type
+- ❌ External plugin providers
 
-**Target**: Comprehensive documentation for AI assistants and humans.
+## 8. Version Management ◐ (Partial)
 
-**Changes**:
-- Enhance AGENTS.md with module map, conventions, workflows
-- Add `docs/architecture/` with component diagrams
-- Add `docs/contributing/` with detailed guides
-- Add API documentation with examples
-- Add RFC template for major changes
+**Status:** Version in `Cargo.toml` and `version.txt`. Build script reads from version.txt. Release script exists. Post-release auto-bump not configured.
 
-## 7. Provider-Based Architecture (OpenCode Pattern)
+## 9. Multi-Agent Orchestration Enhancement ✅ (Implemented)
 
-**Current State**: Hardcoded integrations for MCP, LSP, desktop.
+**Status:** Subagent system in `src/orchestrator/` with task management, session persistence, context management, ACP support, and supervisor feedback loop.
 
-**Target**: Extensible provider system for tools, desktop, notifications, file pickers.
+## 10. Code Quality & Anti-Patterns ◐ (Partial)
 
-**Changes**:
-- Create `Provider` trait for each integration type
-- Implement provider registry
-- Allow dynamic provider registration
-- Support for external plugin providers
+**Current State:** Zero warnings, zero clippy errors, 0 TODOs, 416 tests passing. Some `#[allow(dead_code)]` on test-only dead code.
 
-## 8. Version Management (DeepSpeed Pattern)
-
-**Current State**: Version hardcoded in Cargo.toml.
-
-**Target**: Single source of truth (`version.txt`) with automated bumping.
-
-**Changes**:
-- Add `version.txt` at repo root
-- Update Cargo.toml to read from version.txt via build script
-- Add release script with validation
-- Automate patch version bump post-release
-
-## 9. Multi-Agent Orchestration Enhancement (OpenCode Pattern)
-
-**Current State**: Basic multi-agent support in `startup.rs`.
-
-**Target**: Persistent subagent context, smart context management, self-healing.
-
-**Changes**:
-- Implement subagent session persistence
-- Add priority-based context sliding window
-- Add supervisor feedback loop for error recovery
-- Add ACP (Agent Client Protocol) support
-
-## 10. Code Quality & Anti-Patterns
-
-**Current State**: Some `unwrap()` usage, dead code warnings, inconsistent patterns.
-
-**Target**: Zero warnings, idiomatic Rust, consistent patterns.
-
-**Changes**:
-- Fix all clippy warnings
-- Replace `unwrap()`/`expect()` with proper error handling
-- Remove dead code
-- Standardize error types with `thiserror`
-- Add `#[expect]` with justification where needed
+**Changes:**
+- ✅ All clippy warnings fixed (zero tolerance, `#![deny(warnings)]`)
+- ✅ Dead code removed (VllmConfig 869 lines, ServiceRegistry 300+ lines)
+- ✅ Standardized error types with `thiserror` and `anyhow`
+- ◐ `unwrap()`/`expect()` usage — minimal, mostly in tests
+- ◐ `#[allow(dead_code)]` on some fields/methods used in tests but dead in production
 
 ---
 
 ## Implementation Priority
 
-### Phase 1: Foundation (Week 1)
-1. Centralized configuration (VllmConfig)
-2. Service Locator / DI pattern
-3. Version management system
-4. Pre-commit hooks & DCO
+### Phase 1: Foundation ✅
+1. ~~Centralized configuration (VllmConfig)~~ → Removed, using simple Config
+2. ~~Service Locator / DI pattern~~ → Removed, direct passing sufficient
+3. Version management system → Partial
+4. Pre-commit hooks & DCO → ✅ Complete
 
-### Phase 2: CI/CD & Testing (Week 2)
-1. Enhanced CI/CD pipeline
-2. Testing infrastructure
-3. Benchmark improvements
+### Phase 2: CI/CD & Testing ◐
+1. Enhanced CI/CD pipeline → Partial
+2. Testing infrastructure → Partial
+3. Benchmark improvements → Basic criterion setup done
 
-### Phase 3: Architecture & Extensibility (Week 3)
-1. Provider-based architecture
-2. Multi-agent orchestration enhancements
-3. Documentation overhaul
+### Phase 3: Architecture & Extensibility ◐
+1. Provider-based architecture → Partial (desktop only)
+2. Multi-agent orchestration enhancements → ✅ Complete
+3. Documentation overhaul → ✅ Complete
 
-### Phase 4: Polish (Week 4)
-1. Code quality fixes
-2. Anti-pattern removal
-3. Final verification and release prep
+### Phase 4: Polish ◐
+1. Code quality fixes → ✅ Nearly complete
+2. Anti-pattern removal → ✅ Done (main modules cleaned)
+3. Final verification and release prep → Pending
