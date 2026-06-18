@@ -11,6 +11,7 @@
 - **Security & Auditing** (`permissions.rs`, `audit.rs`, `config.rs`): Granular file/command permissions, network gating, audit logging, and configuration loading
 - **Session Management** (`sessions.rs`): Persistent session storage and history
 - **Desktop Integration** (`desktop/mod.rs`, `desktop/detection.rs`, `desktop/notifications.rs`, `desktop/file_picker.rs`): Cinnamon desktop environment detection, system notifications, and native file pickers
+- **Provider Abstraction** (`providers/mod.rs`, `providers/desktop.rs`, `providers/notifications.rs`, `providers/file_picker.rs`, `providers/tool.rs`, `providers/plugin.rs`): Generic provider traits and registries for extensible integrations (desktop, notifications, file pickers, tools, plugins)
 - **Utilities** (`git.rs`, `rules.rs`, `formatters.rs`, `web.rs`, `events.rs`, `context.rs`, `acp.rs`, `json_utils.rs`): Git integration, rule parsing, auto-formatters, web search, event handling, context management, ACP stdio interface, and JSON path utilities
 
 The architecture enforces **strict separation of concerns** — desktop integration modules never access permissions state or call the LLM directly; data flows through clearly defined boundaries.
