@@ -451,6 +451,82 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ---
 
+## Provider Abstraction Modules
+
+### providers/mod.rs
+**Purpose:** Generic provider trait and registry for extensible integrations  
+**Key types:** `Provider` trait, `ProviderRegistry<P>`  
+**Key functions:** `register()`, `all()`, `available()`, `best()`, `get()`  
+**When to modify:**
+- Adding new provider types
+- Changing provider registry behavior
+- Modifying provider selection logic
+
+**Related modules:** `providers/desktop.rs`, `providers/notifications.rs`, `providers/file_picker.rs`, `providers/tool.rs`, `providers/plugin.rs`  
+**Lines of code:** ~80
+
+### providers/desktop.rs
+**Purpose:** Desktop environment provider trait for detection and theming  
+**Key types:** `DesktopProvider` trait, `DefaultDesktopProvider`, `ThemeColors`, `DesktopProviderRegistry`  
+**Key functions:** `detect()`, `cinnamon_info()`, `display_server()`, `supports_theming()`, `theme_colors()`, `default_desktop_registry()`  
+**When to modify:**
+- Adding new desktop providers
+- Changing detection logic
+- Modifying theme extraction
+
+**Related modules:** `providers/mod.rs`, `desktop/detection.rs`  
+**Lines of code:** ~100
+
+### providers/notifications.rs
+**Purpose:** Notification provider trait for system notifications  
+**Key types:** `NotificationProvider` trait, `NotificationProviderRegistry`  
+**Key functions:** `send()`, `is_available()`  
+**When to modify:**
+- Adding notification backends
+- Changing notification format
+- Modifying platform support
+
+**Related modules:** `providers/mod.rs`, `desktop/notifications.rs`  
+**Lines of code:** ~120
+
+### providers/file_picker.rs
+**Purpose:** File picker provider trait for native file dialogs  
+**Key types:** `FilePickerProvider` trait, `FilePickerProviderRegistry`  
+**Key functions:** `pick_file()`, `pick_directory()`, `is_available()`  
+**When to modify:**
+- Adding picker backends
+- Changing picker behavior
+- Modifying platform support
+
+**Related modules:** `providers/mod.rs`, `desktop/file_picker.rs`  
+**Lines of code:** ~140
+
+### providers/tool.rs
+**Purpose:** Tool provider trait for extensible tool execution  
+**Key types:** `ToolProvider` trait, `ToolProviderRegistry`  
+**Key functions:** `execute()`, `schemas()`, `is_available()`  
+**When to modify:**
+- Adding new tool providers
+- Changing tool execution logic
+- Modifying tool schema generation
+
+**Related modules:** `providers/mod.rs`, `tools.rs`, `custom_tools.rs`  
+**Lines of code:** ~70
+
+### providers/plugin.rs
+**Purpose:** Plugin provider trait for external plugin integration  
+**Key types:** `PluginProvider` trait, `PluginWrapper`, `PluginProviderRegistry`  
+**Key functions:** `execute_hook()`, `execute_tool()`, `tool_schemas()`, `plugin_registry_from_manager()`  
+**When to modify:**
+- Adding plugin provider capabilities
+- Changing plugin execution logic
+- Modifying tool schema generation for plugins
+
+**Related modules:** `providers/mod.rs`, `plugins.rs`  
+**Lines of code:** ~100
+
+---
+
 ## MCP Showcase & Mission Control Modules
 
 ### mcp_showcase/mod.rs

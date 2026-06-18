@@ -72,7 +72,15 @@ opencrust/
 │   │   ├── task.rs        # Task representation and state
 │   │   └── agent_pool.rs  # Agent pool management
 │   │
-│   └── desktop/           # Desktop integration
+│   ├── providers/         # Provider abstraction layer
+│   │   ├── mod.rs         # Generic Provider trait & ProviderRegistry
+│   │   ├── desktop.rs     # DesktopProvider trait & DefaultDesktopProvider
+│   │   ├── notifications.rs # NotificationProvider trait
+│   │   ├── file_picker.rs # FilePickerProvider trait
+│   │   ├── tool.rs        # ToolProvider trait
+│   │   └── plugin.rs      # PluginProvider trait & PluginWrapper
+│   │
+│   └── desktop/           # Desktop integration (legacy, being migrated to providers/)
 │       ├── mod.rs
 │       ├── detection.rs   # Desktop environment detection
 │       ├── notifications.rs # System notifications (DBus + notify-send)
@@ -88,6 +96,7 @@ opencrust/
 - **Security & Auditing (`permissions.rs`, `audit.rs`, `config.rs`)** enforce file-access policies, network gating, and log every tool call.
 - **Session Management (`sessions.rs`)** lets users save, restore, and fork interactive sessions.
 - **Orchestrator (`orchestrator/`)** pools multiple agents, schedules tasks, and visualises the DAG in *Mission Control*.
-- **Desktop integration (`desktop/`)** handles OS-specific notifications and native file-picker dialogs.
+- **Provider abstraction (`providers/`)** provides extensible trait-based integrations for desktop, notifications, file pickers, tools, and plugins.
+- **Desktop integration (`desktop/`)** handles OS-specific notifications and native file-picker dialogs (legacy, being migrated to providers/).
 
 All modules communicate via **event streams** (`events.rs`) and **shared context** (`context.rs`), preserving the strict separation-of-concerns enforced by the architecture.
