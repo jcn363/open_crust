@@ -3,6 +3,7 @@
 //! Saves, loads, lists, and deletes chat sessions as JSON files. Supports
 //! forking a session into a new named variant for experimentation, tracking
 //! message history across restarts.
+//! Supports checkpoints (snapshots) for session rollback.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -21,7 +22,19 @@ pub struct Session {
     pub messages: Vec<Value>,
 }
 
-/// Manages session persistence — save, load, list, delete, fork
+/// A checkpoint (snapshot) of a session at a point in time.
+///
+/// Used for rollback functionality — allows restoring a session
+/// to a previous state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Checkpoint {
+    pub name: String,
+    pub session_id: String,
+    pub timestamp: DateTime<Utc>,
+    pub messages: Vec<Value>,
+}
+
+/// Manages session persistence — save, load, list, delete, fork, checkpoint
 ///
 /// Stores chat sessions as JSON files in the user's cache directory.
 /// Supports forking sessions for experimentation branches.
@@ -127,6 +140,111 @@ impl SessionManager {
         fs::write(session_path, content)?;
 
         Ok(new_session)
+    }
+
+    /// Get the checkpoint directory for a session
+    fn checkpoint_dir(&self, session_id: &str) -> PathBuf {
+        self.cache_dir.join("checkpoints").join(session_id)
+    }
+
+    /// Create a checkpoint (snapshot) of a session
+    pub fn create_checkpoint(
+        &self,
+        session_id: &str,
+        name: Option<&str>,
+    ) -> Result<Checkpoint, Box<dyn std::error::Error>> {
+        // Load the session to checkpoint
+        let session = self.load_session(session_id)?;
+
+        // Generate checkpoint name if not provided
+        let checkpoint_name = name
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("checkpoint-{}", Utc::now().timestamp()));
+
+        let checkpoint = Checkpoint {
+            name: checkpoint_name.clone(),
+            session_id: session_id.to_string(),
+            timestamp: Utc::now(),
+            messages: session.messages.clone(),
+        };
+
+        // Ensure checkpoint directory exists
+        let cp_dir = self.checkpoint_dir(session_id);
+        if !cp_dir.exists() {
+            fs::create_dir_all(&cp_dir)?;
+        }
+
+        // Save checkpoint
+        let cp_path = cp_dir.join(format!("{}.json", checkpoint_name));
+        let content = serde_json::to_string_pretty(&checkpoint)?;
+        fs::write(cp_path, content)?;
+
+        Ok(checkpoint)
+    }
+
+    /// List all checkpoints for a session
+    pub fn list_checkpoints(&self, session_id: &str) -> Vec<Checkpoint> {
+        let cp_dir = self.checkpoint_dir(session_id);
+        if let Ok(entries) = fs::read_dir(&cp_dir) {
+            entries
+                .flatten()
+                .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
+                .filter_map(|e| {
+                    let content = fs::read_to_string(e.path()).ok()?;
+                    serde_json::from_str::<Checkpoint>(&content).ok()
+                })
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    /// Restore a session from a checkpoint
+    pub fn restore_checkpoint(
+        &self,
+        session_id: &str,
+        checkpoint_name: &str,
+    ) -> Result<Session, Box<dyn std::error::Error>> {
+        let cp_dir = self.checkpoint_dir(session_id);
+        let cp_path = cp_dir.join(format!("{}.json", checkpoint_name));
+
+        if !cp_path.exists() {
+            return Err(format!("Checkpoint not found: {}", checkpoint_name).into());
+        }
+
+        let content = fs::read_to_string(cp_path)?;
+        let checkpoint: Checkpoint = serde_json::from_str(&content)?;
+
+        // Create a new session with the checkpoint's messages
+        let restored_session = Session {
+            id: session_id.to_string(),
+            timestamp: Utc::now(),
+            messages: checkpoint.messages.clone(),
+        };
+
+        // Save the restored session (overwrites current session)
+        let session_path = self.cache_dir.join(format!("{}.json", session_id));
+        let content = serde_json::to_string_pretty(&restored_session)?;
+        fs::write(session_path, content)?;
+
+        Ok(restored_session)
+    }
+
+    /// Delete a checkpoint
+    pub fn delete_checkpoint(
+        &self,
+        session_id: &str,
+        checkpoint_name: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let cp_dir = self.checkpoint_dir(session_id);
+        let cp_path = cp_dir.join(format!("{}.json", checkpoint_name));
+
+        if cp_path.exists() {
+            fs::remove_file(cp_path)?;
+            Ok(())
+        } else {
+            Err(format!("Checkpoint not found: {}", checkpoint_name).into())
+        }
     }
 }
 

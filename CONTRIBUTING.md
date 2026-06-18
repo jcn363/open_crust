@@ -7,6 +7,7 @@ Welcome! OpenCrust is built by the community. This guide will help you get start
 - **Rust 1.75+** — Install from [rustup.rs](https://rustup.rs)
 - **Git** — For version control and submitting PRs
 - **Cargo** — Comes with Rust
+- **Python 3.8+** — For pre-commit hooks
 - **Time** — Start with 30 min for setup, 1-2 hours for a first contribution
 
 ## Local Development Setup
@@ -33,7 +34,20 @@ If the build fails, check:
 - Dependencies installed: `cargo check` shows detailed errors
 - See **docs/TROUBLESHOOTING.md** for common issues
 
-### 3. Run Tests
+### 3. Install Pre-commit Hooks
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# Install commit-msg hook for DCO sign-off
+pre-commit install --hook-type commit-msg
+```
+
+### 4. Run Tests
 
 ```bash
 # Run all tests
@@ -108,29 +122,66 @@ cargo deb
 
 If any of these fail, your PR will be rejected. Fix them locally first.
 
-### 4. Commit Your Changes
+### 5. Commit Your Changes
 
 Follow the phase-based convention from **AGENTS.md**:
 
 ```bash
 # Feature work (within a phase)
 git add src/my_file.rs
-git commit -m "phase [N]: brief description of change"
+git commit -s -m "phase [N]: brief description of change"
 
 # Refactoring or fixes
-git commit -m "refactor: extract function for clarity"
-git commit -m "fix: handle nil pointer in tool execution"
-git commit -m "docs: expand CONFIGURATION.md with examples"
+git commit -s -m "refactor: extract function for clarity"
+git commit -s -m "fix: handle nil pointer in tool execution"
+git commit -s -m "docs: expand CONFIGURATION.md with examples"
 
 # Small docs fixes
-git commit -m "docs: typo in README"
+git commit -s -m "docs: typo in README"
 ```
 
 **Rules:**
 - Imperative mood ("add feature" not "added feature")
 - One logical concern per commit
 - Reference issue numbers if applicable: "fix #123: ..."
+- **All commits must be signed off with DCO** (`git commit -s`)
+- Commit messages must follow conventional commit format: `<type>(<scope>): <description>`
 - See past commits for examples: `git log --oneline | head -20`
+
+### Commit Message Format
+
+All commits must follow the conventional commit format:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding or modifying tests
+- `chore`: Maintenance tasks
+- `build`: Build system changes
+- `ci`: CI/CD changes
+- `revert`: Reverting a previous commit
+
+**Example:**
+```
+feat(config): add centralized configuration management
+
+Implements VllmConfig pattern for unified configuration management.
+Follows vLLM Phase 1 approach with single configuration object.
+
+Signed-off-by: John Doe <john.doe@example.com>
+```
 
 ### 5. Push and Create a Pull Request
 
@@ -156,6 +207,7 @@ Before pushing your PR, verify:
 - [ ] New code includes unit tests (if non-trivial logic)
 - [ ] Documentation updated (if user-facing change)
 - [ ] Commit message follows convention
+- [ ] All commits are signed off with DCO (`git commit -s`)
 - [ ] Branch is up to date with main: `git pull origin main`
 - [ ] No unintended changes included
 
@@ -175,9 +227,9 @@ cargo test
 cargo fmt -- --check
 cargo clippy -- -D warnings
 
-# Commit
+# Commit (with DCO sign-off)
 git add src/custom_tools.rs docs/DEVELOPMENT.md
-git commit -m "feat: auto-discover tools from .opencrust/tools/ directory"
+git commit -s -m "feat(config): auto-discover tools from .opencrust/tools/ directory"
 
 # Push
 git push origin feature/add-new-tool

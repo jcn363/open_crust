@@ -74,6 +74,57 @@ pub async fn handle_session(
                 }
             }
         }
+        SessionCommands::Checkpoint { id, name } => {
+            match session_manager.create_checkpoint(&id, name.as_deref()) {
+                Ok(checkpoint) => {
+                    println!("Checkpoint '{}' created for session '{}'", checkpoint.name, id);
+                    println!("Timestamp: {}", checkpoint.timestamp);
+                    println!("Messages: {}", checkpoint.messages.len());
+                }
+                Err(e) => {
+                    eprintln!("Error creating checkpoint: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        SessionCommands::CheckpointList { id } => {
+            let checkpoints = session_manager.list_checkpoints(&id);
+            if checkpoints.is_empty() {
+                println!("No checkpoints found for session '{}'.", id);
+            } else {
+                println!("Checkpoints for session '{}':", id);
+                for cp in checkpoints {
+                    println!(
+                        "  {} - {} messages (created: {})",
+                        cp.name,
+                        cp.messages.len(),
+                        cp.timestamp.format("%Y-%m-%d %H:%M:%S")
+                    );
+                }
+            }
+        }
+        SessionCommands::CheckpointRestore { id, name } => {
+            match session_manager.restore_checkpoint(&id, &name) {
+                Ok(session) => {
+                    println!("Session '{}' restored from checkpoint '{}'", id, name);
+                    println!("Timestamp: {}", session.timestamp);
+                    println!("Messages: {}", session.messages.len());
+                }
+                Err(e) => {
+                    eprintln!("Error restoring checkpoint: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        SessionCommands::CheckpointDelete { id, name } => {
+            match session_manager.delete_checkpoint(&id, &name) {
+                Ok(_) => println!("Checkpoint '{}' deleted for session '{}'.", name, id),
+                Err(e) => {
+                    eprintln!("Error deleting checkpoint: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
     }
     Ok(())
 }

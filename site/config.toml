@@ -11,6 +11,12 @@ check_external_links = true
 build_search_index = true
 use_cdn = false
 
+# Multilingual configuration
+languages = [
+    {code = "en", rss = true, weight = 1, title = "OpenCrust Documentation", description = "The fastest, most secure AI coding agent — built in Rust for terminal-native development."},
+    {code = "es", rss = true, weight = 2, title = "Documentación de OpenCrust", description = "El agente de codificación IA más rápido y seguro — construido en Rust para desarrollo nativo en terminal."},
+]
+
 # Taxonomies
 taxonomies = [
     {name = "tags", feed = true},

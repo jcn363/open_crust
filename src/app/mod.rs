@@ -104,6 +104,8 @@ pub struct App {
     pub custom_commands: crate::custom_commands::CustomCommandManager,
     /// Whether the UI needs a redraw (dirty flag for idle optimization)
     pub dirty: bool,
+    /// Fallback provider state: (provider_name, timestamp) when a fallback occurred
+    pub fallback_provider: Option<(String, chrono::DateTime<chrono::Utc>)>,
 }
 
 impl App {
@@ -267,6 +269,8 @@ impl App {
             custom_commands: crate::custom_commands::CustomCommandManager::new(),
             // Dirty flag — starts true to force initial render
             dirty: true,
+            // Fallback provider tracking
+            fallback_provider: None,
         };
         app.load_history();
         // Discover custom commands from .opencrust/commands/

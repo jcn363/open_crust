@@ -1,7 +1,8 @@
 //! Status bar rendering for the TUI
 //!
 //! Draws the bottom status bar showing mode (insert/normal), provider,
-//! model, token count, and active agent/background task count.
+//! model, token count, active agent/background task count, and provider
+//! fallback status with tooltip.
 
 use ratatui::{Frame, layout::Rect, style::Style, widgets::Paragraph};
 
@@ -48,7 +49,7 @@ fn provider_str(provider: &ProviderType) -> &'static str {
 }
 
 pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContext) {
-    // Structure: [MODE] [PLAN] [Provider:Model] tokens:N/M cost:$X.XX tasks:N | keybind hints
+    // Structure: [MODE] [PLAN] [Provider:Model] [FALLBACK] tokens:N/M cost:$X.XX tasks:N | keybind hints
     let mode_tag = format!(" {} ", mode_str(app.mode));
     let plan_tag = plan_mode_tag(app);
     let provider_tag = format!(
@@ -56,6 +57,13 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         provider_str(&app.config.provider),
         app.config.model
     );
+
+    // Add fallback badge if a fallback occurred
+    let fallback_tag = if let Some((ref provider, _timestamp)) = app.fallback_provider {
+        format!(" ⚠ FALLBACK:{} ", provider)
+    } else {
+        String::new()
+    };
 
     // Add token and cost information from live budget
     let token_tag = {
@@ -111,10 +119,42 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         _ => (theme.status_fg(), theme.status_default_bg()),
     };
 
-    let status_bar = Paragraph::new(format!(
+    // Use warning color for fallback badge
+    let fallback_style = if app.fallback_provider.is_some() {
+        Style::default().fg(theme.warning()).bg(mode_bg)
+    } else {
+        Style::default().fg(mode_fg).bg(mode_bg)
+    };
+
+    let status_text = format!(
         "{}{}{}{}{}{}",
-        mode_tag, plan_tag, provider_tag, token_tag, task_tag, hints,
-    ))
-    .style(Style::default().fg(mode_fg).bg(mode_bg));
+        mode_tag, plan_tag, provider_tag, fallback_tag, token_tag, task_tag
+    );
+    let status_text_len = status_text.len();
+
+    let status_bar = Paragraph::new(status_text)
+        .style(Style::default().fg(mode_fg).bg(mode_bg));
     f.render_widget(status_bar, area);
+
+    // Render hints separately with fallback tooltip if active
+    if let Some((ref provider, timestamp)) = app.fallback_provider {
+        let elapsed = chrono::Utc::now().signed_duration_since(timestamp);
+        let elapsed_secs = elapsed.num_seconds();
+        let tooltip_text = format!(
+            " ⚠ Fallback: {} (switched {}s ago) — Primary failed, using fallback provider",
+            provider, elapsed_secs
+        );
+        let hints_with_tooltip = format!("{}{}", hints, tooltip_text);
+        let hints_area = Rect {
+            x: area.x + status_text_len as u16,
+            y: area.y,
+            width: area.width.saturating_sub(status_text_len as u16),
+            height: 1,
+        };
+        if hints_area.width > 0 {
+            let hints_widget = Paragraph::new(hints_with_tooltip)
+                .style(fallback_style);
+            f.render_widget(hints_widget, hints_area);
+        }
+    }
 }

@@ -238,6 +238,58 @@ Commits follow a **phase-based naming convention**:
 
 Keep commits focused on a single logical concern (e.g., one feature, one subsystem fix). Large refactors should be split into smaller commits. Commit messages should be imperative and descriptive enough to understand the change's purpose without reading the diff.
 
+**All commits must be signed off with DCO** (`git commit -s`)
+
+Commit messages must follow conventional commit format:
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `build`, `ci`, `revert`
+
 ---
 
-**Generated:** 2026-05-05 | **Edition:** Rust 2024 | **Primary dependency:** Ratatui 0.30.0 (TUI), Tokio 1.52.1 (async runtime)
+## New Architecture Patterns (v1.2.0+)
+
+### Centralized Configuration (VllmConfig Pattern)
+- **Location**: `src/config/vllm_config.rs`
+- **Pattern**: Single unified configuration object following vLLM's VllmConfig
+- **Usage**: All subsystems read from `VllmConfig` instead of scattered config
+- **Validation**: Configuration validated at startup with `validate()` method
+
+### Service Locator / Dependency Injection (vLLM Phase 1)
+- **Location**: `src/core/services.rs`
+- **Pattern**: Central service registry with `get_or_init<T>()` for lazy initialization
+- **Usage**: Register services with `register_service!()` macro, retrieve with `get_service!()`
+- **Benefits**: Easy testing with mock services, decoupled component initialization
+
+### Version Management (DeepSpeed Pattern)
+- **Location**: `version.txt` (single source of truth), `scripts/`
+- **Files**: `check_release_version.py`, `bump_patch_version.py`, `release.sh`
+- **Workflow**: Version in `version.txt` → Cargo.toml reads from it → Release script validates → Auto-bump patch post-release
+
+### Pre-commit Hooks & DCO
+- **Config**: `.pre-commit-config.yaml`
+- **Hooks**: rustfmt, clippy, trailing-whitespace, end-of-file-fixer, YAML/TOML/JSON validation, merge conflict check, DCO sign-off
+- **Commit-msg**: Validates conventional commit format and DCO sign-off
+- **Install**: `pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg`
+
+---
+
+## CI/CD Pipeline (DeepSpeed Pattern)
+
+**Enhanced GitHub Actions** (`.github/workflows/ci.yml`):
+- **Multi-platform**: Ubuntu, macOS, Windows
+- **Multi-version**: stable, beta, nightly (nightly only on Ubuntu)
+- **Scheduled**: Nightly runs at 2 AM UTC
+- **Integration tests**: Run on schedule and manual dispatch
+- **Benchmarks**: Run on schedule with Criterion
+- **Release automation**: Tag-based releases with artifact upload
+
+---
+
+**Generated:** 2026-06-18 | **Edition:** Rust 2024 | **Primary dependency:** Ratatui 0.30.0 (TUI), Tokio 1.52.1 (async runtime)

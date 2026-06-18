@@ -6,6 +6,7 @@
 //! subsystem's initialization.
 
 mod types;
+mod vllm_config;
 
 #[cfg(test)]
 mod tests;

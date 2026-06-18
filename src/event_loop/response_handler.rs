@@ -4,6 +4,20 @@ use tokio::sync::mpsc;
 /// Handle incoming responses from the LLM task
 pub fn handle_responses(app: &mut App, response_rx: &mut mpsc::Receiver<String>) {
     while let Ok(response) = response_rx.try_recv() {
+        // Detect provider fallback messages
+        if response.starts_with("opencrust: Trying fallback provider: ") {
+            let provider_name = response
+                .strip_prefix("opencrust: Trying fallback provider: ")
+                .unwrap_or("")
+                .to_string();
+            app.fallback_provider = Some((provider_name.clone(), chrono::Utc::now()));
+            // Log the fallback event
+            crate::logging::log_fallback(&provider_name);
+        } else if response.starts_with("opencrust: Primary provider failed: ") {
+            // Primary provider failed, fallback will be attempted
+            crate::logging::log_fallback_attempt(&response);
+        }
+
         if response.contains("[APPROVAL_REQUIRED]") {
             app.waiting_for_approval = true;
         } else if response.starts_with("[DIFF_REQUIRED]") {

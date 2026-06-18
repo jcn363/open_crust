@@ -167,6 +167,33 @@ pub enum SessionCommands {
         #[arg(short, long)]
         name: Option<String>,
     },
+    /// Create a checkpoint (snapshot) of a session for rollback
+    Checkpoint {
+        /// Session ID to checkpoint
+        id: String,
+        /// Optional name for the checkpoint (defaults to timestamp)
+        #[arg(short, long)]
+        name: Option<String>,
+    },
+    /// List all checkpoints for a session
+    CheckpointList {
+        /// Session ID
+        id: String,
+    },
+    /// Restore a session from a checkpoint
+    CheckpointRestore {
+        /// Session ID
+        id: String,
+        /// Checkpoint name to restore
+        name: String,
+    },
+    /// Delete a checkpoint
+    CheckpointDelete {
+        /// Session ID
+        id: String,
+        /// Checkpoint name to delete
+        name: String,
+    },
 }
 
 #[derive(Subcommand, Debug, Clone)]

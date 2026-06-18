@@ -1,0 +1,67 @@
+# Pre-commit hooks for OpenCrust
+# Following DeepSpeed and vLLM patterns
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  # Rust formatting and linting
+  - repo: https://github.com/rust-lang/rustfmt
+    rev: stable
+    hooks:
+      - id: rustfmt
+        name: Check Rust formatting
+        entry: rustfmt --check
+        language: system
+        types: [rust]
+        args: ["--check"]
+        pass_filenames: false
+
+  - repo: https://github.com/rust-lang/clippy
+    rev: stable
+    hooks:
+      - id: clippy
+        name: Run Clippy lints
+        entry: cargo clippy -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+      - id: end-of-file-fixer
+        name: Ensure files end with newline
+      - id: check-yaml
+        name: Check YAML syntax
+      - id: check-toml
+        name: Check TOML syntax
+      - id: check-json
+        name: Check JSON syntax
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: debug-logger
+        name: Check for debug loggers
+      - id: no-commit-to-branch
+        name: Prevent commits to main/master
+        args: ["--branch", "main", "--branch", "master"]
+
+  # Commit message validation (DCO and conventional commits)
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.28.0
+    hooks:
+      - id: commitizen
+        name: Validate commit message format
+        stages: [commit-msg]
+        additional_dependencies: [cz-conventional-changelog]
+
+  # DCO sign-off check
+  - repo: local
+    hooks:
+      - id: dco-signoff
+        name: Check DCO sign-off
+        entry: bash -c 'git log -1 --pretty=%B | grep -q "Signed-off-by:"'
+        language: system
+        stages: [commit-msg]
+        always_run: true
