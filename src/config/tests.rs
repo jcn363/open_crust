@@ -366,3 +366,94 @@ fn config_validate_invalid_theme_should_warn() {
     };
     assert!(cfg.validate().is_err());
 }
+
+// ── Property-based tests ──────────────────────────────────────────────
+
+use proptest::prelude::*;
+use proptest::arbitrary::Arbitrary;
+use proptest::strategy::{BoxedStrategy, Strategy};
+
+impl Arbitrary for ProviderType {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+        prop_oneof![
+            Just(ProviderType::Ollama),
+            Just(ProviderType::OpenAI),
+            Just(ProviderType::Gemini),
+            Just(ProviderType::Anthropic),
+            Just(ProviderType::Mistral),
+            Just(ProviderType::Groq),
+            Just(ProviderType::TogetherAi),
+            Just(ProviderType::Replicate),
+            Just(ProviderType::OpenRouter),
+            Just(ProviderType::DeepSeek),
+            Just(ProviderType::LocalAi),
+            Just(ProviderType::Unsloth),
+        ]
+        .boxed()
+    }
+}
+
+impl Arbitrary for Config {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_: Self::Parameters) -> Self::Strategy {
+        (
+            any::<ProviderType>(),
+            "(.*)",
+            proptest::option::of(".{0,100}"),
+        )
+            .prop_map(|(provider, model, ollama_url)| Config {
+                provider,
+                model,
+                ollama_url,
+                ..Default::default()
+            })
+            .boxed()
+    }
+}
+
+proptest! {
+    /// ProviderType round-trips via Display -> FromStr.
+    #[test]
+    fn provider_type_display_parse_roundtrip(
+        s in "(ollama|openai|gemini|lambda|anthropic|mistral|groq|togetherai|replicate|openrouter|deepseek|localai|unsloth)"
+    ) {
+        let parsed: Result<ProviderType, _> = s.parse();
+        if let Ok(pt) = parsed {
+            assert_eq!(pt.to_string(), s.to_lowercase());
+        }
+    }
+
+    /// Serializing and deserializing ProviderType is lossless.
+    #[test]
+    fn provider_type_json_roundtrip(pt: ProviderType) {
+        let json = serde_json::to_string(&pt).expect("serialize");
+        let back: ProviderType = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(pt, back);
+    }
+
+    /// Context limits are always positive for every provider.
+    #[test]
+    fn context_limit_is_positive(model: String, provider: ProviderType) {
+        let cfg = Config {
+            provider,
+            model,
+            ..Default::default()
+        };
+        let limit = cfg.context_limit();
+        assert!(limit > 0, "context_limit must be positive, got {limit}");
+    }
+
+    /// Default Config serialization produces valid JSON and preserves fields.
+    #[test]
+    fn config_json_roundtrip(config: Config) {
+        let json = serde_json::to_string_pretty(&config).expect("serialize");
+        let back: Config = serde_json::from_str(&json).expect("deserialize");
+        assert_eq!(config.provider, back.provider);
+        assert_eq!(config.model, back.model);
+    }
+}

@@ -97,7 +97,15 @@ impl McpManager {
             servers: Vec::new(),
         }
     }
+}
 
+impl Default for McpManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl McpManager {
     pub async fn load_from_config(
         &mut self,
         config: &std::collections::HashMap<String, McpConfig>,

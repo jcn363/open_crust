@@ -56,7 +56,15 @@ impl SessionManager {
 
         Self { cache_dir }
     }
+}
 
+impl Default for SessionManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SessionManager {
     pub fn save_session(
         &self,
         id: &str,

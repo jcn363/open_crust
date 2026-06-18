@@ -338,21 +338,19 @@ impl RagManager {
     }
 
     /// Clear all indexed data
-    #[expect(dead_code, reason = "public API for CodeIndexer")]
     pub fn clear_index(&mut self) {
         self.vector_store.clear();
         self.vector_store.save(&self.config_dir);
     }
 
     /// Get index statistics
-    #[expect(dead_code, reason = "public API for CodeIndexer")]
     pub fn stats(&self) -> (usize, usize) {
         self.vector_store.stats()
     }
 }
 
 /// Check if a file is a code file based on extension
-fn is_code_file(path: &str) -> bool {
+pub fn is_code_file(path: &str) -> bool {
     let code_extensions = [
         "rs", "py", "js", "ts", "jsx", "tsx", "go", "java", "c", "cpp", "h", "hpp", "rb", "php",
         "swift", "kt", "cs", "sh", "bash", "zsh", "toml", "yaml", "yml", "json", "md",

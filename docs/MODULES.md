@@ -10,17 +10,27 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ## Core Application Modules
 
+### lib.rs
+**Purpose:** Library crate exposing all modules as public API  
+**Key types:** Re-exports from all submodules  
+**Key functions:** `run_headless()`  
+**When to modify:**
+- Making new module types accessible to integration tests
+- Adding shared startup/headless logic reused by `main.rs`
+
+**Related modules:** All other modules  
+**Lines of code:** ~130
+
 ### main.rs
-**Purpose:** Entry point, CLI argument parsing, event loop, TUI initialization  
-**Key types:** `Config`, `Args`, `AppState`  
-**Key functions:** `main()`, `run_tui()`, `handle_cli_args()`  
+**Purpose:** Thin entry point, CLI argument parsing, delegates to `lib.rs`  
+**Key types:** (none — uses types from library)  
+**Key functions:** `main()`  
 **When to modify:**
 - Adding new CLI commands or flags
 - Changing startup behavior
-- Modifying event loop or shutdown
 
-**Related modules:** `app.rs`, `config.rs`, `ui.rs`  
-**Lines of code:** ~500
+**Related modules:** `lib.rs` (all logic lives there now)  
+**Lines of code:** ~80
 
 ### app.rs
 **Purpose:** Application state management, tabs, input history, background tasks  

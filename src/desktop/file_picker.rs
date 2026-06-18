@@ -52,7 +52,6 @@ impl FileFilter {
     }
 
     /// Common filter: source code
-    #[expect(dead_code, reason = "convenience preset for file filtering")]
     pub fn source_code() -> Self {
         Self::new(
             "Source Code",
@@ -78,13 +77,6 @@ pub struct FilePickerResult {
 
 impl FilePickerResult {
     /// Single file result (convenience)
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "convenience accessor for single-file selection, used in tests"
-        )
-    )]
     pub fn single(self) -> Option<PathBuf> {
         if self.cancelled {
             None
@@ -104,10 +96,8 @@ pub enum FilePickerBackend {
     /// KDE file dialog
     KDialog,
     /// macOS osascript/Finder (not yet implemented, reserved for future cross-platform support)
-    #[expect(dead_code, reason = "Reserved for future macOS support")]
     Osascript,
     /// Windows PowerShell/Windows Forms (not yet implemented, reserved for future cross-platform support)
-    #[expect(dead_code, reason = "Reserved for future Windows support")]
     WindowsForms,
     /// None available
     #[default]

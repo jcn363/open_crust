@@ -84,7 +84,6 @@ impl BackgroundAgent {
 
 /// Events emitted by the manager for real-time TUI updates.
 #[derive(Debug, Clone)]
-#[expect(dead_code, reason = "broadcast events for TUI dashboard subscriber")]
 pub enum AgentEvent {
     Created(Uuid),
     Started(Uuid),
@@ -101,7 +100,6 @@ pub struct BackgroundAgentManager {
     event_tx: broadcast::Sender<AgentEvent>,
 }
 
-#[expect(dead_code, reason = "public API for TUI dashboard and CLI handler")]
 impl BackgroundAgentManager {
     /// Create a new empty manager.
     pub fn new() -> Self {

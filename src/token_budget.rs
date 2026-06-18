@@ -83,7 +83,15 @@ impl TokenBudgetManager {
             budgets: Arc::new(RwLock::new(HashMap::new())),
         }
     }
+}
 
+impl Default for TokenBudgetManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl TokenBudgetManager {
     /// Create a new token budget for a session.
     pub async fn create_budget(&self, session_id: String, max_tokens: u32) -> TokenBudget {
         let mut budgets = self.budgets.write().await;
@@ -129,9 +137,7 @@ impl TokenBudgetManager {
 /// Pricing information for a provider/model.
 #[derive(Debug, Clone)]
 pub struct ProviderPricing {
-    #[expect(dead_code)]
     pub provider: String,
-    #[expect(dead_code)]
     pub model: String,
     pub prompt_price: f64,
     pub completion_price: f64,

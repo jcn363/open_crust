@@ -28,7 +28,15 @@ impl CustomToolManager {
             tools: HashMap::new(),
         }
     }
+}
 
+impl Default for CustomToolManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CustomToolManager {
     pub fn discover(&mut self) {
         let paths = vec![
             PathBuf::from(".opencrust/tools"),

@@ -59,7 +59,6 @@ pub fn send_notification_smart(notification: &Notification) -> Result<u32, Strin
 }
 
 /// Show a transient notification with auto-dismiss
-#[expect(dead_code, reason = "convenience API for timed notifications")]
 pub fn notify_timed(
     title: impl Into<String>,
     body: impl Into<String>,

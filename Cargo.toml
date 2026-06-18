@@ -56,6 +56,10 @@ objc = { version = "0.2", optional = true }
 default = []
 macos-menu-bar = ["cocoa", "objc"]
 
+[lib]
+name = "opencrust"
+path = "src/lib.rs"
+
 [[bin]]
 name = "opencrust"
 path = "src/main.rs"
@@ -108,6 +112,8 @@ mode = "644"
 [dev-dependencies]
 tempfile = "3.20.0"
 criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.6.0"
+insta = { version = "1.42.0", features = ["json"] }
 
 [[bench]]
 name = "benchmark"

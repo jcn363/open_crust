@@ -416,7 +416,6 @@ impl Config {
     ///          2. Per-agent override in subagent_config.agent_overrides
     ///          3. Default subagent model in subagent_config.default_model
     ///          4. Fall back to main config model (self.model)
-    #[expect(dead_code, reason = "model resolution for subagents")]
     pub fn resolve_subagent_model(&self, agent_type: Option<&str>) -> (ProviderType, String) {
         // Check environment variable first
         if let Ok(env_model) = std::env::var("OPENCRUST_SUBAGENT_MODEL")

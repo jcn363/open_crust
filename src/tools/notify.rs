@@ -19,7 +19,7 @@ pub fn execute_notify_tool(name: &str, args: &Value) -> Option<String> {
                 .unwrap_or("normal");
 
             let notif = notifications::Notification::new(title, body)
-                .with_urgency(notifications::NotificationUrgency::from_str(urgency));
+                .with_urgency(notifications::NotificationUrgency::from_name(urgency));
 
             Some(match notifications::send_notification_smart(&notif) {
                 Ok(_) => format!("Notification sent: {} - {}", title, body),

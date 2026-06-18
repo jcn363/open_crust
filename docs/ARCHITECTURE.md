@@ -3,7 +3,8 @@
 ```text
 opencrust/
 ├── src/
-│   ├── main.rs            # Entry point, CLI args, TUI event loop
+│   ├── lib.rs             # Library crate (pub mod declarations, shared logic)
+│   ├── main.rs            # Thin entry point, delegates to lib.rs
 │   ├── app.rs             # Application state, tabs, history, background tasks
 │   ├── ui.rs              # TUI rendering (ratatui)
 │   │

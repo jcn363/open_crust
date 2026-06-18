@@ -46,24 +46,29 @@ impl AuditLogger {
         }
     }
 
-    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_session_id(mut self, session_id: String) -> Self {
         self.session_id = session_id;
         self
     }
 
-    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_agent_type(mut self, agent_type: Option<String>) -> Self {
         self.agent_type = agent_type;
         self
     }
 
-    #[expect(dead_code, reason = "AuditLogger builder API")]
     pub fn with_compliance_mode(mut self, enabled: bool) -> Self {
         self.compliance_mode = enabled;
         self
     }
+}
 
+impl Default for AuditLogger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AuditLogger {
     pub fn log_action(&self, tool_name: &str, input: &str, approved: bool) {
         self.log_action_with_duration(tool_name, input, approved, 0);
     }
@@ -124,7 +129,6 @@ impl AuditLogger {
         }
     }
 
-    #[expect(dead_code, reason = "AuditLogger maintenance API")]
     pub fn cleanup_old_logs(&self, retention_days: u64) {
         // In compliance mode, logs must never be deleted (immutable audit trail)
         if self.compliance_mode {
@@ -235,7 +239,6 @@ impl AuditQuery {
         }
     }
 
-    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_dates(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Self {
         Self {
             from_date: from,
@@ -245,7 +248,6 @@ impl AuditQuery {
         }
     }
 
-    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_action(pattern: Option<String>) -> Self {
         Self {
             from_date: None,
@@ -255,7 +257,6 @@ impl AuditQuery {
         }
     }
 
-    #[expect(dead_code, reason = "AuditQuery builder API")]
     pub fn with_status(status: Option<bool>) -> Self {
         Self {
             from_date: None,
@@ -264,6 +265,15 @@ impl AuditQuery {
             status_filter: status,
         }
     }
+}
+
+impl Default for AuditQuery {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AuditQuery {
     fn matches(&self, entry: &AuditEntry) -> bool {
         if let Some(from) = self.from_date {
             if entry.timestamp.len() < 10 {

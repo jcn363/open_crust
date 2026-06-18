@@ -72,13 +72,6 @@ impl Task {
     }
 
     /// Returns a summary string for the task
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "task status reporting for logging/debugging, used in tests"
-        )
-    )]
     pub fn summary(&self) -> String {
         let state_str = match &self.state {
             TaskState::Pending => "pending".to_string(),

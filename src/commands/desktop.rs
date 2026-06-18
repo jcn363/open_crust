@@ -63,7 +63,7 @@ pub async fn handle_desktop(
                 eprintln!("Warning: No notification daemon available");
             }
 
-            let urgency = NotificationUrgency::from_str(&urgency);
+            let urgency = NotificationUrgency::from_name(&urgency);
             let notification = Notification::new(&title, &body)
                 .with_urgency(urgency)
                 .with_expire_timeout(10);

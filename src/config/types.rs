@@ -9,7 +9,7 @@ use std::str::FromStr;
 pub const DEFAULT_OPENROUTER_FREE_MODEL: &str = "openrouter/free";
 
 /// Supported LLM provider backends
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum ProviderType {
     Ollama,
     OpenRouter,

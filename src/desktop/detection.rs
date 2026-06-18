@@ -38,13 +38,11 @@ pub enum DisplayServer {
 
 impl DisplayServer {
     /// Check if running on Wayland
-    #[expect(dead_code, reason = "display server check API")]
     pub fn is_wayland(&self) -> bool {
         matches!(self, DisplayServer::Wayland)
     }
 
     /// Check if running on X11
-    #[expect(dead_code, reason = "display server check API")]
     pub fn is_x11(&self) -> bool {
         matches!(self, DisplayServer::X11)
     }
@@ -123,7 +121,6 @@ impl CinnamonTheme {
 #[derive(Debug, Clone)]
 pub struct CinnamonInfo {
     /// Desktop environment variant
-    #[expect(dead_code)]
     pub desktop: DesktopEnvironment,
     /// Display server protocol (X11/Wayland)
     pub display_server: DisplayServer,
@@ -132,13 +129,10 @@ pub struct CinnamonInfo {
     /// User's theme settings
     pub theme: CinnamonTheme,
     /// Home directory path
-    #[expect(dead_code)]
     pub home_dir: PathBuf,
     /// Config directory path
-    #[expect(dead_code)]
     pub config_dir: PathBuf,
     /// Data directory path
-    #[expect(dead_code)]
     pub data_dir: PathBuf,
     /// Icon theme
     pub icon_theme: String,

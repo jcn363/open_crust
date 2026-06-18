@@ -55,10 +55,6 @@ pub struct PolicyViolation {
 
 /// Compliance framework standards.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[expect(
-    clippy::upper_case_acronyms,
-    reason = "standard compliance framework names"
-)]
 pub enum ComplianceFramework {
     SOC2,
     HIPAA,

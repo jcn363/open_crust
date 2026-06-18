@@ -19,8 +19,8 @@ impl NotificationUrgency {
         }
     }
 
-    /// Parse from string
-    pub fn from_str(s: &str) -> Self {
+    /// Parse from urgency name (e.g., "low", "normal", "critical")
+    pub fn from_name(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "low" => NotificationUrgency::Low,
             "critical" => NotificationUrgency::Critical,
@@ -100,7 +100,6 @@ impl Notification {
 
 /// Notification daemon status
 #[derive(Debug, Clone, Default)]
-#[expect(dead_code, reason = "daemon capability inspection fields")]
 pub struct NotificationDaemon {
     /// Whether notifications are available
     pub available: bool,

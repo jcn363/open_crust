@@ -54,7 +54,15 @@ impl SkillManager {
             last_discovery: Instant::now(),
         }
     }
+}
 
+impl Default for SkillManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SkillManager {
     /// Collect all skill search paths, in priority order (local first, then global).
     fn search_paths() -> Vec<std::path::PathBuf> {
         let mut paths = Vec::new();
@@ -263,10 +271,6 @@ impl SkillManager {
         self.skills.get(name)
     }
 
-    #[cfg_attr(
-        not(test),
-        expect(dead_code, reason = "used in tests; dead in non-test builds")
-    )]
     pub fn get_skill_mut(&mut self, name: &str) -> Option<&mut Skill> {
         self.skills.get_mut(name)
     }

@@ -133,7 +133,6 @@ impl Orchestrator {
     /// High-level public API for bulk agent cancellation. Delegates to the
     /// Coordinator which manages agent pool lifecycle. Part of the Orchestrator
     /// public interface for feature-complete agent control.
-    #[expect(dead_code, reason = "public API for orchestrator cancellation")]
     pub fn cancel_all(&mut self) {
         self.coordinator.cancel_all();
     }

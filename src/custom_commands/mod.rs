@@ -40,7 +40,15 @@ impl CustomCommandManager {
             commands: HashMap::new(),
         }
     }
+}
 
+impl Default for CustomCommandManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CustomCommandManager {
     /// Discover custom commands from `.opencrust/commands/` directories.
     pub fn discover(&mut self) {
         let paths = vec![

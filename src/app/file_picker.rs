@@ -8,7 +8,6 @@ use walkdir::WalkDir;
 impl App {
     /// Activate the file picker with an initial query string.
     /// Caches the full project file list and filters by the query.
-    #[expect(dead_code)]
     pub fn activate_file_picker(&mut self, query: String) {
         self.file_picker_active = true;
         self.file_picker_query = query.clone();
@@ -33,7 +32,6 @@ impl App {
     }
 
     /// Confirm the current selection and insert the file path into input.
-    #[expect(dead_code)]
     pub fn confirm_file_picker(&mut self) -> Option<String> {
         if let Some(path) = self.file_picker_results.get(self.file_picker_selected) {
             let selected = path.clone();

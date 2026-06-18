@@ -16,15 +16,13 @@ How to write and run tests for OpenCrust: unit tests, integration tests, propert
 cargo test
 ```
 
-**Output:**
+**Output (439 tests total — 420 unit + 19 integration):**
 ```
-running 418 tests
-test app::tests::test_tab_switching ... ok
-test config::tests::test_parse_config ... ok
-test permissions::tests::test_file_pattern_match ... ok
-...
+running 420 tests (unit)
+test result: ok. 420 passed; 0 failed; 0 ignored; 0 measured; finished in 2.02s
 
-test result: ok. 418 passed; 0 failed; 0 ignored; 0 measured; finished in 2.02s
+running 19 tests (integration)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; finished in 0.01s
 ```
 
 ### Run Tests for One Module

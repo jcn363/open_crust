@@ -150,10 +150,6 @@ impl LlmClient {
     }
 
     /// Check if the session has exceeded its token budget.
-    #[expect(
-        dead_code,
-        reason = "public API for budget enforcement, consumed by /cost and UI"
-    )]
     pub async fn is_over_budget(&self, session_id: &str) -> bool {
         self.token_budget_manager.is_over_budget(session_id).await
     }

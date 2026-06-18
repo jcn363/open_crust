@@ -127,10 +127,6 @@ pub fn simple_hash(s: &str) -> u32 {
 }
 
 /// Close a notification by ID
-#[expect(
-    dead_code,
-    reason = "notification management API for programmatic dismissal"
-)]
 pub fn close_notification(id: u32) -> Result<(), String> {
     let output = Command::new("dbus-send")
         .args([
