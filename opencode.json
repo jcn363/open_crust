@@ -38,7 +38,7 @@
         "qwen3:8b": {
           "_launch": true
         },
-        "deepseek-coder-v2:16b": {
+        "deepseek-coder-v2-16b-prog": {
           "_launch": true
         }
       }

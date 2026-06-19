@@ -1,0 +1,41 @@
+[package]
+name = "opencrust-codegen"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+documentation = { workspace = true }
+readme = "README.md"
+description = "Rust code generation library with template rendering and data source adapters"
+categories = ["development-tools", "code-generation"]
+keywords = ["codegen", "template", "tera", "handlebars", "csv", "json", "http", "database"]
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tera = { workspace = true }
+handlebars = { workspace = true }
+csv = { workspace = true }
+reqwest = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+insta = { workspace = true }
+wiremock = { workspace = true }
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[features]
+default = ["tera-engine", "handlebars-engine", "csv-adapter", "json-adapter", "http-adapter", "db-adapter"]
+tera-engine = []
+handlebars-engine = []
+csv-adapter = []
+json-adapter = []
+http-adapter = []
+db-adapter = []
