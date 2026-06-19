@@ -44,8 +44,6 @@ impl PluginManager {
         }
     }
 
-
-
     pub fn discover(&mut self) -> Vec<String> {
         let mut discovered = Vec::new();
         // Collect all manifest paths first to avoid borrow conflicts
@@ -134,8 +132,6 @@ impl PluginManager {
     pub fn get(&self, name: &str) -> Option<&Plugin> {
         self.plugins.get(name)
     }
-
-
 
     /// Enable a plugin by name.
     pub fn enable(&mut self, name: &str) -> Result<(), PluginError> {

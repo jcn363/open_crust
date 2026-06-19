@@ -239,18 +239,53 @@ fn reviewer_is_read_only() {
 #[test]
 fn admin_blocked_paths_enforced() {
     let template = RoleTemplate::for_role(Role::Admin);
-    assert!(!template.blocked_path_prefixes.iter().any(|p| "/home/user/file.txt".starts_with(p)));
-    assert!(template.blocked_path_prefixes.iter().any(|p| "/proc/1/status".starts_with(p)));
-    assert!(template.blocked_path_prefixes.iter().any(|p| "/sys/kernel/hostname".starts_with(p)));
+    assert!(
+        !template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/home/user/file.txt".starts_with(p))
+    );
+    assert!(
+        template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/proc/1/status".starts_with(p))
+    );
+    assert!(
+        template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/sys/kernel/hostname".starts_with(p))
+    );
 }
 
 #[test]
 fn developer_blocked_paths_enforced() {
     let template = RoleTemplate::for_role(Role::Developer);
-    assert!(!template.blocked_path_prefixes.iter().any(|p| "/home/user/file.txt".starts_with(p)));
-    assert!(template.blocked_path_prefixes.iter().any(|p| "/root/secret.txt".starts_with(p)));
-    assert!(template.blocked_path_prefixes.iter().any(|p| "/etc/shadow".starts_with(p)));
-    assert!(template.blocked_path_prefixes.iter().any(|p| "/etc/passwd".starts_with(p)));
+    assert!(
+        !template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/home/user/file.txt".starts_with(p))
+    );
+    assert!(
+        template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/root/secret.txt".starts_with(p))
+    );
+    assert!(
+        template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/etc/shadow".starts_with(p))
+    );
+    assert!(
+        template
+            .blocked_path_prefixes
+            .iter()
+            .any(|p| "/etc/passwd".starts_with(p))
+    );
 }
 
 #[test]

@@ -281,8 +281,6 @@ impl MissionControlUI {
         MissionControlAction::None
     }
 
-
-
     /// Navigate up within the current layer
     fn navigate_up_in_layer(&mut self) {
         if self.tasks.is_empty() {

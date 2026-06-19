@@ -71,8 +71,6 @@ impl RoleTemplate {
             },
         }
     }
-
-
 }
 
 /// Pre-compiled permission pattern for efficient matching

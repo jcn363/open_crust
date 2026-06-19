@@ -316,9 +316,7 @@ impl Config {
 
         // Check provider-specific requirements
         match self.provider {
-            ProviderType::Ollama
-                if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
+            ProviderType::Ollama if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) => {
                 warnings.push("Ollama provider selected but ollama_url is not set".to_string());
             }
             ProviderType::OpenRouter
@@ -327,28 +325,19 @@ impl Config {
                 let is_free = self.model.to_lowercase().contains("free");
                 if !is_free {
                     warnings.push(
-                        "OpenRouter provider selected but openrouter_key is not set"
-                            .to_string(),
+                        "OpenRouter provider selected but openrouter_key is not set".to_string(),
                     );
                 }
             }
-            ProviderType::OpenAI
-                if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
+            ProviderType::OpenAI if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) => {
                 warnings.push("OpenAI provider selected but openai_key is not set".to_string());
             }
-            ProviderType::Gemini
-                if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
-                warnings
-                    .push("Gemini provider selected but gemini_api_key is not set".to_string());
+            ProviderType::Gemini if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) => {
+                warnings.push("Gemini provider selected but gemini_api_key is not set".to_string());
             }
-            ProviderType::Mistral
-                if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
-                warnings.push(
-                    "Mistral provider selected but mistral_api_key is not set".to_string(),
-                );
+            ProviderType::Mistral if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) => {
+                warnings
+                    .push("Mistral provider selected but mistral_api_key is not set".to_string());
             }
             ProviderType::Anthropic
                 if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
@@ -357,9 +346,7 @@ impl Config {
                     "Anthropic provider selected but anthropic_api_key is not set".to_string(),
                 );
             }
-            ProviderType::Groq
-                if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
+            ProviderType::Groq if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) => {
                 warnings.push("Groq provider selected but groq_api_key is not set".to_string());
             }
             ProviderType::TogetherAi
@@ -379,21 +366,14 @@ impl Config {
             ProviderType::DeepSeek
                 if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
             {
-                warnings.push(
-                    "DeepSeek provider selected but deepseek_api_key is not set".to_string(),
-                );
-            }
-            ProviderType::LocalAi
-                if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
                 warnings
-                    .push("LocalAi provider selected but localai_url is not set".to_string());
+                    .push("DeepSeek provider selected but deepseek_api_key is not set".to_string());
             }
-            ProviderType::Unsloth
-                if self.unsloth_url.as_ref().is_none_or(|v| v.is_empty()) =>
-            {
-                warnings
-                    .push("Unsloth provider selected but unsloth_url is not set".to_string());
+            ProviderType::LocalAi if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) => {
+                warnings.push("LocalAi provider selected but localai_url is not set".to_string());
+            }
+            ProviderType::Unsloth if self.unsloth_url.as_ref().is_none_or(|v| v.is_empty()) => {
+                warnings.push("Unsloth provider selected but unsloth_url is not set".to_string());
             }
             _ => {} // New providers use simple_openai! pattern; validate their keys at runtime
         }
@@ -470,7 +450,7 @@ impl Config {
             ProviderType::DeepSeek => 128_000,
             ProviderType::LocalAi => 8_000,
             ProviderType::Unsloth => 32_000, // local models, generous default
-            _ => 128_000, // Default for new OpenAI-compatible providers
+            _ => 128_000,                    // Default for new OpenAI-compatible providers
         }
     }
 

@@ -71,8 +71,7 @@ impl ToolExecutor {
         plugin_manager: Arc<Mutex<PluginManager>>,
     ) -> Self {
         // LRU cache with max 1000 entries (~100MB for typical file sizes)
-        let cache_capacity = NonZeroUsize::new(1000)
-            .unwrap_or_else(|| unreachable!("1000 > 0"));
+        let cache_capacity = NonZeroUsize::new(1000).unwrap_or_else(|| unreachable!("1000 > 0"));
         Self {
             config,
             mcp_manager,
@@ -505,7 +504,10 @@ impl ToolExecutor {
             .map_err(|e| format!("Invalid root path: {}", e))?;
 
         let mut count = 0;
-        for entry in WalkDir::new(&validated_root).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(&validated_root)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
             if include != "*" {
                 let ext = path

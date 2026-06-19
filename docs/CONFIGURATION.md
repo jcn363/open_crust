@@ -370,6 +370,231 @@ docker run -p 8080:8080 -e GALLERIES='[{"name":"ollama","url":"https://raw.githu
 2. Start the Studio: `python -m unsloth.studio`
 3. Configure OpenCrust to use the Unsloth endpoint
 
+### 13. Azure OpenAI
+
+```json
+{
+  "provider": "azure",
+  "model": "gpt-4",
+  "azure_api_key": "YOUR_AZURE_KEY",
+  "azure_endpoint": "https://your-instance.openai.azure.com/"
+}
+```
+
+### 14. GitHub Copilot
+
+```json
+{
+  "provider": "github-copilot",
+  "model": "gpt-4",
+  "copilot_key": "YOUR_COPILOT_TOKEN"
+}
+```
+
+### 15. Amazon Bedrock
+
+```json
+{
+  "provider": "bedrock",
+  "model": "anthropic.claude-3-sonnet-20240229-v1:0",
+  "aws_access_key": "YOUR_ACCESS_KEY",
+  "aws_secret_key": "YOUR_SECRET_KEY",
+  "aws_region": "us-east-1"
+}
+```
+
+### 16. Vertex AI
+
+```json
+{
+  "provider": "vertex",
+  "model": "gemini-1.5-pro",
+  "vertex_project_id": "YOUR_PROJECT_ID",
+  "vertex_location": "us-central1"
+}
+```
+
+### 17. Perplexity
+
+```json
+{
+  "provider": "perplexity",
+  "model": "pplx-70b-online",
+  "perplexity_api_key": "YOUR_KEY"
+}
+```
+
+### 18. Cohere
+
+```json
+{
+  "provider": "cohere",
+  "model": "command-r-plus",
+  "cohere_api_key": "YOUR_KEY"
+}
+```
+
+### 19. Cerebras
+
+```json
+{
+  "provider": "cerebras",
+  "model": "llama3.1-70b",
+  "cerebras_api_key": "YOUR_KEY"
+}
+```
+
+### 20. Alibaba Cloud
+
+```json
+{
+  "provider": "alibaba",
+  "model": "qwen-max",
+  "alibaba_api_key": "YOUR_KEY"
+}
+```
+
+### 21. Venice AI
+
+```json
+{
+  "provider": "venice",
+  "model": "llama-3.3-70b",
+  "venice_api_key": "YOUR_KEY"
+}
+```
+
+### 22. NVIDIA NIM
+
+```json
+{
+  "provider": "nvidia",
+  "model": "meta/llama-3.1-405b-instruct",
+  "nvidia_api_key": "YOUR_KEY"
+}
+```
+
+### 23. Fireworks AI
+
+```json
+{
+  "provider": "fireworks",
+  "model": "accounts/fireworks/models/llama-v3p1-405b-instruct",
+  "fireworks_api_key": "YOUR_KEY"
+}
+```
+
+### 24. SambaNova
+
+```json
+{
+  "provider": "sambanova",
+  "model": "Meta-Llama-3.1-405B-Instruct",
+  "sambanova_api_key": "YOUR_KEY"
+}
+```
+
+### 25. OctoAI
+
+```json
+{
+  "provider": "octoai",
+  "model": "meta-llama-3.1-405b-instruct",
+  "octoai_api_key": "YOUR_KEY"
+}
+```
+
+### 26. Anyscale
+
+```json
+{
+  "provider": "anyscale",
+  "model": "meta-llama/Llama-3-70B-Instruct",
+  "anyscale_api_key": "YOUR_KEY"
+}
+```
+
+### 27. Lambda Labs
+
+```json
+{
+  "provider": "lambdalabs",
+  "model": "lambda-labs/llama-3.1-405b-instruct",
+  "lambdalabs_api_key": "YOUR_KEY"
+}
+```
+
+### 28. RunPod
+
+```json
+{
+  "provider": "runpod",
+  "model": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+  "runpod_api_key": "YOUR_KEY"
+}
+```
+
+### 29. Modal
+
+```json
+{
+  "provider": "modal",
+  "model": "meta-llama-3.1-405b-instruct",
+  "modal_api_key": "YOUR_KEY"
+}
+```
+
+### 30. Hugging Face
+
+```json
+{
+  "provider": "huggingface",
+  "model": "meta-llama/Llama-3.1-405B-Instruct",
+  "huggingface_api_key": "YOUR_KEY"
+}
+```
+
+### 31. LM Studio
+
+```json
+{
+  "provider": "lmstudio",
+  "model": "meta-llama-3.1-405b-instruct",
+  "lmstudio_url": "http://localhost:1234"
+}
+```
+
+### 32. Text Generation Inference (TGI)
+
+```json
+{
+  "provider": "tgi",
+  "model": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+  "tgi_url": "http://localhost:8080"
+}
+```
+
+### 33. vLLM
+
+```json
+{
+  "provider": "vllm",
+  "model": "meta-llama/Meta-Llama-3.1-405B-Instruct",
+  "vllm_url": "http://localhost:8000"
+}
+```
+
+### 34. Custom OpenAI-Compatible
+
+```json
+{
+  "provider": "custom-openai",
+  "model": "your-model-name",
+  "custom_openai_url": "http://your-endpoint/v1",
+  "custom_openai_key": "YOUR_KEY"
+}
+```
+
 ### Choosing a Provider
 
 | Use Case | Provider | Config Field | Why |

@@ -2,7 +2,9 @@
 //!
 //! Abstracts system notification delivery across different platforms and backends.
 
-use crate::desktop::notifications::mod_types::{Notification, NotificationDaemon, NotificationUrgency};
+use crate::desktop::notifications::mod_types::{
+    Notification, NotificationDaemon, NotificationUrgency,
+};
 use crate::providers::Provider;
 use std::time::Duration;
 
@@ -15,12 +17,7 @@ pub trait NotificationProvider: Provider {
     fn send(&self, notification: &Notification) -> Result<u32, String>;
 
     /// Send a timed notification (auto-dismiss)
-    fn notify_timed(
-        &self,
-        title: String,
-        body: String,
-        duration: Duration,
-    ) -> Result<(), String> {
+    fn notify_timed(&self, title: String, body: String, duration: Duration) -> Result<(), String> {
         let seconds = duration.as_secs() as u32;
         let notification = Notification::new(title, body).with_expire_timeout(seconds);
         self.send(&notification).map(|_| ())
@@ -28,7 +25,8 @@ pub trait NotificationProvider: Provider {
 
     /// Send an error notification
     fn notify_error(&self, title: String, body: String) -> Result<(), String> {
-        let notification = Notification::new(title, body).with_urgency(NotificationUrgency::Critical);
+        let notification =
+            Notification::new(title, body).with_urgency(NotificationUrgency::Critical);
         self.send(&notification).map(|_| ())
     }
 
@@ -70,7 +68,9 @@ impl NotificationProvider for LinuxNotificationProvider {
     fn send(&self, notification: &Notification) -> Result<u32, String> {
         let app_name = "OpenCrust";
         // Try DBus first
-        if let Ok(id) = crate::desktop::notifications::linux::send_notification_dbus(app_name, notification) {
+        if let Ok(id) =
+            crate::desktop::notifications::linux::send_notification_dbus(app_name, notification)
+        {
             return Ok(id);
         }
         // Fall back to notify-send
@@ -113,7 +113,8 @@ impl NotificationProvider for MacOSNotificationProvider {
 }
 
 /// Registry for notification providers
-pub type NotificationProviderRegistry = crate::providers::ProviderRegistry<dyn NotificationProvider>;
+pub type NotificationProviderRegistry =
+    crate::providers::ProviderRegistry<dyn NotificationProvider>;
 
 /// Create default notification provider registry
 pub fn default_notification_registry() -> NotificationProviderRegistry {

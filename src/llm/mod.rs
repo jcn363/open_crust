@@ -315,7 +315,9 @@ impl LlmClient {
                                 // lets the LLM retry with corrected parameters
                                 format!(
                                     "Tool '{}' failed: {}\n\nOriginal arguments: {}\n\n{}",
-                                    name, e, args_str,
+                                    name,
+                                    e,
+                                    args_str,
                                     "Suggestions:\n- Check argument spelling and types\n- Ensure paths exist and are valid\n- Use correct parameter names shown in the tool schema"
                                 )
                             }

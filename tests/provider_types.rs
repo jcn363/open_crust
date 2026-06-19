@@ -24,9 +24,9 @@ fn all_providers_display_and_parse() {
         let display = variant.to_string();
         assert_eq!(display, *expected_str, "Display for {variant:?}");
 
-        let parsed: ProviderType = display.parse().unwrap_or_else(|_| {
-            panic!("FromStr for {expected_str}")
-        });
+        let parsed: ProviderType = display
+            .parse()
+            .unwrap_or_else(|_| panic!("FromStr for {expected_str}"));
         assert_eq!(parsed, *variant, "Round-trip for {expected_str}");
     }
 }

@@ -56,13 +56,17 @@ impl LlmClient {
             ProviderType::LocalAi => self.generate_local_ai(messages, model_override).await,
             ProviderType::Unsloth => self.generate_unsloth(messages, model_override).await,
             ProviderType::AzureOpenAi => self.generate_azure_openai(messages, model_override).await,
-            ProviderType::GitHubCopilot => self.generate_github_copilot(messages, model_override).await,
+            ProviderType::GitHubCopilot => {
+                self.generate_github_copilot(messages, model_override).await
+            }
             ProviderType::Bedrock => self.generate_bedrock(messages, model_override).await,
             ProviderType::VertexAi => self.generate_vertex_ai(messages, model_override).await,
             ProviderType::Perplexity => self.generate_perplexity(messages, model_override).await,
             ProviderType::Cohere => self.generate_cohere(messages, model_override).await,
             ProviderType::Cerebras => self.generate_cerebras(messages, model_override).await,
-            ProviderType::AlibabaCloud => self.generate_alibaba_cloud(messages, model_override).await,
+            ProviderType::AlibabaCloud => {
+                self.generate_alibaba_cloud(messages, model_override).await
+            }
             ProviderType::VeniceAi => self.generate_venice_ai(messages, model_override).await,
             ProviderType::Nvidia => self.generate_nvidia(messages, model_override).await,
             ProviderType::FireworksAi => self.generate_fireworks_ai(messages, model_override).await,
@@ -76,7 +80,9 @@ impl LlmClient {
             ProviderType::LMStudio => self.generate_lmstudio(messages, model_override).await,
             ProviderType::TGI => self.generate_tgi(messages, model_override).await,
             ProviderType::VLLM => self.generate_vllm(messages, model_override).await,
-            ProviderType::CustomOpenAi => self.generate_custom_openai(messages, model_override).await,
+            ProviderType::CustomOpenAi => {
+                self.generate_custom_openai(messages, model_override).await
+            }
         }
     }
 
@@ -93,7 +99,12 @@ impl LlmClient {
             .as_deref()
             .unwrap_or("https://api.openai.com/v1/chat/completions");
         let res_json = self
-            .generate_completion(messages, endpoint, Some(("api-key", api_key.to_string())), model_override)
+            .generate_completion(
+                messages,
+                endpoint,
+                Some(("api-key", api_key.to_string())),
+                model_override,
+            )
             .await?;
         Ok(res_json
             .get("choices")
@@ -112,7 +123,12 @@ impl LlmClient {
         let token = self.config.github_copilot_token.as_deref().unwrap_or("");
         let endpoint = "https://api.githubcopilot.com/v1/chat/completions";
         let res_json = self
-            .generate_completion(messages, endpoint, Some(("Authorization", format!("Bearer {}", token))), model_override)
+            .generate_completion(
+                messages,
+                endpoint,
+                Some(("Authorization", format!("Bearer {}", token))),
+                model_override,
+            )
             .await?;
         Ok(res_json
             .get("choices")
@@ -131,7 +147,12 @@ impl LlmClient {
         let key = self.config.bedrock_access_key.as_deref().unwrap_or("");
         let endpoint = "https://bedrock.amazonaws.com/v1/chat/completions";
         let res_json = self
-            .generate_completion(messages, endpoint, Some(("x-amz-access-key", key.to_string())), model_override)
+            .generate_completion(
+                messages,
+                endpoint,
+                Some(("x-amz-access-key", key.to_string())),
+                model_override,
+            )
             .await?;
         Ok(res_json
             .get("choices")
@@ -148,7 +169,10 @@ impl LlmClient {
         model_override: Option<&str>,
     ) -> Result<Value, Box<dyn Error + Send + Sync>> {
         let project = self.config.vertex_ai_project.as_deref().unwrap_or("");
-        let endpoint = format!("https://{project}-aiplatform.googleapis.com/v1/projects/{project}/locations/us-central1/publishers/google/models/{model}", model = model_override.unwrap_or("default-model"));
+        let endpoint = format!(
+            "https://{project}-aiplatform.googleapis.com/v1/projects/{project}/locations/us-central1/publishers/google/models/{model}",
+            model = model_override.unwrap_or("default-model")
+        );
         let res_json = self
             .generate_completion(messages, &endpoint, None, model_override)
             .await?;
@@ -160,25 +184,92 @@ impl LlmClient {
             .unwrap_or(json!({})))
     }
 
-    simple_openai!(generate_perplexity, perplexity_api_key, "https://api.perplexity.ai/v1/chat/completions");
-    simple_openai!(generate_cohere, cohere_api_key, "https://api.cohere.com/v1/chat/completions");
-    simple_openai!(generate_cerebras, cerebras_api_key, "https://api.cerebras.ai/v1/chat/completions");
-    simple_openai!(generate_alibaba_cloud, alibaba_cloud_key, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
-    simple_openai!(generate_venice_ai, venice_ai_key, "https://api.venice.ai/api/v1/chat/completions");
-    simple_openai!(generate_nvidia, nvidia_api_key, "https://integrate.api.nvidia.com/v1/chat/completions");
-    simple_openai!(generate_fireworks_ai, fireworks_ai_key, "https://api.fireworks.ai/inference/v1/chat/completions");
-    simple_openai!(generate_sambanova, sambanova_api_key, "https://api.sambanova.ai/v1/chat/completions");
-    simple_openai!(generate_octo_ai, octo_ai_key, "https://api.octoai.com/v1/chat/completions");
-    simple_openai!(generate_anyscale, anyscale_api_key, "https://api.anyscale.com/v1/chat/completions");
-    simple_openai!(generate_lambda_labs, lambda_labs_api_key, "https://api.lambdalabs.com/v1/chat/completions");
-    simple_openai!(generate_runpod, runpod_api_key, "https://api.runpod.ai/v1/chat/completions");
-    simple_openai!(generate_modal, modal_api_key, "https://api.modal.com/v1/chat/completions");
-    simple_openai!(generate_huggingface, huggingface_api_key, "https://api-inference.huggingface.co/v1/chat/completions");
-    simple_openai!(generate_lmstudio, lmstudio_url, "http://localhost:1234/v1/chat/completions");
-    simple_openai!(generate_tgi, tgi_url, "http://localhost:8080/v1/chat/completions");
-    simple_openai!(generate_vllm, vllm_url, "http://localhost:8000/v1/chat/completions");
+    simple_openai!(
+        generate_perplexity,
+        perplexity_api_key,
+        "https://api.perplexity.ai/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_cohere,
+        cohere_api_key,
+        "https://api.cohere.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_cerebras,
+        cerebras_api_key,
+        "https://api.cerebras.ai/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_alibaba_cloud,
+        alibaba_cloud_key,
+        "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_venice_ai,
+        venice_ai_key,
+        "https://api.venice.ai/api/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_nvidia,
+        nvidia_api_key,
+        "https://integrate.api.nvidia.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_fireworks_ai,
+        fireworks_ai_key,
+        "https://api.fireworks.ai/inference/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_sambanova,
+        sambanova_api_key,
+        "https://api.sambanova.ai/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_octo_ai,
+        octo_ai_key,
+        "https://api.octoai.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_anyscale,
+        anyscale_api_key,
+        "https://api.anyscale.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_lambda_labs,
+        lambda_labs_api_key,
+        "https://api.lambdalabs.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_runpod,
+        runpod_api_key,
+        "https://api.runpod.ai/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_modal,
+        modal_api_key,
+        "https://api.modal.com/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_huggingface,
+        huggingface_api_key,
+        "https://api-inference.huggingface.co/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_lmstudio,
+        lmstudio_url,
+        "http://localhost:1234/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_tgi,
+        tgi_url,
+        "http://localhost:8080/v1/chat/completions"
+    );
+    simple_openai!(
+        generate_vllm,
+        vllm_url,
+        "http://localhost:8000/v1/chat/completions"
+    );
     simple_openai!(generate_custom_openai, custom_openai_url, "");
-
 
     /// Dispatch with automatic fallback: tries primary provider, then each in fallback_chain.
     pub(crate) async fn dispatch_with_fallback(
@@ -372,9 +463,7 @@ impl LlmClient {
                         Ok(ProviderType::LMStudio) => {
                             self.generate_lmstudio(messages, model_override).await
                         }
-                        Ok(ProviderType::TGI) => {
-                            self.generate_tgi(messages, model_override).await
-                        }
+                        Ok(ProviderType::TGI) => self.generate_tgi(messages, model_override).await,
                         Ok(ProviderType::VLLM) => {
                             self.generate_vllm(messages, model_override).await
                         }

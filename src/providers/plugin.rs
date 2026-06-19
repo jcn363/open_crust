@@ -58,12 +58,18 @@ impl PluginProvider for PluginWrapper {
     fn execute_hook(&self, _hook: &str, _context: &str) -> Result<String, String> {
         // This would call the plugin's entry script
         // For now, return not implemented
-        Err(format!("Hook execution not implemented for plugin {}", self.plugin.name))
+        Err(format!(
+            "Hook execution not implemented for plugin {}",
+            self.plugin.name
+        ))
     }
 
     fn execute_tool(&self, _tool_name: &str, _args: &Value) -> Result<String, String> {
         // This would call the plugin's entry script with tool_execute hook
-        Err(format!("Tool execution not implemented for plugin {}", self.plugin.name))
+        Err(format!(
+            "Tool execution not implemented for plugin {}",
+            self.plugin.name
+        ))
     }
 
     fn tool_schemas(&self) -> Vec<Value> {
@@ -93,7 +99,9 @@ impl PluginProvider for PluginWrapper {
 pub type PluginProviderRegistry = crate::providers::ProviderRegistry<dyn PluginProvider>;
 
 /// Create plugin provider registry from PluginManager
-pub fn plugin_registry_from_manager(manager: &crate::plugins::manager::PluginManager) -> PluginProviderRegistry {
+pub fn plugin_registry_from_manager(
+    manager: &crate::plugins::manager::PluginManager,
+) -> PluginProviderRegistry {
     let mut registry = PluginProviderRegistry::new();
     for plugin in manager.list() {
         if plugin.enabled {

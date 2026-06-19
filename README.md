@@ -175,7 +175,7 @@ Configure your environment at `~/.config/opencrust/config.json`:
 }
 ```
 
-**Supported providers (12):** `ollama`, `openrouter`, `openai`, `gemini`, `mistral`, `anthropic`, `groq`, `togetherai`, `replicate`, `deepseek`, `localai`, `unsloth`.
+**Supported providers (34):** `ollama`, `openrouter`, `openai`, `gemini`, `mistral`, `anthropic`, `groq`, `togetherai`, `replicate`, `deepseek`, `localai`, `unsloth`, `azure`, `github-copilot`, `bedrock`, `vertex`, `perplexity`, `cohere`, `cerebras`, `alibaba`, `venice`, `nvidia`, `fireworks`, `sambanova`, `octoai`, `anyscale`, `lambdalabs`, `runpod`, `modal`, `huggingface`, `lmstudio`, `tgi`, `vllm`, `custom-openai`.
 
 Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via the `model_aliases` config section. Subagent-specific provider configs are also supported for multi-agent routing.
 

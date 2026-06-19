@@ -4,10 +4,10 @@
 //! different integration types (desktop, notifications, file pickers, tools, etc.)
 
 pub mod desktop;
-pub mod notifications;
 pub mod file_picker;
-pub mod tool;
+pub mod notifications;
 pub mod plugin;
+pub mod tool;
 
 /// Generic provider trait that all providers must implement
 pub trait Provider: Send + Sync {
@@ -74,6 +74,9 @@ impl<P: Provider + ?Sized> ProviderRegistry<P> {
 
     /// Get provider by ID
     pub fn get(&self, id: &str) -> Option<&P> {
-        self.providers.iter().find(|p| p.id() == id).map(|p| p.as_ref())
+        self.providers
+            .iter()
+            .find(|p| p.id() == id)
+            .map(|p| p.as_ref())
     }
 }

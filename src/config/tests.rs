@@ -369,8 +369,8 @@ fn config_validate_invalid_theme_should_warn() {
 
 // ── Property-based tests ──────────────────────────────────────────────
 
-use proptest::prelude::*;
 use proptest::arbitrary::Arbitrary;
+use proptest::prelude::*;
 use proptest::strategy::{BoxedStrategy, Strategy};
 
 impl Arbitrary for ProviderType {

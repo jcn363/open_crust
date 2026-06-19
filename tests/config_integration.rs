@@ -28,10 +28,7 @@ fn config_save_roundtrip() {
 
     assert_eq!(loaded.provider, opencrust::config::ProviderType::Ollama);
     assert_eq!(loaded.model, "llama3");
-    assert_eq!(
-        loaded.ollama_url,
-        Some("http://localhost:11434".into())
-    );
+    assert_eq!(loaded.ollama_url, Some("http://localhost:11434".into()));
 }
 
 /// Default config is valid JSON and has expected default provider.
@@ -40,8 +37,7 @@ fn config_default_is_valid() {
     let config = opencrust::config::Config::default();
     let json = serde_json::to_string_pretty(&config).expect("serialize");
     // Must parse back
-    let parsed: opencrust::config::Config =
-        serde_json::from_str(&json).expect("deserialize");
+    let parsed: opencrust::config::Config = serde_json::from_str(&json).expect("deserialize");
     assert_eq!(parsed.provider, opencrust::config::ProviderType::OpenRouter);
 }
 
@@ -73,8 +69,7 @@ fn config_all_provider_fields_roundtrip() {
     config.unsloth_url = Some("http://localhost:8000".into());
 
     let json = serde_json::to_string_pretty(&config).expect("serialize");
-    let loaded: opencrust::config::Config =
-        serde_json::from_str(&json).expect("deserialize");
+    let loaded: opencrust::config::Config = serde_json::from_str(&json).expect("deserialize");
 
     assert_eq!(loaded.ollama_url, Some("http://localhost:11434".into()));
     assert_eq!(loaded.openai_key, Some("sk-test".into()));
@@ -98,8 +93,7 @@ fn config_all_keys_roundtrip() {
     config.unsloth_api_key = Some("unsloth-xxx".into());
 
     let json = serde_json::to_string_pretty(&config).expect("serialize");
-    let loaded: opencrust::config::Config =
-        serde_json::from_str(&json).expect("deserialize");
+    let loaded: opencrust::config::Config = serde_json::from_str(&json).expect("deserialize");
 
     assert_eq!(loaded.openai_key, Some("sk-xxx".into()));
     assert_eq!(loaded.unsloth_api_key, Some("unsloth-xxx".into()));
