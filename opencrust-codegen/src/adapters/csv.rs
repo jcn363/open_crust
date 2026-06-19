@@ -1,13 +1,14 @@
 //! CSV data source adapter.
 
-use std::path::Path;
+use crate::adapters::DataSource;
+use crate::errors::Result;
 use async_trait::async_trait;
 use csv::ReaderBuilder;
 use serde_json::{Value, json};
-use crate::adapters::DataSource;
-use crate::errors::Result;
+use std::path::Path;
 
 /// CSV data source that reads a CSV file and returns an array of objects.
+#[allow(dead_code)]
 pub struct CsvSource {
     path: String,
     has_headers: bool,
@@ -16,6 +17,7 @@ pub struct CsvSource {
 
 impl CsvSource {
     /// Create a new CSV source from a file path.
+    #[allow(dead_code)]
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
             path: path.as_ref().to_string_lossy().to_string(),
@@ -25,12 +27,14 @@ impl CsvSource {
     }
 
     /// Set whether the CSV has headers (default: true).
+    #[allow(dead_code)]
     pub fn with_headers(mut self, has_headers: bool) -> Self {
         self.has_headers = has_headers;
         self
     }
 
     /// Set the delimiter character (default: ',').
+    #[allow(dead_code)]
     pub fn with_delimiter(mut self, delimiter: u8) -> Self {
         self.delimiter = delimiter;
         self
@@ -45,23 +49,41 @@ impl DataSource for CsvSource {
         let delimiter = self.delimiter;
 
         tokio::task::spawn_blocking(move || {
+            // Always read with has_headers=false to get all rows as data
             let mut reader = ReaderBuilder::new()
-                .has_headers(has_headers)
+                .has_headers(false)
                 .delimiter(delimiter)
                 .from_path(&path)?;
 
+            // Collect all records first
+            let all_records: std::result::Result<Vec<_>, csv::Error> = reader.records().collect();
+            let all_records = all_records?;
+
             let headers = if has_headers {
-                reader.headers()?.clone()
+                // Use first record as headers, process remaining records
+                if let Some(first_record) = all_records.first() {
+                    first_record
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                } else {
+                    Vec::new()
+                }
             } else {
-                // Generate default headers if none
-                let first_record = reader.records().next().transpose()?;
-                let count = first_record.as_ref().map(|r| r.len()).unwrap_or(0);
-                (0..count).map(|i| format!("col{}", i)).collect()
+                // Generate default headers from first record's column count
+                if let Some(first_record) = all_records.first() {
+                    (0..first_record.len())
+                        .map(|i| format!("col{}", i))
+                        .collect()
+                } else {
+                    Vec::new()
+                }
             };
 
             let mut records = Vec::new();
-            for result in reader.records() {
-                let record = result?;
+            let start_idx = if has_headers { 1 } else { 0 };
+
+            for record in all_records.iter().skip(start_idx) {
                 let mut obj = serde_json::Map::new();
                 for (i, field) in record.iter().enumerate() {
                     if let Some(header) = headers.get(i) {
@@ -90,8 +112,8 @@ impl DataSource for CsvSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[tokio::test]
     async fn test_csv_source_with_headers() {

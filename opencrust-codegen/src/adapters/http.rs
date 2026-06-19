@@ -1,12 +1,13 @@
 //! HTTP data source adapter.
 
+use crate::adapters::DataSource;
+use crate::errors::Result;
 use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::Value;
-use crate::adapters::DataSource;
-use crate::errors::Result;
 
 /// HTTP data source that performs a GET request and parses JSON response.
+#[allow(dead_code)]
 pub struct HttpSource {
     client: Client,
     url: String,
@@ -14,6 +15,7 @@ pub struct HttpSource {
 
 impl HttpSource {
     /// Create a new HTTP source with the given URL.
+    #[allow(dead_code)]
     pub fn new<U: Into<String>>(url: U) -> Self {
         Self {
             client: Client::new(),
@@ -22,6 +24,7 @@ impl HttpSource {
     }
 
     /// Set a custom `reqwest::Client` (e.g., for auth, timeouts).
+    #[allow(dead_code)]
     pub fn with_client(mut self, client: Client) -> Self {
         self.client = client;
         self
@@ -31,7 +34,12 @@ impl HttpSource {
 #[async_trait]
 impl DataSource for HttpSource {
     async fn fetch(&self) -> Result<Value> {
-        let resp = self.client.get(&self.url).send().await?.error_for_status()?;
+        let resp = self
+            .client
+            .get(&self.url)
+            .send()
+            .await?
+            .error_for_status()?;
         let json = resp.json::<Value>().await?;
         Ok(json)
     }

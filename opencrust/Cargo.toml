@@ -1,0 +1,53 @@
+[package]
+name = "opencrust"
+version = "1.2.0"
+edition = "2024"
+
+[dependencies]
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+directories = { workspace = true }
+glob = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+shell-words = { workspace = true }
+async-recursion = { workspace = true }
+regex = { workspace = true }
+url = { workspace = true }
+async-trait = { workspace = true }
+walkdir = { workspace = true }
+arboard = { workspace = true }
+html2md = { workspace = true }
+uuid = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+similar = { workspace = true }
+lru = { workspace = true }
+nucleo = { workspace = true }
+rayon = { workspace = true }
+hostname = { workspace = true }
+ssh2 = { workspace = true }
+nix = { workspace = true }
+libc = { workspace = true }
+tera = { workspace = true }
+handlebars = { workspace = true }
+csv = { workspace = true }
+sqlx = { workspace = true }
+anyhow = { workspace = true }
+dirs = { workspace = true }
+
+
+[features]
+macos-menu-bar = []
+
+[dev-dependencies]
+tempfile = { version = "3.20.0" }
+
+proptest = { version = "1.6.0" }
+insta = { version = "1.42.0", features = ["json"] }
+wiremock = { version = "0.5" }

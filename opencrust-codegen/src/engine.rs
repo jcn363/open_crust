@@ -3,7 +3,7 @@
 use anyhow::Context;
 use handlebars::Handlebars;
 use serde_json::Value;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tera::{Context as TeraContext, Tera};
 
 use crate::errors::Result;
@@ -74,6 +74,8 @@ impl Engine {
     /// Render a raw template string (Handlebars syntax) with the given JSON context.
     pub fn render_raw(&self, template: &str, ctx: &Value) -> Result<String> {
         // Handlebars is used for raw strings because it can compile on‑the‑fly.
-        self.handlebars.render_template(template, ctx).map_err(|e| e.into())
+        self.handlebars
+            .render_template(template, ctx)
+            .map_err(|e| e.into())
     }
 }

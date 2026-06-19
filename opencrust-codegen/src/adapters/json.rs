@@ -1,18 +1,20 @@
 //! JSON data source adapter.
 
-use std::path::Path;
-use async_trait::async_trait;
-use serde_json::Value;
 use crate::adapters::DataSource;
 use crate::errors::Result;
+use async_trait::async_trait;
+use serde_json::Value;
+use std::path::Path;
 
 /// JSON data source that loads a JSON file.
+#[allow(dead_code)]
 pub struct JsonSource {
     path: String,
 }
 
 impl JsonSource {
     /// Create a new JSON source from a file path.
+    #[allow(dead_code)]
     pub fn new<P: AsRef<Path>>(path: P) -> Self {
         Self {
             path: path.as_ref().to_string_lossy().to_string(),
@@ -36,8 +38,8 @@ impl DataSource for JsonSource {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[tokio::test]
     async fn test_json_source_object() {

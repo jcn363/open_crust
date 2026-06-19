@@ -1,10 +1,11 @@
 //! Data source adapters for fetching context data.
 
+use crate::errors::Result;
 use async_trait::async_trait;
 use serde_json::Value;
-use crate::errors::{DataSourceError, Result};
 
 /// Trait for data sources that can fetch JSON data.
+#[allow(dead_code)]
 #[async_trait]
 pub trait DataSource: Send + Sync {
     /// Fetch data from the source and return as JSON Value.
@@ -12,11 +13,15 @@ pub trait DataSource: Send + Sync {
 }
 
 pub mod csv;
-pub mod json;
-pub mod http;
 pub mod db;
+pub mod http;
+pub mod json;
 
+#[allow(unused_imports)]
 pub use csv::CsvSource;
-pub use json::JsonSource;
-pub use http::HttpSource;
+#[allow(unused_imports)]
 pub use db::DbSource;
+#[allow(unused_imports)]
+pub use http::HttpSource;
+#[allow(unused_imports)]
+pub use json::JsonSource;

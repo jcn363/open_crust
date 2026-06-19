@@ -1,0 +1,6 @@
+[[plugin]]
+name = "codegen_example"
+path = "codegen_example"
+entry = "handler.sh"
+version = "0.1.0"
+description = "Example OpenCrust plugin demonstrating usage of the opencrust-codegen library."

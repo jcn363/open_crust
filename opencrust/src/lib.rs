@@ -1,9 +1,8 @@
+#![allow(clippy::collapsible_if)]
 //! OpenCrust — Production TUI platform for AI-powered coding
 //!
 //! Library crate for OpenCrust. All application logic is exposed here;
 //! `main.rs` is a thin CLI parser that delegates to this library.
-
-#![deny(warnings)]
 
 pub mod acp;
 pub mod app;

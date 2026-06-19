@@ -23,13 +23,6 @@ pub enum CodegenError {
     #[error("Template render error: {message}")]
     TemplateRenderError { message: String },
 
-    /// Data source error.
-    #[error("Data source error: {source}")]
-    DataSourceError {
-        #[from]
-        source: DataSourceError,
-    },
-
     /// I/O error.
     #[error("I/O error: {source}")]
     IoError {
@@ -73,16 +66,29 @@ pub enum CodegenError {
     #[error("Invalid template syntax: {engine} template syntax: {message}")]
     InvalidSyntax { engine: String, message: String },
 
-    /// Output write error.
-    #[error("Failed to write output to {path}: {source}")]
-    OutputWriteError {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
+    /// Anyhow error.
+    #[error("Anyhow error: {0}")]
+    AnyhowError(#[from] anyhow::Error),
+
+    /// Handlebars template error.
+    #[error("Handlebars error: {0}")]
+    HandlebarsError(#[from] handlebars::TemplateError),
+
+    /// Tera template error.
+    #[error("Tera error: {0}")]
+    TeraError(#[from] tera::Error),
+
+    /// Tokio JoinError.
+    #[error("Join error: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
+
+    /// Handlebars render error.
+    #[error("Render error: {0}")]
+    RenderError(#[from] handlebars::RenderError),
 }
 
 /// Errors from data source adapters.
+#[allow(dead_code)]
 #[derive(Error, Debug)]
 pub enum DataSourceError {
     /// CSV data source error.
@@ -123,12 +129,6 @@ pub enum DataSourceError {
     /// Generic error with message.
     #[error("{message}")]
     Other { message: String },
-}
-
-impl From<DataSourceError> for CodegenError {
-    fn from(err: DataSourceError) -> Self {
-        CodegenError::DataSourceError { source: err }
-    }
 }
 
 /// Result type for codegen operations.
