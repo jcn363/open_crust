@@ -8,6 +8,10 @@ opencrust/
 │   ├── app.rs             # Application state, tabs, history, background tasks
 │   ├── ui.rs              # TUI rendering (ratatui)
 │   │
+│   ├── auth.rs            # GitHub Copilot / ChatGPT Plus OAuth device flow
+│   ├── memory.rs          # Auto memory system (conversation persistence)
+│   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
+│   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
 │   ├── config.rs          # Config loading/saving (34 providers, model_aliases, subagent cfg)

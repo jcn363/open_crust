@@ -399,6 +399,46 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 ---
 
+## New Feature Modules (Phase 5)
+
+### auth.rs
+**Purpose:** GitHub Copilot and ChatGPT Plus OAuth device flow authentication  
+**Key types:** `AuthProvider`, `CachedToken`, `DeviceCodeResponse`  
+**Key functions:** `github_copilot_device_flow()`, `chatgpt_plus_device_flow()`, `is_authenticated()`, `save_token()`, `load_token()`  
+**When to modify:**
+- Adding new auth providers
+- Changing OAuth flow
+- Modifying token caching
+
+**Related modules:** `config.rs`, `llm.rs`  
+**Lines of code:** ~300
+
+### memory.rs
+**Purpose:** Auto memory system — persists conversation learnings across sessions  
+**Key types:** `AutoMemory`, `MemoryEntry`, `MemoryCategory`  
+**Key functions:** `remember()`, `recall()`, `forget()`, `auto_extract()`, `save()`, `load()`  
+**When to modify:**
+- Adding new memory categories
+- Changing auto-extraction patterns
+- Modifying storage format
+
+**Related modules:** `app.rs`, `event_loop/slash_commands.rs`  
+**Lines of code:** ~200
+
+### recursive_agents.rs
+**Purpose:** Recursive sub-agent management — agents can spawn children up to 5 levels deep  
+**Key types:** `RecursiveAgentManager`, `AgentNode`, `RecursiveAgentStatus`  
+**Key functions:** `spawn_agent()`, `cancel_agent()`, `render_tree()`, `can_spawn()`  
+**When to modify:**
+- Changing max depth limit
+- Adding agent metadata
+- Modifying tree rendering
+
+**Related modules:** `background_agents/`, `app.rs`  
+**Lines of code:** ~250
+
+---
+
 ## Desktop Integration Modules
 
 ### desktop/mod.rs

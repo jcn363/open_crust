@@ -14,6 +14,15 @@ pub enum Mode {
     Help,           // ? key help
     McpShowcase,    // Ctrl+M MCP Showcase
     MissionControl, // Ctrl+G Mission Control
+    SplitView,      // Split view mode for diffs
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum SplitViewMode {
+    #[default]
+    SideBySide,
+    InlineUnified,
+    InlineSplit,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]

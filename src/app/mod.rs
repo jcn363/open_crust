@@ -103,6 +103,16 @@ pub struct App {
     pub dirty: bool,
     /// Fallback provider state: (provider_name, timestamp) when a fallback occurred
     pub fallback_provider: Option<(String, chrono::DateTime<chrono::Utc>)>,
+    /// Split view mode for diff rendering
+    pub split_view_mode: SplitViewMode,
+    /// Left pane content for split view
+    pub split_left_content: Option<String>,
+    /// Right pane content for split view
+    pub split_right_content: Option<String>,
+    /// Left pane scroll offset
+    pub split_left_scroll: usize,
+    /// Right pane scroll offset
+    pub split_right_scroll: usize,
 }
 
 impl App {
@@ -268,6 +278,12 @@ impl App {
             dirty: true,
             // Fallback provider tracking
             fallback_provider: None,
+            // Split view state
+            split_view_mode: SplitViewMode::default(),
+            split_left_content: None,
+            split_right_content: None,
+            split_left_scroll: 0,
+            split_right_scroll: 0,
         };
         app.load_history();
         // Discover custom commands from .opencrust/commands/

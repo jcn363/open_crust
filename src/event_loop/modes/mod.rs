@@ -13,6 +13,7 @@ pub mod plugin_browser;
 pub mod review;
 pub mod servers;
 pub mod skill_browser;
+pub mod split_view;
 pub mod types;
 
 pub use types::{HandlerContext, ModeAction, ModeHandler};
@@ -38,6 +39,7 @@ pub async fn dispatch_mode(
         Mode::Help => Box::new(help::HelpHandler),
         Mode::McpShowcase => Box::new(mcp_showcase::McpShowcaseHandler),
         Mode::MissionControl => Box::new(mission_control::MissionControlHandler),
+        Mode::SplitView => Box::new(split_view::SplitViewHandler),
     };
 
     handler.handle_key(app, key, ctx).await

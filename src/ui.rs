@@ -6,6 +6,7 @@
 mod chat;
 mod layout;
 mod popups;
+pub mod split_view;
 
 use ratatui::{
     Frame,
@@ -217,6 +218,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             if let Some(ui) = app.mission_control_ui.as_mut() {
                 ui.render(f, f.area(), &theme);
             }
+        }
+        Mode::SplitView => {
+            split_view::draw_split_view(f, app, f.area(), &theme);
         }
         _ => {}
     }

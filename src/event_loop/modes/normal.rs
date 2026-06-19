@@ -196,6 +196,11 @@ impl ModeHandler for NormalHandler {
                 app.tabs[0].messages.push(Message::new(msg));
                 ModeAction::Continue
             }
+            KeyCode::Char('d') if key.modifiers == KeyModifiers::CONTROL => {
+                // Toggle split view mode for diffs
+                app.mode = Mode::SplitView;
+                ModeAction::SwitchMode(Mode::SplitView)
+            }
             _ => ModeAction::Continue,
         }
     }

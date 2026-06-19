@@ -22,6 +22,7 @@ fn mode_str(mode: crate::app::Mode) -> &'static str {
         crate::app::Mode::Help => "HELP",
         crate::app::Mode::McpShowcase => "MCP SHOWCASE",
         crate::app::Mode::MissionControl => "MISSION CONTROL",
+        crate::app::Mode::SplitView => "SPLIT VIEW",
     }
 }
 
@@ -127,6 +128,7 @@ pub fn draw_status_bar(f: &mut Frame, app: &App, area: Rect, theme: &ThemeContex
         crate::app::Mode::CommandPalette => " ↑↓:Navigate  Enter:Select  Esc:Cancel",
         crate::app::Mode::McpShowcase => " ↑↓:Navigate  Enter:Toggle  Esc:Close",
         crate::app::Mode::MissionControl => " ↑↓:Navigate  Enter:Select  Esc:Close",
+        crate::app::Mode::SplitView => " ←→:Scroll  Tab:Toggle Mode  Esc:Close",
     };
 
     // Mode-specific background coloring for visual context

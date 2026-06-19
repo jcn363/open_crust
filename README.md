@@ -87,6 +87,12 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Skill Browser**: Toggle skills active/inactive (`Ctrl+Shift+K` or `S` in normal mode)
 - **Input Prediction**: Ghost text suggestions — `Tab` to accept, `Esc` to dismiss
 - **Interactive Diff Viewer**: Side-by-side line-diff with unified view toggle (`u`) and scroll support (`j`/`k`)
+- **Split View Mode**: Side-by-side, unified diff, and interleaved split diff modes (`Ctrl+D`)
+- **Auto Memory**: Persistent conversation learnings across sessions (`/memory` commands)
+- **Recursive Sub-Agents**: Agents can spawn child agents up to 5 levels deep (`/agent spawn`)
+- **Share Links**: Generate shareable session links with metadata (`/share`, `/share-list`)
+- **External Editor**: Open files in your preferred editor (`/edit <file>`)
+- **Auth Integration**: GitHub Copilot and ChatGPT Plus OAuth device flow (`/auth`)
 - **Context Pinning**: Permanently lock critical files into the agent's context
 - **Context Budget Display**: Real-time token count, budget %, model name, and cost in status bar
 - **Command History**: Persistent history across sessions; navigate with `↑` / `↓`
@@ -202,6 +208,8 @@ Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via
 | `Ctrl+G`            | Mission Control (orchestrator DAG view)   |
 | `Ctrl+T`            | Open Background Agents tab                |
 | `Ctrl+Shift+K`      | Open Skill Browser                        |
+| `Ctrl+Shift+P`      | Open Plugin Browser                       |
+| `Ctrl+D`            | Toggle Split View (diff modes)            |
 | `Alt+V`             | Toggle Vim Mode                           |
 | `p` / `P`           | Enter Plan Mode                            |
 | `s` / `S`           | Server panel / Skill Browser              |
@@ -226,6 +234,13 @@ opencrust/
 │   ├── main.rs            # Entry point, CLI args, TUI event loop
 │   ├── app.rs             # Application state, tabs, history, background tasks
 │   ├── ui.rs              # TUI rendering (ratatui)
+│   │   ├── chat.rs        # Chat/message rendering
+│   │   ├── layout.rs      # Terminal layout
+│   │   ├── popups.rs      # Modal popups (review, skills, plugins)
+│   │   └── split_view.rs  # Side-by-side / inline diff rendering
+│   ├── auth.rs            # GitHub Copilot / ChatGPT Plus OAuth
+│   ├── memory.rs          # Auto memory system (conversation persistence)
+│   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
 │   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing

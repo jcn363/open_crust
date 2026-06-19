@@ -25,12 +25,12 @@ impl ModeHandler for InsertHandler {
             // Handle slash commands before submitting
             let input_trimmed = app.input.trim();
             if input_trimmed == "/share" {
-                let share_path = share::share_conversation(app);
-                if let Some(path) = share_path {
-                    let _ = ctx.clipboard.lock().await.copy(&path);
+                let share_link = share::share_conversation(app);
+                if let Some(link) = share_link {
+                    let _ = ctx.clipboard.lock().await.copy(&link.file_path);
                     app.tabs[0].messages.push(Message::new(format!(
-                        "Conversation shared to: {}\nPath copied to clipboard.",
-                        path
+                        "Conversation shared: {} (id: {})\nPath copied to clipboard.",
+                        link.tab_name, link.id
                     )));
                 } else {
                     app.tabs[0].messages.push(Message::new(

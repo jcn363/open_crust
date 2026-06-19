@@ -189,6 +189,12 @@ pub struct Config {
     /// User role for permission templates (admin, developer, reviewer)
     #[serde(default)]
     pub role: crate::permissions::Role,
+
+    // --- External editor configuration ---
+    /// Path to external editor binary (e.g., "code", "vim", "nano")
+    /// When set, /edit command opens files in this editor
+    #[serde(default)]
+    pub external_editor: Option<String>,
 }
 
 impl Default for Config {
@@ -257,6 +263,7 @@ impl Default for Config {
             token_budget_enabled: true,
             fallback_chain: Vec::new(),
             role: crate::permissions::Role::default(),
+            external_editor: None,
         }
     }
 }

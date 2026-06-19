@@ -223,6 +223,318 @@ pub(crate) async fn handle_slash_command(
         return true;
     }
 
+    // --- External Editor ---
+    if prompt_str.starts_with("/edit ") {
+        let file_path = prompt_str.trim_start_matches("/edit ").trim();
+        if file_path.is_empty() {
+            let _ = response_tx
+                .send(
+                    "opencrust: Usage: /edit <file_path> (opens file in external editor)"
+                        .to_string(),
+                )
+                .await;
+        } else if let Some(editor) = client.config.external_editor.as_deref() {
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: Opening '{}' in {}...",
+                    file_path, editor
+                ))
+                .await;
+            match std::process::Command::new(editor).arg(file_path).spawn() {
+                Ok(_) => {
+                    let _ = response_tx
+                        .send(format!(
+                            "opencrust: Launched {} for '{}'",
+                            editor, file_path
+                        ))
+                        .await;
+                }
+                Err(e) => {
+                    let _ = response_tx
+                        .send(format!("opencrust: Failed to launch {}: {}", editor, e))
+                        .await;
+                }
+            }
+        } else {
+            let _ = response_tx
+                .send(
+                    "opencrust: No external editor configured. Set 'external_editor' in config.json (e.g., \"external_editor\": \"code\")".to_string()
+                )
+                .await;
+        }
+        return true;
+    }
+
+    // --- Split View / Diff ---
+    if prompt_str.starts_with("/diff ") {
+        let file_path = prompt_str.trim_start_matches("/diff ").trim();
+        if file_path.is_empty() {
+            let _ = response_tx
+                .send("opencrust: Usage: /diff <file_path> (shows file in split view)".to_string())
+                .await;
+        } else {
+            match std::fs::read_to_string(file_path) {
+                Ok(content) => {
+                    let _ = response_tx
+                        .send(format!(
+                            "opencrust: Loaded '{}' ({} bytes) into split view. Press Ctrl+D to enter split view.",
+                            file_path, content.len()
+                        ))
+                        .await;
+                }
+                Err(e) => {
+                    let _ = response_tx
+                        .send(format!("opencrust: Error reading '{}': {}", file_path, e))
+                        .await;
+                }
+            }
+        }
+        return true;
+    }
+
+    // --- Memory ---
+    if prompt_str.starts_with("/memory ") {
+        let args = prompt_str.trim_start_matches("/memory ").trim();
+        if args.starts_with("remember ") {
+            let rest = args.trim_start_matches("remember ").trim();
+            let parts: Vec<&str> = rest.splitn(2, ' ').collect();
+            if parts.len() < 2 {
+                let _ = response_tx
+                    .send("opencrust: Usage: /memory remember <key> <value>".to_string())
+                    .await;
+            } else {
+                let mut mem = crate::memory::AutoMemory::default();
+                mem.remember(
+                    parts[0],
+                    parts[1],
+                    crate::memory::MemoryCategory::UserPreference,
+                );
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: Remembered '{}': '{}'",
+                        parts[0], parts[1]
+                    ))
+                    .await;
+            }
+        } else if args.starts_with("recall ") {
+            let query = args.trim_start_matches("recall ").trim();
+            let mut mem = crate::memory::AutoMemory::default();
+            let results = mem.recall(query);
+            if results.is_empty() {
+                let _ = response_tx
+                    .send(format!("opencrust: No memories matching '{}'", query))
+                    .await;
+            } else {
+                let list: Vec<String> = results
+                    .iter()
+                    .map(|e| format!("  [{}] {}: {}", e.category, e.key, e.value))
+                    .collect();
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: Found {} memories:\n{}",
+                        results.len(),
+                        list.join("\n")
+                    ))
+                    .await;
+            }
+        } else if args.starts_with("forget ") {
+            let key = args.trim_start_matches("forget ").trim();
+            let mut mem = crate::memory::AutoMemory::default();
+            if mem.forget(key) {
+                let _ = response_tx
+                    .send(format!("opencrust: Forgot memory '{}'", key))
+                    .await;
+            } else {
+                let _ = response_tx
+                    .send(format!("opencrust: No memory with key '{}'", key))
+                    .await;
+            }
+        } else if args == "list" {
+            let mem = crate::memory::AutoMemory::default();
+            let all = mem.list_all();
+            if all.is_empty() {
+                let _ = response_tx
+                    .send("opencrust: No memories stored.".to_string())
+                    .await;
+            } else {
+                let list: Vec<String> = all
+                    .iter()
+                    .map(|e| format!("  [{}] {}: {}", e.category, e.key, e.value))
+                    .collect();
+                let _ = response_tx
+                    .send(format!(
+                        "opencrust: {} memories:\n{}",
+                        all.len(),
+                        list.join("\n")
+                    ))
+                    .await;
+            }
+        } else {
+            let _ = response_tx
+                .send("opencrust: Usage: /memory <remember|recall|forget|list> [args]".to_string())
+                .await;
+        }
+        return true;
+    }
+
+    // --- Agent (Recursive Sub-agents) ---
+    if prompt_str.starts_with("/agent ") {
+        let args = prompt_str.trim_start_matches("/agent ").trim();
+        if args.starts_with("spawn ") {
+            let prompt = args.trim_start_matches("spawn ").trim();
+            let mut mgr = crate::recursive_agents::RecursiveAgentManager::new();
+            match mgr.spawn_agent(None, prompt) {
+                Ok(id) => {
+                    let _ = response_tx
+                        .send(format!(
+                            "opencrust: Spawned agent '{}' (id: {}). Use Ctrl+T to view background tasks.",
+                            &prompt[..40.min(prompt.len())],
+                            &id[..12.min(id.len())]
+                        ))
+                        .await;
+                }
+                Err(e) => {
+                    let _ = response_tx
+                        .send(format!("opencrust: Failed to spawn agent: {}", e))
+                        .await;
+                }
+            }
+        } else if args == "status" {
+            let mgr = crate::recursive_agents::RecursiveAgentManager::new();
+            let count = mgr.get_total_count();
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: {} total agents. Use Ctrl+T for full background task view.",
+                    count
+                ))
+                .await;
+        } else if args == "tree" {
+            let mgr = crate::recursive_agents::RecursiveAgentManager::new();
+            let tree = mgr.render_tree();
+            if tree.is_empty() {
+                let _ = response_tx
+                    .send("opencrust: No agents running.".to_string())
+                    .await;
+            } else {
+                let _ = response_tx
+                    .send(format!("opencrust: Agent tree:\n{}", tree.join("\n")))
+                    .await;
+            }
+        } else {
+            let _ = response_tx
+                .send("opencrust: Usage: /agent <spawn|status|tree> [args]".to_string())
+                .await;
+        }
+        return true;
+    }
+
+    // --- Auth (GitHub Copilot / ChatGPT Plus login) ---
+    if prompt_str.starts_with("/auth ") {
+        let args = prompt_str.trim_start_matches("/auth ").trim();
+        if args == "copilot" {
+            let _ = response_tx
+                .send("opencrust: Initiating GitHub Copilot device flow... Visit https://github.com/login/device".to_string())
+                .await;
+            match crate::auth::github_copilot_device_flow().await {
+                Ok(flow) => {
+                    let _ = response_tx
+                        .send(format!(
+                            "opencrust: Go to {} and enter code: {}",
+                            flow.verification_uri, flow.user_code
+                        ))
+                        .await;
+                }
+                Err(e) => {
+                    let _ = response_tx
+                        .send(format!("opencrust: Copilot auth error: {}", e))
+                        .await;
+                }
+            }
+        } else if args == "chatgpt" {
+            let _ = response_tx
+                .send("opencrust: Initiating ChatGPT Plus device flow...".to_string())
+                .await;
+            match crate::auth::chatgpt_plus_device_flow().await {
+                Ok(flow) => {
+                    let _ = response_tx
+                        .send(format!(
+                            "opencrust: Go to {} and enter code: {}",
+                            flow.verification_uri, flow.user_code
+                        ))
+                        .await;
+                }
+                Err(e) => {
+                    let _ = response_tx
+                        .send(format!("opencrust: ChatGPT auth error: {}", e))
+                        .await;
+                }
+            }
+        } else if args == "status" {
+            let copilot = crate::auth::is_authenticated(&crate::auth::AuthProvider::GitHubCopilot);
+            let chatgpt = crate::auth::is_authenticated(&crate::auth::AuthProvider::ChatGptPlus);
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: Auth status — GitHub Copilot: {} | ChatGPT Plus: {}",
+                    if copilot { "✓" } else { "✗" },
+                    if chatgpt { "✓" } else { "✗" }
+                ))
+                .await;
+        } else if args == "clear" {
+            let _ = crate::auth::clear_token(&crate::auth::AuthProvider::GitHubCopilot);
+            let _ = crate::auth::clear_token(&crate::auth::AuthProvider::ChatGptPlus);
+            let _ = response_tx
+                .send("opencrust: All auth tokens cleared.".to_string())
+                .await;
+        } else {
+            let _ = response_tx
+                .send("opencrust: Usage: /auth <copilot|chatgpt|status|clear>".to_string())
+                .await;
+        }
+        return true;
+    }
+
+    // --- Share ---
+    if prompt_str == "/share" {
+        let _ = response_tx
+            .send(
+                "opencrust: Share link generation requires App context. Use /share-file instead."
+                    .to_string(),
+            )
+            .await;
+        return true;
+    }
+
+    if prompt_str == "/share-list" {
+        let links = crate::event_loop::share::list_share_links();
+        if links.is_empty() {
+            let _ = response_tx
+                .send("opencrust: No share links found.".to_string())
+                .await;
+        } else {
+            let list: Vec<String> = links
+                .iter()
+                .map(|l| {
+                    format!(
+                        "  {} | {} msgs | {} {} | {}",
+                        &l.id[..12.min(l.id.len())],
+                        l.message_count,
+                        l.provider,
+                        l.model,
+                        &l.created_at[..10.min(l.created_at.len())]
+                    )
+                })
+                .collect();
+            let _ = response_tx
+                .send(format!(
+                    "opencrust: {} share links:\n{}",
+                    links.len(),
+                    list.join("\n")
+                ))
+                .await;
+        }
+        return true;
+    }
+
     // Not a slash command - send to LLM
     let _ = git::checkpoint();
     let enriched_prompt = context::inject_file_context(prompt_str);
