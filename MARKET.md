@@ -125,7 +125,7 @@
 |----------|---------|------------|
 | ✅ **Built in Rust** | 7-10ms startup, 16MB binary, ~18MB RAM | Shared with Codex, OpenDev. Ahead of all TS/Go agents |
 | ✅ **Security-first** | Granular permissions, network gating, persistent audit | Unique — only Cline has partial equivalent |
-| ✅ **12 providers** | Ollama, OpenRouter, OpenAI, Gemini, Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI, Unsloth | OpenCode (75+) has more; OpenCrust covers all major + Unsloth Studio |
+| ✅ **34 providers** | Ollama, OpenRouter, OpenAI, Gemini, Anthropic, Mistral, Groq, Together, Replicate, DeepSeek, LocalAI, Unsloth, Azure, Copilot, Bedrock, Vertex, Perplexity, Cohere, Cerebras, Alibaba, Venice, NVIDIA, Fireworks, SambaNova, OctoAI, Anyscale, Lambda, RunPod, Modal, HuggingFace, LMStudio, TGI, vLLM, Custom | OpenCode (75+) has more; OpenCrust covers all major + Unsloth Studio |
 | ✅ **Plan Mode enforced** | Ctrl+P toggles Planning, blocks write/edit/bash tools | ✅ Matches market (was ⚠️) |
 | ✅ **`/goal` command** | Persistent objective, system prompt injection | ✅ Caught up with Claude Code + Codex |
 | ✅ **Mission Control TUI** | Live orchestrator DAG visualization (Ctrl+G) | Unique — no other open-source agent has this |

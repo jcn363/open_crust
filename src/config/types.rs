@@ -26,6 +26,52 @@ pub enum ProviderType {
     /// Supports 500+ models with 2x faster training, 70% less VRAM
     /// Default URL: http://localhost:8000/v1
     Unsloth,
+    /// Azure OpenAI — Enterprise Azure deployments
+    AzureOpenAi,
+    /// GitHub Copilot — Use existing Copilot subscription
+    GitHubCopilot,
+    /// Amazon Bedrock — AWS-hosted models
+    Bedrock,
+    /// Vertex AI — Google Cloud Vertex AI
+    VertexAi,
+    /// Perplexity — Perplexity AI models
+    Perplexity,
+    /// Cohere — Cohere models
+    Cohere,
+    /// Cerebras — Cerebras inference
+    Cerebras,
+    /// Alibaba Cloud — Alibaba Cloud models
+    AlibabaCloud,
+    /// Venice AI — Venice AI models
+    VeniceAi,
+    /// NVIDIA — NVIDIA NIM models
+    Nvidia,
+    /// Fireworks AI — Fireworks AI models
+    FireworksAi,
+    /// SambaNova — SambaNova models
+    SambaNova,
+    /// OctoAI — OctoAI models
+    OctoAi,
+    /// Anyscale — Anyscale models
+    Anyscale,
+    /// Lambda Labs — Lambda Labs models
+    LambdaLabs,
+    /// RunPod — RunPod models
+    RunPod,
+    /// Modal — Modal models
+    Modal,
+    /// Replicate — Replicate models (already exists)
+    /// Hugging Face — Hugging Face Inference API
+    HuggingFace,
+    /// LM Studio — Local model management
+    LMStudio,
+    /// Text Generation Inference — TGI endpoints
+    TGI,
+    /// vLLM — vLLM OpenAI-compatible endpoints
+    VLLM,
+    /// Ollama — Local models (already exists)
+    /// Custom OpenAI-compatible endpoint
+    CustomOpenAi,
 }
 
 impl fmt::Display for ProviderType {
@@ -43,6 +89,28 @@ impl fmt::Display for ProviderType {
             ProviderType::DeepSeek => write!(f, "deepseek"),
             ProviderType::LocalAi => write!(f, "localai"),
             ProviderType::Unsloth => write!(f, "unsloth"),
+            ProviderType::AzureOpenAi => write!(f, "azure"),
+            ProviderType::GitHubCopilot => write!(f, "github-copilot"),
+            ProviderType::Bedrock => write!(f, "bedrock"),
+            ProviderType::VertexAi => write!(f, "vertex"),
+            ProviderType::Perplexity => write!(f, "perplexity"),
+            ProviderType::Cohere => write!(f, "cohere"),
+            ProviderType::Cerebras => write!(f, "cerebras"),
+            ProviderType::AlibabaCloud => write!(f, "alibaba"),
+            ProviderType::VeniceAi => write!(f, "venice"),
+            ProviderType::Nvidia => write!(f, "nvidia"),
+            ProviderType::FireworksAi => write!(f, "fireworks"),
+            ProviderType::SambaNova => write!(f, "sambanova"),
+            ProviderType::OctoAi => write!(f, "octoai"),
+            ProviderType::Anyscale => write!(f, "anyscale"),
+            ProviderType::LambdaLabs => write!(f, "lambdalabs"),
+            ProviderType::RunPod => write!(f, "runpod"),
+            ProviderType::Modal => write!(f, "modal"),
+            ProviderType::HuggingFace => write!(f, "huggingface"),
+            ProviderType::LMStudio => write!(f, "lmstudio"),
+            ProviderType::TGI => write!(f, "tgi"),
+            ProviderType::VLLM => write!(f, "vllm"),
+            ProviderType::CustomOpenAi => write!(f, "custom-openai"),
         }
     }
 }
@@ -64,6 +132,28 @@ impl FromStr for ProviderType {
             "deepseek" => Ok(ProviderType::DeepSeek),
             "localai" | "local_ai" | "local-ai" => Ok(ProviderType::LocalAi),
             "unsloth" => Ok(ProviderType::Unsloth),
+            "azure" | "azure-openai" | "azure_openai" => Ok(ProviderType::AzureOpenAi),
+            "github-copilot" | "github_copilot" | "copilot" => Ok(ProviderType::GitHubCopilot),
+            "bedrock" | "aws-bedrock" | "aws_bedrock" => Ok(ProviderType::Bedrock),
+            "vertex" | "vertex-ai" | "vertex_ai" => Ok(ProviderType::VertexAi),
+            "perplexity" => Ok(ProviderType::Perplexity),
+            "cohere" => Ok(ProviderType::Cohere),
+            "cerebras" => Ok(ProviderType::Cerebras),
+            "alibaba" | "alibaba-cloud" | "alibaba_cloud" => Ok(ProviderType::AlibabaCloud),
+            "venice" | "venice-ai" | "venice_ai" => Ok(ProviderType::VeniceAi),
+            "nvidia" | "nvidia-nim" | "nvidia_nim" => Ok(ProviderType::Nvidia),
+            "fireworks" | "fireworks-ai" | "fireworks_ai" => Ok(ProviderType::FireworksAi),
+            "sambanova" | "samba-nova" | "samba_nova" => Ok(ProviderType::SambaNova),
+            "octoai" | "octo-ai" | "octo_ai" => Ok(ProviderType::OctoAi),
+            "anyscale" => Ok(ProviderType::Anyscale),
+            "lambdalabs" | "lambda-labs" | "lambda_labs" => Ok(ProviderType::LambdaLabs),
+            "runpod" => Ok(ProviderType::RunPod),
+            "modal" => Ok(ProviderType::Modal),
+            "huggingface" | "hugging-face" | "hugging_face" => Ok(ProviderType::HuggingFace),
+            "lmstudio" | "lm-studio" | "lm_studio" => Ok(ProviderType::LMStudio),
+            "tgi" => Ok(ProviderType::TGI),
+            "vllm" | "v-llm" | "v_llm" => Ok(ProviderType::VLLM),
+            "custom-openai" | "custom_openai" | "custom" => Ok(ProviderType::CustomOpenAi),
             _ => Err(format!("Unknown provider: {}", s)),
         }
     }

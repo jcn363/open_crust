@@ -8,6 +8,33 @@ use crate::config::ProviderType;
 use serde_json::{Value, json};
 use std::error::Error;
 
+// Macro for simple OpenAI-compatible providers — defined outside impl block
+macro_rules! simple_openai {
+    ($fn_name:ident, $config_field:ident, $url:expr) => {
+        pub(crate) async fn $fn_name(
+            &self,
+            messages: &[Value],
+            model_override: Option<&str>,
+        ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+            let api_key = self.config.$config_field.as_deref().unwrap_or("");
+            let res_json = self
+                .generate_completion(
+                    messages,
+                    $url,
+                    Some(("Authorization", format!("Bearer {}", api_key))),
+                    model_override,
+                )
+                .await?;
+            Ok(res_json
+                .get("choices")
+                .and_then(|c| c.get(0))
+                .and_then(|c| c.get("message"))
+                .cloned()
+                .unwrap_or(json!({})))
+        }
+    };
+}
+
 impl LlmClient {
     /// Dispatch to the appropriate provider based on config.
     pub(crate) async fn dispatch_provider(
@@ -28,8 +55,130 @@ impl LlmClient {
             ProviderType::DeepSeek => self.generate_deepseek(messages, model_override).await,
             ProviderType::LocalAi => self.generate_local_ai(messages, model_override).await,
             ProviderType::Unsloth => self.generate_unsloth(messages, model_override).await,
+            ProviderType::AzureOpenAi => self.generate_azure_openai(messages, model_override).await,
+            ProviderType::GitHubCopilot => self.generate_github_copilot(messages, model_override).await,
+            ProviderType::Bedrock => self.generate_bedrock(messages, model_override).await,
+            ProviderType::VertexAi => self.generate_vertex_ai(messages, model_override).await,
+            ProviderType::Perplexity => self.generate_perplexity(messages, model_override).await,
+            ProviderType::Cohere => self.generate_cohere(messages, model_override).await,
+            ProviderType::Cerebras => self.generate_cerebras(messages, model_override).await,
+            ProviderType::AlibabaCloud => self.generate_alibaba_cloud(messages, model_override).await,
+            ProviderType::VeniceAi => self.generate_venice_ai(messages, model_override).await,
+            ProviderType::Nvidia => self.generate_nvidia(messages, model_override).await,
+            ProviderType::FireworksAi => self.generate_fireworks_ai(messages, model_override).await,
+            ProviderType::SambaNova => self.generate_sambanova(messages, model_override).await,
+            ProviderType::OctoAi => self.generate_octo_ai(messages, model_override).await,
+            ProviderType::Anyscale => self.generate_anyscale(messages, model_override).await,
+            ProviderType::LambdaLabs => self.generate_lambda_labs(messages, model_override).await,
+            ProviderType::RunPod => self.generate_runpod(messages, model_override).await,
+            ProviderType::Modal => self.generate_modal(messages, model_override).await,
+            ProviderType::HuggingFace => self.generate_huggingface(messages, model_override).await,
+            ProviderType::LMStudio => self.generate_lmstudio(messages, model_override).await,
+            ProviderType::TGI => self.generate_tgi(messages, model_override).await,
+            ProviderType::VLLM => self.generate_vllm(messages, model_override).await,
+            ProviderType::CustomOpenAi => self.generate_custom_openai(messages, model_override).await,
         }
     }
+
+    // Azure OpenAI
+    pub(crate) async fn generate_azure_openai(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let api_key = self.config.azure_openai_key.as_deref().unwrap_or("");
+        let endpoint = self
+            .config
+            .azure_openai_endpoint
+            .as_deref()
+            .unwrap_or("https://api.openai.com/v1/chat/completions");
+        let res_json = self
+            .generate_completion(messages, endpoint, Some(("api-key", api_key.to_string())), model_override)
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    // GitHub Copilot
+    pub(crate) async fn generate_github_copilot(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let token = self.config.github_copilot_token.as_deref().unwrap_or("");
+        let endpoint = "https://api.githubcopilot.com/v1/chat/completions";
+        let res_json = self
+            .generate_completion(messages, endpoint, Some(("Authorization", format!("Bearer {}", token))), model_override)
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    // Bedrock
+    pub(crate) async fn generate_bedrock(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let key = self.config.bedrock_access_key.as_deref().unwrap_or("");
+        let endpoint = "https://bedrock.amazonaws.com/v1/chat/completions";
+        let res_json = self
+            .generate_completion(messages, endpoint, Some(("x-amz-access-key", key.to_string())), model_override)
+            .await?;
+        Ok(res_json
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    // Vertex AI
+    pub(crate) async fn generate_vertex_ai(
+        &self,
+        messages: &[Value],
+        model_override: Option<&str>,
+    ) -> Result<Value, Box<dyn Error + Send + Sync>> {
+        let project = self.config.vertex_ai_project.as_deref().unwrap_or("");
+        let endpoint = format!("https://{project}-aiplatform.googleapis.com/v1/projects/{project}/locations/us-central1/publishers/google/models/{model}", model = model_override.unwrap_or("default-model"));
+        let res_json = self
+            .generate_completion(messages, &endpoint, None, model_override)
+            .await?;
+        Ok(res_json
+            .get("candidates")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("content"))
+            .cloned()
+            .unwrap_or(json!({})))
+    }
+
+    simple_openai!(generate_perplexity, perplexity_api_key, "https://api.perplexity.ai/v1/chat/completions");
+    simple_openai!(generate_cohere, cohere_api_key, "https://api.cohere.com/v1/chat/completions");
+    simple_openai!(generate_cerebras, cerebras_api_key, "https://api.cerebras.ai/v1/chat/completions");
+    simple_openai!(generate_alibaba_cloud, alibaba_cloud_key, "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions");
+    simple_openai!(generate_venice_ai, venice_ai_key, "https://api.venice.ai/api/v1/chat/completions");
+    simple_openai!(generate_nvidia, nvidia_api_key, "https://integrate.api.nvidia.com/v1/chat/completions");
+    simple_openai!(generate_fireworks_ai, fireworks_ai_key, "https://api.fireworks.ai/inference/v1/chat/completions");
+    simple_openai!(generate_sambanova, sambanova_api_key, "https://api.sambanova.ai/v1/chat/completions");
+    simple_openai!(generate_octo_ai, octo_ai_key, "https://api.octoai.com/v1/chat/completions");
+    simple_openai!(generate_anyscale, anyscale_api_key, "https://api.anyscale.com/v1/chat/completions");
+    simple_openai!(generate_lambda_labs, lambda_labs_api_key, "https://api.lambdalabs.com/v1/chat/completions");
+    simple_openai!(generate_runpod, runpod_api_key, "https://api.runpod.ai/v1/chat/completions");
+    simple_openai!(generate_modal, modal_api_key, "https://api.modal.com/v1/chat/completions");
+    simple_openai!(generate_huggingface, huggingface_api_key, "https://api-inference.huggingface.co/v1/chat/completions");
+    simple_openai!(generate_lmstudio, lmstudio_url, "http://localhost:1234/v1/chat/completions");
+    simple_openai!(generate_tgi, tgi_url, "http://localhost:8080/v1/chat/completions");
+    simple_openai!(generate_vllm, vllm_url, "http://localhost:8000/v1/chat/completions");
+    simple_openai!(generate_custom_openai, custom_openai_url, "");
+
 
     /// Dispatch with automatic fallback: tries primary provider, then each in fallback_chain.
     pub(crate) async fn dispatch_with_fallback(
@@ -82,7 +231,29 @@ impl LlmClient {
                 ProviderType::Replicate => self.config.replicate_api_key.is_some(),
                 ProviderType::DeepSeek => self.config.deepseek_api_key.is_some(),
                 ProviderType::LocalAi => self.config.localai_url.is_some(),
-            ProviderType::Unsloth => self.config.unsloth_url.is_some(),
+                ProviderType::Unsloth => self.config.unsloth_url.is_some(),
+                ProviderType::AzureOpenAi => self.config.azure_openai_key.is_some(),
+                ProviderType::GitHubCopilot => self.config.github_copilot_token.is_some(),
+                ProviderType::Bedrock => self.config.bedrock_access_key.is_some(),
+                ProviderType::VertexAi => self.config.vertex_ai_project.is_some(),
+                ProviderType::Perplexity => self.config.perplexity_api_key.is_some(),
+                ProviderType::Cohere => self.config.cohere_api_key.is_some(),
+                ProviderType::Cerebras => self.config.cerebras_api_key.is_some(),
+                ProviderType::AlibabaCloud => self.config.alibaba_cloud_key.is_some(),
+                ProviderType::VeniceAi => self.config.venice_ai_key.is_some(),
+                ProviderType::Nvidia => self.config.nvidia_api_key.is_some(),
+                ProviderType::FireworksAi => self.config.fireworks_ai_key.is_some(),
+                ProviderType::SambaNova => self.config.sambanova_api_key.is_some(),
+                ProviderType::OctoAi => self.config.octo_ai_key.is_some(),
+                ProviderType::Anyscale => self.config.anyscale_api_key.is_some(),
+                ProviderType::LambdaLabs => self.config.lambda_labs_api_key.is_some(),
+                ProviderType::RunPod => self.config.runpod_api_key.is_some(),
+                ProviderType::Modal => self.config.modal_api_key.is_some(),
+                ProviderType::HuggingFace => self.config.huggingface_api_key.is_some(),
+                ProviderType::LMStudio => self.config.lmstudio_url.is_some(),
+                ProviderType::TGI => self.config.tgi_url.is_some(),
+                ProviderType::VLLM => self.config.vllm_url.is_some(),
+                ProviderType::CustomOpenAi => self.config.custom_openai_url.is_some(),
             };
 
             if !has_key {
@@ -143,6 +314,72 @@ impl LlmClient {
                         }
                         Ok(ProviderType::Unsloth) => {
                             self.generate_unsloth(messages, model_override).await
+                        }
+                        Ok(ProviderType::AzureOpenAi) => {
+                            self.generate_azure_openai(messages, model_override).await
+                        }
+                        Ok(ProviderType::GitHubCopilot) => {
+                            self.generate_github_copilot(messages, model_override).await
+                        }
+                        Ok(ProviderType::Bedrock) => {
+                            self.generate_bedrock(messages, model_override).await
+                        }
+                        Ok(ProviderType::VertexAi) => {
+                            self.generate_vertex_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Perplexity) => {
+                            self.generate_perplexity(messages, model_override).await
+                        }
+                        Ok(ProviderType::Cohere) => {
+                            self.generate_cohere(messages, model_override).await
+                        }
+                        Ok(ProviderType::Cerebras) => {
+                            self.generate_cerebras(messages, model_override).await
+                        }
+                        Ok(ProviderType::AlibabaCloud) => {
+                            self.generate_alibaba_cloud(messages, model_override).await
+                        }
+                        Ok(ProviderType::VeniceAi) => {
+                            self.generate_venice_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Nvidia) => {
+                            self.generate_nvidia(messages, model_override).await
+                        }
+                        Ok(ProviderType::FireworksAi) => {
+                            self.generate_fireworks_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::SambaNova) => {
+                            self.generate_sambanova(messages, model_override).await
+                        }
+                        Ok(ProviderType::OctoAi) => {
+                            self.generate_octo_ai(messages, model_override).await
+                        }
+                        Ok(ProviderType::Anyscale) => {
+                            self.generate_anyscale(messages, model_override).await
+                        }
+                        Ok(ProviderType::LambdaLabs) => {
+                            self.generate_lambda_labs(messages, model_override).await
+                        }
+                        Ok(ProviderType::RunPod) => {
+                            self.generate_runpod(messages, model_override).await
+                        }
+                        Ok(ProviderType::Modal) => {
+                            self.generate_modal(messages, model_override).await
+                        }
+                        Ok(ProviderType::HuggingFace) => {
+                            self.generate_huggingface(messages, model_override).await
+                        }
+                        Ok(ProviderType::LMStudio) => {
+                            self.generate_lmstudio(messages, model_override).await
+                        }
+                        Ok(ProviderType::TGI) => {
+                            self.generate_tgi(messages, model_override).await
+                        }
+                        Ok(ProviderType::VLLM) => {
+                            self.generate_vllm(messages, model_override).await
+                        }
+                        Ok(ProviderType::CustomOpenAi) => {
+                            self.generate_custom_openai(messages, model_override).await
                         }
                         Err(_) => continue,
                     }
@@ -527,6 +764,34 @@ pub(crate) fn extract_content(provider: &ProviderType, res: &Value) -> Option<St
             .and_then(|p| p.get(0))
             .and_then(|p| p.get("text"))
             .and_then(|t| t.as_str())
+            .map(|s| s.to_string()),
+        ProviderType::AzureOpenAi
+        | ProviderType::GitHubCopilot
+        | ProviderType::Bedrock
+        | ProviderType::VertexAi
+        | ProviderType::Perplexity
+        | ProviderType::Cohere
+        | ProviderType::Cerebras
+        | ProviderType::AlibabaCloud
+        | ProviderType::VeniceAi
+        | ProviderType::Nvidia
+        | ProviderType::FireworksAi
+        | ProviderType::SambaNova
+        | ProviderType::OctoAi
+        | ProviderType::Anyscale
+        | ProviderType::LambdaLabs
+        | ProviderType::RunPod
+        | ProviderType::Modal
+        | ProviderType::HuggingFace
+        | ProviderType::LMStudio
+        | ProviderType::TGI
+        | ProviderType::VLLM
+        | ProviderType::CustomOpenAi => res
+            .get("choices")
+            .and_then(|c| c.get(0))
+            .and_then(|c| c.get("message"))
+            .and_then(|m| m.get("content"))
+            .and_then(|c| c.as_str())
             .map(|s| s.to_string()),
         ProviderType::Anthropic => res
             .get("content")

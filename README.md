@@ -221,7 +221,7 @@ opencrust/
 │   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
-│   ├── config.rs          # Config loading/saving (12 providers, model_aliases, subagent cfg)
+│   ├── config.rs          # Config loading/saving (34 providers, model_aliases, subagent cfg)
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation
@@ -499,7 +499,7 @@ OpenCrust documentation is organized by use case and audience. Start with **Tier
 - **[docs/SECURITY.md](./docs/SECURITY.md)** — Permissions model, audit system, network gating, sandboxing, secrets management, threat model
 
 **For configuration & optimization:**
-- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — Complete config reference; all 11 LLM providers with examples; MCP/LSP setup; permissions and security settings
+- **[docs/CONFIGURATION.md](./docs/CONFIGURATION.md)** — Complete config reference; all 34 LLM providers with examples; MCP/LSP setup; permissions and security settings
 - **[docs/PERFORMANCE.md](./docs/PERFORMANCE.md)** — Profiling, startup/runtime/memory optimization, benchmarking, tuning for production
 
 ### 🔵 Tier 3: Practical (Copy-Paste)

@@ -118,7 +118,29 @@ impl LlmClient {
             | ProviderType::Replicate
             | ProviderType::DeepSeek
             | ProviderType::LocalAi
-            | ProviderType::Unsloth => self.generate_openai(&messages, None).await,
+            | ProviderType::Unsloth
+            | ProviderType::AzureOpenAi
+            | ProviderType::GitHubCopilot
+            | ProviderType::Bedrock
+            | ProviderType::VertexAi
+            | ProviderType::Perplexity
+            | ProviderType::Cohere
+            | ProviderType::Cerebras
+            | ProviderType::AlibabaCloud
+            | ProviderType::VeniceAi
+            | ProviderType::Nvidia
+            | ProviderType::FireworksAi
+            | ProviderType::SambaNova
+            | ProviderType::OctoAi
+            | ProviderType::Anyscale
+            | ProviderType::LambdaLabs
+            | ProviderType::RunPod
+            | ProviderType::Modal
+            | ProviderType::HuggingFace
+            | ProviderType::LMStudio
+            | ProviderType::TGI
+            | ProviderType::VLLM
+            | ProviderType::CustomOpenAi => self.generate_openai(&messages, None).await,
         };
 
         let summary = match summary_result {

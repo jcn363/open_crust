@@ -97,6 +97,54 @@ pub struct Config {
     #[serde(default)]
     pub unsloth_api_key: Option<String>,
 
+    // --- New provider API keys/URLs (22 new providers) ---
+    #[serde(default)]
+    pub azure_openai_key: Option<String>,
+    #[serde(default)]
+    pub azure_openai_endpoint: Option<String>,
+    #[serde(default)]
+    pub github_copilot_token: Option<String>,
+    #[serde(default)]
+    pub bedrock_access_key: Option<String>,
+    #[serde(default)]
+    pub vertex_ai_project: Option<String>,
+    #[serde(default)]
+    pub perplexity_api_key: Option<String>,
+    #[serde(default)]
+    pub cohere_api_key: Option<String>,
+    #[serde(default)]
+    pub cerebras_api_key: Option<String>,
+    #[serde(default)]
+    pub alibaba_cloud_key: Option<String>,
+    #[serde(default)]
+    pub venice_ai_key: Option<String>,
+    #[serde(default)]
+    pub nvidia_api_key: Option<String>,
+    #[serde(default)]
+    pub fireworks_ai_key: Option<String>,
+    #[serde(default)]
+    pub sambanova_api_key: Option<String>,
+    #[serde(default)]
+    pub octo_ai_key: Option<String>,
+    #[serde(default)]
+    pub anyscale_api_key: Option<String>,
+    #[serde(default)]
+    pub lambda_labs_api_key: Option<String>,
+    #[serde(default)]
+    pub runpod_api_key: Option<String>,
+    #[serde(default)]
+    pub modal_api_key: Option<String>,
+    #[serde(default)]
+    pub huggingface_api_key: Option<String>,
+    #[serde(default)]
+    pub lmstudio_url: Option<String>,
+    #[serde(default)]
+    pub tgi_url: Option<String>,
+    #[serde(default)]
+    pub vllm_url: Option<String>,
+    #[serde(default)]
+    pub custom_openai_url: Option<String>,
+
     // --- Orchestrator configuration ---
     #[serde(default)]
     pub subagent_max_concurrent: Option<usize>,
@@ -173,6 +221,29 @@ impl Default for Config {
             localai_api_key: None,
             unsloth_url: Some("http://localhost:8000".to_string()),
             unsloth_api_key: None,
+            azure_openai_key: None,
+            azure_openai_endpoint: None,
+            github_copilot_token: None,
+            bedrock_access_key: None,
+            vertex_ai_project: None,
+            perplexity_api_key: None,
+            cohere_api_key: None,
+            cerebras_api_key: None,
+            alibaba_cloud_key: None,
+            venice_ai_key: None,
+            nvidia_api_key: None,
+            fireworks_ai_key: None,
+            sambanova_api_key: None,
+            octo_ai_key: None,
+            anyscale_api_key: None,
+            lambda_labs_api_key: None,
+            runpod_api_key: None,
+            modal_api_key: None,
+            huggingface_api_key: None,
+            lmstudio_url: None,
+            tgi_url: None,
+            vllm_url: None,
+            custom_openai_url: None,
             subagent_max_concurrent: None,
             subagent_timeout_secs: None,
             model_auto_refresh: Some(ModelAutoRefreshConfig::default()),
@@ -245,85 +316,86 @@ impl Config {
 
         // Check provider-specific requirements
         match self.provider {
-            ProviderType::Ollama => {
-                if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Ollama provider selected but ollama_url is not set".to_string());
-                }
+            ProviderType::Ollama
+                if self.ollama_url.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push("Ollama provider selected but ollama_url is not set".to_string());
             }
-            ProviderType::OpenRouter => {
-                if self.openrouter_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    let is_free = self.model.to_lowercase().contains("free");
-                    if !is_free {
-                        warnings.push(
-                            "OpenRouter provider selected but openrouter_key is not set"
-                                .to_string(),
-                        );
-                    }
-                }
-            }
-            ProviderType::OpenAI => {
-                if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("OpenAI provider selected but openai_key is not set".to_string());
-                }
-            }
-            ProviderType::Gemini => {
-                if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings
-                        .push("Gemini provider selected but gemini_api_key is not set".to_string());
-                }
-            }
-            ProviderType::Mistral => {
-                if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) {
+            ProviderType::OpenRouter
+                if self.openrouter_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                let is_free = self.model.to_lowercase().contains("free");
+                if !is_free {
                     warnings.push(
-                        "Mistral provider selected but mistral_api_key is not set".to_string(),
+                        "OpenRouter provider selected but openrouter_key is not set"
+                            .to_string(),
                     );
                 }
             }
-            ProviderType::Anthropic => {
-                if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push(
-                        "Anthropic provider selected but anthropic_api_key is not set".to_string(),
-                    );
-                }
+            ProviderType::OpenAI
+                if self.openai_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push("OpenAI provider selected but openai_key is not set".to_string());
             }
-            ProviderType::Groq => {
-                if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push("Groq provider selected but groq_api_key is not set".to_string());
-                }
+            ProviderType::Gemini
+                if self.gemini_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings
+                    .push("Gemini provider selected but gemini_api_key is not set".to_string());
             }
-            ProviderType::TogetherAi => {
-                if self.together_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push(
-                        "TogetherAi provider selected but together_api_key is not set".to_string(),
-                    );
-                }
+            ProviderType::Mistral
+                if self.mistral_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push(
+                    "Mistral provider selected but mistral_api_key is not set".to_string(),
+                );
             }
-            ProviderType::Replicate => {
-                if self.replicate_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push(
-                        "Replicate provider selected but replicate_api_key is not set".to_string(),
-                    );
-                }
+            ProviderType::Anthropic
+                if self.anthropic_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push(
+                    "Anthropic provider selected but anthropic_api_key is not set".to_string(),
+                );
             }
-            ProviderType::DeepSeek => {
-                if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings.push(
-                        "DeepSeek provider selected but deepseek_api_key is not set".to_string(),
-                    );
-                }
+            ProviderType::Groq
+                if self.groq_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push("Groq provider selected but groq_api_key is not set".to_string());
             }
-            ProviderType::LocalAi => {
-                if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings
-                        .push("LocalAi provider selected but localai_url is not set".to_string());
-                }
+            ProviderType::TogetherAi
+                if self.together_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push(
+                    "TogetherAi provider selected but together_api_key is not set".to_string(),
+                );
             }
-            ProviderType::Unsloth => {
-                if self.unsloth_url.as_ref().is_none_or(|v| v.is_empty()) {
-                    warnings
-                        .push("Unsloth provider selected but unsloth_url is not set".to_string());
-                }
+            ProviderType::Replicate
+                if self.replicate_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push(
+                    "Replicate provider selected but replicate_api_key is not set".to_string(),
+                );
             }
+            ProviderType::DeepSeek
+                if self.deepseek_api_key.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings.push(
+                    "DeepSeek provider selected but deepseek_api_key is not set".to_string(),
+                );
+            }
+            ProviderType::LocalAi
+                if self.localai_url.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings
+                    .push("LocalAi provider selected but localai_url is not set".to_string());
+            }
+            ProviderType::Unsloth
+                if self.unsloth_url.as_ref().is_none_or(|v| v.is_empty()) =>
+            {
+                warnings
+                    .push("Unsloth provider selected but unsloth_url is not set".to_string());
+            }
+            _ => {} // New providers use simple_openai! pattern; validate their keys at runtime
         }
 
         // Check model is not empty
@@ -387,13 +459,8 @@ impl Config {
                 }
             }
             ProviderType::OpenAI => 128_000,
-            ProviderType::Gemini => {
-                if self.model.contains("gemini-2.5") {
-                    1_000_000
-                } else {
-                    128_000
-                }
-            }
+            ProviderType::Gemini if self.model.contains("gemini-2.5") => 1_000_000,
+            ProviderType::Gemini => 128_000,
             ProviderType::Ollama => 8_000, // configurable, but default is small
             ProviderType::OpenRouter => 128_000, // depends on the model routed
             ProviderType::Mistral => 32_000,
@@ -403,6 +470,7 @@ impl Config {
             ProviderType::DeepSeek => 128_000,
             ProviderType::LocalAi => 8_000,
             ProviderType::Unsloth => 32_000, // local models, generous default
+            _ => 128_000, // Default for new OpenAI-compatible providers
         }
     }
 
