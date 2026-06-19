@@ -185,19 +185,19 @@ This is the #1 blocker for wider adoption — 75% of developers use macOS or Win
 | 2 | **macOS: System notifications (full)** | Low (1-2h) | 🟡 Medium | ✅ |
 | 3 | **Windows: Toast notifications** | Medium (3-4h) | 🔥 High | ✅ |
 | 4 | **Windows: File picker** | Medium (2-3h) | 🟡 Medium | ✅ |
-| 5 | **macOS: Menu bar agent** | High (4-6h) | 🟢 Low | ⏳ |
+| 5 | **macOS: Menu bar agent** | High (4-6h) | 🟢 Low | ✅ |
 
 #### 5. macOS: Menu Bar Agent
 
 Native macOS menu bar integration with status, notifications, and quick actions.
 
 **Acceptance criteria:**
-- [ ] Menu bar icon with status indicator (idle, working, error)
-- [ ] Click-to-open main window
-- [ ] Right-click context menu with agent controls
-- [ ] Native macOS notifications (Notification Center)
-- [ ] System Preferences integration (settings)
-- [ ] All tests pass, clippy clean
+- [x] Menu bar icon with status indicator (idle, working, error)
+- [x] Click-to-open main window
+- [x] Right-click context menu with agent controls
+- [x] Native macOS notifications (Notification Center)
+- [x] System Preferences integration (settings)
+- [x] All tests pass, clippy clean
 
 **Reference:** Claude Code system tray, Cursor 3 menu bar, OpenCode status bar.
 
@@ -359,23 +359,36 @@ Build developer ecosystem around OpenCrust: documentation, examples, Discord, Gi
 
 ## Current Status Summary
 
+**Phase 5 (Market Positioning)**: ✅ Complete
+- Token budget & cost dashboard: ✅
+- Visual diff / plan review UX: ✅
+- Cross-platform desktop: ✅
+
 **Phase 6 (Enterprise Readiness)**: ✅ Complete
 - Token budget & cost dashboard: ✅
 - Background agent dashboard: ✅
 - Enterprise compliance packaging: ✅
 
-**Phase 7 (Cross-Platform Desktop)**: ✅ Complete (except menu bar)
+**Phase 7 (Cross-Platform Desktop)**: ✅ Complete
 - macOS file picker + environment detection: ✅
 - macOS system notifications: ✅
 - Windows toast notifications: ✅
 - Windows file picker: ✅
-- macOS menu bar agent: 🔶
+- macOS menu bar agent: ✅
 
 **Phase 8 (Ecosystem & Community)**: ✅ Complete (except community)
 - Plugin system: ✅
 - Multi-repo support: ✅
 - Publish to crates.io: ✅
 - Community growth: 🔶
+
+**Phase 5 (Claude Code/OpenCode Features)**: ✅ Complete
+- Split views with inline diffs: ✅
+- Auto memory system: ✅
+- Recursive sub-agents (5 levels): ✅
+- Share links for sessions: ✅
+- External editor support: ✅
+- GitHub Copilot / ChatGPT auth: ✅
 
 ---
 
