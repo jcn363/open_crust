@@ -99,11 +99,12 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Customizable TUI**: Configurable keybinds and theme engine with RGB support (Catppuccin Mocha default)
 - **Mission Control**: Visualize orchestrator task DAG with interactive navigation (`Ctrl+G`)
 
-### 🖥️ Desktop Integration (Linux)
+### 🖥️ Desktop Integration
 
-- **Smart Notifications**: DBus-first notifications with notify-send fallback for maximum compatibility
-- **Native File Pickers**: Nemo (Cinnamon), Zenity, or KDialog backends with automatic detection
-- **Desktop Detection**: Automatic Cinnamon/MATE/GNOME/Plasma environment detection with theme extraction
+- **Linux**: Smart notifications (DBus/notify-send), native file pickers (Nemo/Zenity/KDialog), Cinnamon/MATE/GNOME/Plasma detection
+- **macOS**: osascript notifications, native file picker (choose file/folder), menu bar agent with status icon and agent controls
+- **Windows**: Toast notifications (PowerShell), file picker support
+- **Menu Bar** (macOS): Status icon with context menu — show window, agent list, spawn/cancel agents, quit
 
 ### 🚀 Enhanced Mission Control (v1.3.0+)
 
@@ -132,6 +133,13 @@ Or build from source:
 git clone https://github.com/opencrust/opencrust.git
 cd opencrust
 cargo install --path .
+```
+
+### macOS (with Menu Bar)
+
+```bash
+# Build with native macOS menu bar support
+cargo install --path . --features macos-menu-bar
 ```
 
 ### Quick Start
@@ -226,6 +234,37 @@ Use any provider with model aliases like `big-pickle`, `fast`, or `powerful` via
 
 ---
 
+## 💬 Slash Commands
+
+Type `/` in the input field to access these commands:
+
+| Command | Description |
+|---------|-------------|
+| `/provider <name>` | Switch LLM provider |
+| `/model <name>` | Switch model |
+| `/goal <description>` | Set autonomous goal |
+| `/goal-clear` | Clear active goal |
+| `/undo` / `/redo` | Git undo/redo |
+| `/share` | Share conversation to JSON |
+| `/share-list` | List share links |
+| `/diff <file>` | Open file in split view |
+| `/edit <file>` | Open file in external editor |
+| `/memory remember <text>` | Remember a fact |
+| `/memory recall <query>` | Recall memories |
+| `/memory forget <id>` | Remove a memory |
+| `/memory list` | List all memories |
+| `/agent spawn <task>` | Spawn recursive sub-agent |
+| `/agent status` | Show agent status |
+| `/agent tree` | Show agent hierarchy |
+| `/auth copilot` | Login to GitHub Copilot |
+| `/auth chatgpt` | Login to ChatGPT Plus |
+| `/auth status` | Check auth status |
+| `/auth clear` | Clear auth tokens |
+| `/format` | Format selected file |
+| `/init` | Initialize project rules |
+
+---
+
 ## 🏗️ Architecture
 
 ```text
@@ -241,6 +280,20 @@ opencrust/
 │   ├── auth.rs            # GitHub Copilot / ChatGPT Plus OAuth
 │   ├── memory.rs          # Auto memory system (conversation persistence)
 │   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
+│   │
+│   ├── desktop/           # Desktop integration (Linux, macOS, Windows)
+│   │   ├── detection.rs   # Desktop environment detection
+│   │   ├── file_picker.rs # Native file pickers (Nemo, Zenity, osascript)
+│   │   ├── notifications/ # System notifications (notify-send, osascript)
+│   │   └── menu_bar.rs    # macOS menu bar (cocoa/objc)
+│   │
+│   ├── providers/         # Provider abstraction layer
+│   │   ├── desktop.rs     # Desktop provider trait
+│   │   ├── notifications.rs # Notification provider trait
+│   │   ├── file_picker.rs # File picker provider trait
+│   │   ├── menu_bar.rs    # Menu bar provider trait
+│   │   ├── tool.rs        # Tool provider trait
+│   │   └── plugin.rs      # Plugin provider trait
 │   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
