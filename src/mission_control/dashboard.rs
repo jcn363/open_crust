@@ -272,6 +272,22 @@ impl AgentDashboard {
             0.0
         };
 
+        // Calculate average task duration from completed agents
+        let avg_task_duration = {
+            let completed_durations: Vec<Duration> = agents
+                .iter()
+                .filter(|a| a.state == AgentState::Completed)
+                .filter_map(|a| a.last_activity.duration_since(a.started_at).ok())
+                .collect();
+
+            if completed_durations.is_empty() {
+                Duration::ZERO
+            } else {
+                let total_duration: Duration = completed_durations.iter().sum();
+                total_duration / completed_durations.len() as u32
+            }
+        };
+
         DashboardStats {
             total_agents: total,
             active_agents: active,
@@ -281,7 +297,7 @@ impl AgentDashboard {
             total_tasks_failed: failed as u64,
             total_api_calls,
             total_tokens_used: total_tokens,
-            avg_task_duration: Duration::from_secs(0), // TODO: Calculate from actual data
+            avg_task_duration,
             success_rate,
         }
     }
