@@ -51,6 +51,13 @@ Options are resolved in this order (first match wins):
 
 ## Global Settings
 
+**Note:** The `dirs` crate is used to locate the configuration directory (`~/.config/opencrust`). This is required for all platforms.
+
+**Feature Flags:**
+- `macos-menu-bar`: Enables native macOS menu bar integration.
+
+## Global Settings
+
 ### Root Level
 
 ```json
