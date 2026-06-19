@@ -72,7 +72,8 @@ pub fn save_token(token: &CachedToken) -> std::io::Result<()> {
     let dir = auth_dir();
     std::fs::create_dir_all(&dir)?;
     let path = token_cache_path(&token.provider);
-    let content = serde_json::to_string(&token).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let content = serde_json::to_string(&token)
+        .map_err(std::io::Error::other)?;
     std::fs::write(path, content)
 }
 
