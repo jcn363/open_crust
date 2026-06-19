@@ -7,17 +7,14 @@ opencrust/
 │   ├── main.rs            # Thin entry point, delegates to lib.rs
 │   ├── app.rs             # Application state, tabs, history, background tasks
 │   ├── ui.rs              # TUI rendering (ratatui)
-│   │
-│   ├── auth.rs            # GitHub Copilot / ChatGPT Plus OAuth device flow
-│   ├── memory.rs          # Auto memory system (conversation persistence)
-│   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
+│   │   └── split_view.rs  # Side-by-side / inline diff rendering
 │   │
 │   ├── desktop/           # Desktop integration (Linux, macOS, Windows)
 │   │   ├── mod.rs
 │   │   ├── detection.rs   # Desktop environment detection (Cinnamon, MATE, Plasma, GNOME, macOS, Windows)
 │   │   ├── file_picker.rs # Native file pickers (Nemo, Zenity, KDialog, osascript)
-│   │   ├── notifications/ # System notifications (notify-send, osascript)
-│   │   └── menu_bar.rs    # macOS menu bar integration (cocoa/objc)
+│   │   ├── menu_bar.rs    # macOS menu bar (cocoa/objc)
+│   │   └── notifications/ # System notifications (notify-send, osascript)
 │   │
 │   ├── providers/         # Provider abstraction layer
 │   │   ├── mod.rs         # Generic Provider trait and registry
@@ -34,6 +31,9 @@ opencrust/
 │   ├── rules.rs           # Steering rules / AGENTS.md loading for context injection
 │   ├── context.rs         # Context management (@file syntax, pinning, budget)
 │   ├── skills.rs          # Skill discovery, loading, activation/deactivation
+│   ├── auth.rs            # GitHub Copilot / ChatGPT Plus OAuth device flow
+│   ├── memory.rs          # Auto memory system (conversation persistence)
+│   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
 │   │
 │   ├── mcp.rs             # MCP server management (JSON-RPC transport)
 │   ├── mcp_showcase/      # MCP Showcase TUI browser
@@ -78,7 +78,8 @@ opencrust/
 │   │   │   ├── command_palette.rs # Command palette
 │   │   │   ├── help.rs    # Help mode
 │   │   │   ├── mcp_showcase.rs # MCP showcase mode
-│   │   │   └── mission_control.rs # Mission control mode
+│   │   │   ├── mission_control.rs # Mission control mode
+│   │   │   └── split_view.rs # Split view mode (diff viewing)
 │   │   ├── keybinds.rs    # Keybind matching utilities
 │   │   ├── slash_commands.rs # Slash command handling
 │   │   ├── response_handler.rs # LLM response processing
@@ -110,6 +111,7 @@ opencrust/
 │   │   ├── desktop.rs     # DesktopProvider trait & DefaultDesktopProvider
 │   │   ├── notifications.rs # NotificationProvider trait
 │   │   ├── file_picker.rs # FilePickerProvider trait
+│   │   ├── menu_bar.rs     # MenuBarProvider trait & MenuBarStatus
 │   │   ├── tool.rs        # ToolProvider trait
 │   │   └── plugin.rs      # PluginProvider trait & PluginWrapper
 │   │
@@ -118,6 +120,7 @@ opencrust/
 │       ├── detection.rs   # Desktop environment detection
 │       ├── notifications.rs # System notifications (DBus + notify-send)
 │       └── file_picker.rs # Native file pickers (Nemo, Zenity, KDialog)
+│       └── menu_bar.rs     # macOS menu bar (cocoa/objc)
 ```
 
 ## How the pieces fit together

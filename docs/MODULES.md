@@ -494,77 +494,6 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 ## Provider Abstraction Modules
 
 ### providers/mod.rs
-**Purpose:** Generic Provider trait and registry  
-**Key types:** `Provider`, `ProviderRegistry<P>`  
-**Key functions:** `register()`, `available()`, `best()`, `get()`  
-**When to modify:**
-- Adding new provider types
-- Changing provider selection logic
-
-**Related modules:** All provider modules  
-**Lines of code:** ~100
-
-### providers/desktop.rs
-**Purpose:** Desktop provider trait for environment detection and theming  
-**Key types:** `DesktopProvider`, `ThemeColors`, `DefaultDesktopProvider`  
-**Key functions:** `detect()`, `cinnamon_info()`, `theme_colors()`  
-**When to modify:**
-- Adding new desktop environments
-- Changing theme extraction
-
-**Related modules:** `desktop/detection.rs`  
-**Lines of code:** ~100
-
-### providers/notifications.rs
-**Purpose:** Notification provider trait  
-**Key types:** `NotificationProvider`, `MacOSNotificationProvider`, `LinuxNotificationProvider`  
-**Key functions:** `send_notification()`, `is_available()`  
-**When to modify:**
-- Adding notification backends
-- Changing notification format
-
-**Related modules:** `desktop/notifications.rs`  
-**Lines of code:** ~150
-
-### providers/file_picker.rs
-**Purpose:** File picker provider trait  
-**Key types:** `FilePickerProvider`, `NemoFilePickerProvider`, `ZenityFilePickerProvider`, `KDialogFilePickerProvider`  
-**Key functions:** `open_file_picker()`, `is_available()`  
-**When to modify:**
-- Adding file picker backends
-- Changing file picker options
-
-**Related modules:** `desktop/file_picker.rs`  
-**Lines of code:** ~200
-
-### providers/menu_bar.rs
-**Purpose:** Menu bar provider trait  
-**Key types:** `MenuBarProvider`, `MenuBarStatus`, `MacOSMenuBarProvider`, `FallbackMenuBarProvider`  
-**Key functions:** `start()`, `stop()`, `set_status()`, `set_agent_count()`  
-**When to modify:**
-- Adding menu bar backends
-- Changing menu bar behavior
-
-**Related modules:** `desktop/menu_bar.rs`  
-**Lines of code:** ~200
-
-### desktop/file_picker.rs
-**Purpose:** Native file pickers (Nemo, Zenity, KDialog, etc.)  
-**Key types:** `FilePicker`, `FilePickerBackend`, `FilePickerResult`  
-**Key functions:** `pick_file()`, `pick_directory()`, `detect_backend()`  
-**When to modify:**
-- Adding picker backends
-- Changing picker behavior
-- Modifying platform support
-
-**Related modules:** `desktop/mod.rs`  
-**Lines of code:** ~400
-
----
-
-## Provider Abstraction Modules
-
-### providers/mod.rs
 **Purpose:** Generic provider trait and registry for extensible integrations  
 **Key types:** `Provider` trait, `ProviderRegistry<P>`  
 **Key functions:** `register()`, `all()`, `available()`, `best()`, `get()`  
@@ -573,7 +502,7 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 - Changing provider registry behavior
 - Modifying provider selection logic
 
-**Related modules:** `providers/desktop.rs`, `providers/notifications.rs`, `providers/file_picker.rs`, `providers/tool.rs`, `providers/plugin.rs`  
+**Related modules:** `providers/desktop.rs`, `providers/notifications.rs`, `providers/file_picker.rs`, `providers/menu_bar.rs`, `providers/tool.rs`, `providers/plugin.rs`  
 **Lines of code:** ~80
 
 ### providers/desktop.rs
@@ -612,6 +541,17 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `providers/mod.rs`, `desktop/file_picker.rs`  
 **Lines of code:** ~140
 
+### providers/menu_bar.rs
+**Purpose:** Menu bar provider trait for macOS status bar integration  
+**Key types:** `MenuBarProvider` trait, `MenuBarStatus`, `MacOSMenuBarProvider`, `FallbackMenuBarProvider`  
+**Key functions:** `start()`, `stop()`, `set_status()`, `set_agent_count()`  
+**When to modify:**
+- Adding menu bar backends
+- Changing menu bar behavior
+
+**Related modules:** `providers/mod.rs`, `desktop/menu_bar.rs`  
+**Lines of code:** ~100
+
 ### providers/tool.rs
 **Purpose:** Tool provider trait for extensible tool execution  
 **Key types:** `ToolProvider` trait, `ToolProviderRegistry`  
@@ -635,6 +575,18 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 
 **Related modules:** `providers/mod.rs`, `plugins.rs`  
 **Lines of code:** ~100
+
+### desktop/file_picker.rs
+**Purpose:** Native file pickers (Nemo, Zenity, KDialog, osascript)  
+**Key types:** `FilePickerBackend`, `FilePickerMode`, `FilePickerResult`, `FilePickerOptions`  
+**Key functions:** `pick_file()`, `pick_directory()`, `detect_backend()`, `osascript_file_picker()`  
+**When to modify:**
+- Adding picker backends
+- Changing picker behavior
+- Modifying platform support
+
+**Related modules:** `providers/file_picker.rs`, `desktop/mod.rs`  
+**Lines of code:** ~400
 
 ---
 

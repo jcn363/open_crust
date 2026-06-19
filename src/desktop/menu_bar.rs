@@ -24,10 +24,10 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
 use cocoa::appkit::{
-    NSApplication, NSButton, NSEventMask, NSImage, NSMenu, NSMenuItem, NSRunLoop,
-    NSStatusBar, NSStatusItem, NSVariableStatusItemLength,
+    NSApplication, NSButton, NSEventMask, NSImage, NSMenu, NSMenuItem, NSRunLoop, NSStatusBar,
+    NSStatusItem, NSVariableStatusItemLength,
 };
-use cocoa::base::{id, nil, NO, YES};
+use cocoa::base::{NO, YES, id, nil};
 use cocoa::foundation::{NSAutoreleasePool, NSString};
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel};
@@ -171,12 +171,11 @@ impl MenuBarManager {
         let _: () = msg_send![menu, removeAllItems];
 
         // Show Main Window
-        let show_item = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str("Show OpenCrust"),
-                sel!(showMainWindow:),
-                NSString::alloc(nil).init_str(""),
-            );
+        let show_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str("Show OpenCrust"),
+            sel!(showMainWindow:),
+            NSString::alloc(nil).init_str(""),
+        );
         let _: () = msg_send![show_item, setTarget:self as *const Self as id];
         let _: () = msg_send![menu, addItem:show_item];
 
@@ -185,12 +184,11 @@ impl MenuBarManager {
         let _: () = msg_send![menu, addItem:separator];
 
         // Status section
-        let status_header = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str("Status"),
-                nil,
-                NSString::alloc(nil).init_str(""),
-            );
+        let status_header = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str("Status"),
+            nil,
+            NSString::alloc(nil).init_str(""),
+        );
         let _: () = msg_send![status_header, setEnabled:NO];
         let _: () = msg_send![menu, addItem:status_header];
 
@@ -201,12 +199,11 @@ impl MenuBarManager {
             MenuBarStatus::Error => "● Error",
             MenuBarStatus::Custom(text) => text.as_str(),
         };
-        let status_item = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str(status_text),
-                nil,
-                NSString::alloc(nil).init_str(""),
-            );
+        let status_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str(status_text),
+            nil,
+            NSString::alloc(nil).init_str(""),
+        );
         let _: () = msg_send![status_item, setEnabled:NO];
         let _: () = msg_send![menu, addItem:status_item];
 
@@ -215,22 +212,20 @@ impl MenuBarManager {
         let _: () = msg_send![menu, addItem:separator];
 
         // Agents section
-        let agents_header = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str(&format!("Agents ({})", self.agent_count)),
-                nil,
-                NSString::alloc(nil).init_str(""),
-            );
+        let agents_header = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str(&format!("Agents ({})", self.agent_count)),
+            nil,
+            NSString::alloc(nil).init_str(""),
+        );
         let _: () = msg_send![agents_header, setEnabled:NO];
         let _: () = msg_send![menu, addItem:agents_header];
 
         // Spawn Agent
-        let spawn_item = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str("Spawn Agent"),
-                sel!(spawnAgent:),
-                NSString::alloc(nil).init_str(""),
-            );
+        let spawn_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str("Spawn Agent"),
+            sel!(spawnAgent:),
+            NSString::alloc(nil).init_str(""),
+        );
         let _: () = msg_send![spawn_item, setTarget:self as *const Self as id];
         let _: () = msg_send![menu, addItem:spawn_item];
 
@@ -240,17 +235,13 @@ impl MenuBarManager {
             let _: () = msg_send![menu, addItem:separator];
 
             for agent in &self.agents {
-                let agent_name = format!(
-                    "{}{}",
-                    if agent.running { "● " } else { "○ " },
-                    agent.name
+                let agent_name =
+                    format!("{}{}", if agent.running { "● " } else { "○ " }, agent.name);
+                let agent_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+                    NSString::alloc(nil).init_str(&agent_name),
+                    sel!(cancelAgent:),
+                    NSString::alloc(nil).init_str(""),
                 );
-                let agent_item = NSMenuItem::alloc(nil)
-                    .initWithTitle_action_keyEquivalent_(
-                        NSString::alloc(nil).init_str(&agent_name),
-                        sel!(cancelAgent:),
-                        NSString::alloc(nil).init_str(""),
-                    );
                 let _: () = msg_send![agent_item, setTarget:self as *const Self as id];
                 let _: () = msg_send![agent_item, setRepresentedObject:NSString::alloc(nil).init_str(&agent.id)];
                 let _: () = msg_send![menu, addItem:agent_item];
@@ -262,12 +253,11 @@ impl MenuBarManager {
         let _: () = msg_send![menu, addItem:separator];
 
         // Quit
-        let quit_item = NSMenuItem::alloc(nil)
-            .initWithTitle_action_keyEquivalent_(
-                NSString::alloc(nil).init_str("Quit OpenCrust"),
-                sel!(quitApp:),
-                NSString::alloc(nil).init_str("q"),
-            );
+        let quit_item = NSMenuItem::alloc(nil).initWithTitle_action_keyEquivalent_(
+            NSString::alloc(nil).init_str("Quit OpenCrust"),
+            sel!(quitApp:),
+            NSString::alloc(nil).init_str("q"),
+        );
         let _: () = msg_send![quit_item, setTarget:self as *const Self as id];
         let _: () = msg_send![menu, addItem:quit_item];
     }
@@ -353,7 +343,9 @@ impl MenuBarManager {
 
     /// Cancel agent action
     unsafe fn cancel_agent(&self, agent_id: &str) {
-        let _ = self.event_tx.send(MenuBarEvent::CancelAgent(agent_id.to_string()));
+        let _ = self
+            .event_tx
+            .send(MenuBarEvent::CancelAgent(agent_id.to_string()));
     }
 
     /// Quit app action

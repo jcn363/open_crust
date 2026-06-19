@@ -346,18 +346,12 @@ pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) ->
 /// Show file picker using osascript (macOS)
 #[cfg(target_os = "macos")]
 fn osascript_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
-    let prompt = options
-        .title
-        .as_deref()
-        .unwrap_or("Select file");
+    let prompt = options.title.as_deref().unwrap_or("Select file");
 
     // Build the AppleScript command based on mode
     let script = match mode {
         FilePickerMode::Open => {
-            format!(
-                r#"POSIX path of (choose file with prompt "{}")"#,
-                prompt
-            )
+            format!(r#"POSIX path of (choose file with prompt "{}")"#, prompt)
         }
         FilePickerMode::OpenMultiple => {
             format!(
@@ -377,16 +371,11 @@ paths"#,
             )
         }
         FilePickerMode::SelectFolder => {
-            format!(
-                r#"POSIX path of (choose folder with prompt "{}")"#,
-                prompt
-            )
+            format!(r#"POSIX path of (choose folder with prompt "{}")"#, prompt)
         }
     };
 
-    let output = Command::new("osascript")
-        .args(["-e", &script])
-        .output();
+    let output = Command::new("osascript").args(["-e", &script]).output();
 
     match output {
         Ok(output) => {

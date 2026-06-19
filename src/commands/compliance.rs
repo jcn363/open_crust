@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_export_to_syslog_format() {
-        let entries = vec![AuditEntry {
+        let entries = [AuditEntry {
             timestamp: "2026-01-01T00:00:00.000Z".to_string(),
             session_id: "test-session".to_string(),
             agent_type: "llm".to_string(),

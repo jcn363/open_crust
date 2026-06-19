@@ -55,18 +55,20 @@ fn config_optional_fields_can_be_none() {
 /// Config with all provider URL/key fields set round-trips correctly.
 #[test]
 fn config_all_provider_fields_roundtrip() {
-    let mut config = opencrust::config::Config::default();
-    config.ollama_url = Some("http://localhost:11434".into());
-    config.openai_key = Some("sk-test".into());
-    config.gemini_api_key = Some("gemini-test".into());
-    config.anthropic_api_key = Some("sk-ant-test".into());
-    config.mistral_api_key = Some("mistral-test".into());
-    config.groq_api_key = Some("gsk-test".into());
-    config.together_api_key = Some("together-test".into());
-    config.replicate_api_key = Some("r-test".into());
-    config.deepseek_api_key = Some("ds-test".into());
-    config.localai_url = Some("http://localhost:8080".into());
-    config.unsloth_url = Some("http://localhost:8000".into());
+    let config = opencrust::config::Config {
+        ollama_url: Some("http://localhost:11434".into()),
+        openai_key: Some("sk-test".into()),
+        gemini_api_key: Some("gemini-test".into()),
+        anthropic_api_key: Some("sk-ant-test".into()),
+        mistral_api_key: Some("mistral-test".into()),
+        groq_api_key: Some("gsk-test".into()),
+        together_api_key: Some("together-test".into()),
+        replicate_api_key: Some("r-test".into()),
+        deepseek_api_key: Some("ds-test".into()),
+        localai_url: Some("http://localhost:8080".into()),
+        unsloth_url: Some("http://localhost:8000".into()),
+        ..Default::default()
+    };
 
     let json = serde_json::to_string_pretty(&config).expect("serialize");
     let loaded: opencrust::config::Config = serde_json::from_str(&json).expect("deserialize");
@@ -80,17 +82,19 @@ fn config_all_provider_fields_roundtrip() {
 /// Config with all provider API keys set round-trips correctly.
 #[test]
 fn config_all_keys_roundtrip() {
-    let mut config = opencrust::config::Config::default();
-    config.openai_key = Some("sk-xxx".into());
-    config.gemini_api_key = Some("gemini-xxx".into());
-    config.mistral_api_key = Some("mistral-xxx".into());
-    config.anthropic_api_key = Some("sk-ant-xxx".into());
-    config.groq_api_key = Some("gsk-xxx".into());
-    config.together_api_key = Some("together-xxx".into());
-    config.replicate_api_key = Some("replicate-xxx".into());
-    config.deepseek_api_key = Some("ds-xxx".into());
-    config.localai_api_key = Some("localai-xxx".into());
-    config.unsloth_api_key = Some("unsloth-xxx".into());
+    let config = opencrust::config::Config {
+        openai_key: Some("sk-xxx".into()),
+        gemini_api_key: Some("gemini-xxx".into()),
+        mistral_api_key: Some("mistral-xxx".into()),
+        anthropic_api_key: Some("sk-ant-xxx".into()),
+        groq_api_key: Some("gsk-xxx".into()),
+        together_api_key: Some("together-xxx".into()),
+        replicate_api_key: Some("replicate-xxx".into()),
+        deepseek_api_key: Some("ds-xxx".into()),
+        localai_api_key: Some("localai-xxx".into()),
+        unsloth_api_key: Some("unsloth-xxx".into()),
+        ..Default::default()
+    };
 
     let json = serde_json::to_string_pretty(&config).expect("serialize");
     let loaded: opencrust::config::Config = serde_json::from_str(&json).expect("deserialize");
