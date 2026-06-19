@@ -72,6 +72,19 @@ opencrust/
 │   │   ├── task.rs        # Task representation and state
 │   │   └── agent_pool.rs  # Agent pool management
 │   │
+│   ├── mission_control/   # Mission Control hub
+│   │   ├── mod.rs         # Module exports
+│   │   ├── state.rs       # MissionControlUI state management
+│   │   ├── render.rs      # TUI rendering
+│   │   ├── controls.rs    # Control components
+│   │   ├── progress.rs    # Progress visualization
+│   │   ├── types.rs       # Common types (Node, Edge, ViewMode, SpacePanel)
+│   │   ├── spaces.rs      # Spaces/Projects - group agents and tasks by project
+│   │   ├── dashboard.rs   # Agent Dashboard - real-time agent monitoring
+│   │   ├── artifacts.rs   # Artifacts - generate/manage docs, test results
+│   │   ├── workflows.rs   # Workflows - parameterized command library
+│   │   └── scheduler.rs   # Scheduler - cron-like task automation
+│   │
 │   ├── providers/         # Provider abstraction layer
 │   │   ├── mod.rs         # Generic Provider trait & ProviderRegistry
 │   │   ├── desktop.rs     # DesktopProvider trait & DefaultDesktopProvider

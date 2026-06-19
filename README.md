@@ -98,6 +98,14 @@ OpenCrust is a high-intelligence AI partner for complex software engineering. Un
 - **Smart Notifications**: DBus-first notifications with notify-send fallback for maximum compatibility
 - **Native File Pickers**: Nemo (Cinnamon), Zenity, or KDialog backends with automatic detection
 - **Desktop Detection**: Automatic Cinnamon/MATE/GNOME/Plasma environment detection with theme extraction
+
+### 🚀 Enhanced Mission Control (v1.3.0+)
+
+- **Spaces/Projects**: Group agents and tasks by project for better organization (inspired by Devin Desktop)
+- **Agent Dashboard**: Real-time monitoring of agent status, resources, and logs
+- **Artifacts System**: Generate and manage documentation, test results, and other outputs (inspired by Antigravity)
+- **Workflows**: Parameterized command library for reusable automation (inspired by Warp Terminal)
+- **Scheduled Tasks**: Cron-like automation for running tasks on schedule
 - **CLI Commands**: `opencrust desktop` and `opencrust session` for terminal-native workflows
 
 ---

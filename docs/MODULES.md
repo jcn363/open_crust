@@ -565,6 +565,66 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `mission_control/tui.rs`, `llm.rs`, `events.rs`  
 **Lines of code:** ~300
 
+### mission_control/spaces.rs
+**Purpose:** Spaces/Projects - group agents and tasks by project for better organization  
+**Key types:** `Space`, `SpaceManager`, `Project`  
+**Key functions:** `create_space()`, `list_spaces()`, `get_space()`  
+**When to modify:**
+- Adding new space features
+- Changing project organization
+- Modifying space persistence
+
+**Related modules:** `mission_control/mod.rs`, `mission_control/dashboard.rs`  
+**Lines of code:** ~200
+
+### mission_control/dashboard.rs
+**Purpose:** Agent Dashboard - real-time monitoring of agent status, resources, and logs  
+**Key types:** `AgentDashboard`, `AgentStatus`, `AgentState`  
+**Key functions:** `update_status()`, `get_agents()`, `get_logs()`  
+**When to modify:**
+- Adding new monitoring features
+- Changing dashboard UI
+- Modifying agent status tracking
+
+**Related modules:** `mission_control/mod.rs`, `mission_control/spaces.rs`  
+**Lines of code:** ~300
+
+### mission_control/artifacts.rs
+**Purpose:** Artifacts - generate and manage documentation, test results, and other outputs  
+**Key types:** `Artifact`, `ArtifactManager`, `ArtifactType`  
+**Key functions:** `create_artifact()`, `list_artifacts()`, `export_artifacts()`  
+**When to modify:**
+- Adding new artifact types
+- Changing artifact generation
+- Modifying artifact persistence
+
+**Related modules:** `mission_control/mod.rs`, `mission_control/workflows.rs`  
+**Lines of code:** ~250
+
+### mission_control/workflows.rs
+**Purpose:** Workflows - parameterized command library for reusable automation  
+**Key types:** `Workflow`, `WorkflowManager`, `WorkflowParameter`  
+**Key functions:** `create_workflow()`, `execute_workflow()`, `list_workflows()`  
+**When to modify:**
+- Adding new workflow features
+- Changing workflow execution
+- Modifying workflow parameters
+
+**Related modules:** `mission_control/mod.rs`, `mission_control/scheduler.rs`  
+**Lines of code:** ~350
+
+### mission_control/scheduler.rs
+**Purpose:** Scheduler - cron-like automation for running tasks on schedule  
+**Key types:** `ScheduledTask`, `TaskScheduler`, `ScheduleType`  
+**Key functions:** `create_task()`, `execute_task()`, `list_tasks()`  
+**When to modify:**
+- Adding new schedule types
+- Changing task execution
+- Modifying scheduler persistence
+
+**Related modules:** `mission_control/mod.rs`, `mission_control/workflows.rs`  
+**Lines of code:** ~300
+
 ### mission_control/tui.rs
 **Purpose:** Mission control terminal UI (Ratatui component)  
 **Key types:** `MissionControlTUI`, `AgentWidget`, `StatusDisplay`  

@@ -5,7 +5,11 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::types::{AgentPanel, DashboardStats, MissionControlAction, NodePosition};
+use super::dashboard::AgentDashboard;
+use super::spaces::SpaceManager;
+use super::types::{
+    AgentPanel, DashboardStats, MissionControlAction, NodePosition, SpacePanel, ViewMode,
+};
 
 /// Mission Control TUI state
 pub struct MissionControlUI {
@@ -27,6 +31,18 @@ pub struct MissionControlUI {
     pub stats: DashboardStats,
     /// Agent panel state
     pub agent_panel: AgentPanel,
+    /// Space panel state
+    pub space_panel: SpacePanel,
+    /// Agent dashboard for real-time monitoring
+    pub agent_dashboard: AgentDashboard,
+    /// Space manager for project organization
+    pub space_manager: SpaceManager,
+    /// Current view mode
+    pub view_mode: ViewMode,
+    /// Whether space panel is visible
+    pub show_space_panel: bool,
+    /// Whether agent dashboard is visible
+    pub show_agent_dashboard: bool,
 }
 
 impl MissionControlUI {
@@ -41,12 +57,22 @@ impl MissionControlUI {
             scroll_offset: 0,
             active_panel: 0,
             stats: DashboardStats::default(),
-            agent_panel: AgentPanel {
-                agents: Vec::new(),
-                selected: 0,
-                show_logs: false,
-            },
+            agent_panel: AgentPanel::new(),
+            space_panel: SpacePanel::new(),
+            agent_dashboard: AgentDashboard::new(),
+            space_manager: SpaceManager::new(),
+            view_mode: ViewMode::Dag,
+            show_space_panel: false,
+            show_agent_dashboard: false,
         }
+    }
+
+    /// Create a new Mission Control UI with persistence
+    pub fn with_persistence(spaces_path: std::path::PathBuf) -> Self {
+        let mut ui = Self::new();
+        ui.space_manager = SpaceManager::new().with_persistence(spaces_path);
+        let _ = ui.space_manager.load();
+        ui
     }
 
     /// Refresh task snapshot from shared bridge and recompute layout
@@ -195,7 +221,7 @@ impl MissionControlUI {
         self.node_positions = positions;
     }
 
-    /// Compute dashboard statistics from current tasks
+    /// Compute dashboard statistics from current tasks and agents
     pub(crate) fn compute_stats(&mut self) {
         let total = self.tasks.len();
         let mut pending = 0usize;
@@ -212,12 +238,19 @@ impl MissionControlUI {
             }
         }
 
+        // Get agent dashboard stats
+        let agent_stats = self.agent_dashboard.compute_stats();
+
         self.stats = DashboardStats {
             total,
             pending,
             running,
             completed,
             failed,
+            active_agents: agent_stats.active_agents,
+            idle_agents: agent_stats.idle_agents,
+            failed_agents: agent_stats.failed_agents,
+            success_rate: agent_stats.success_rate,
         };
     }
 
@@ -368,6 +401,123 @@ impl MissionControlUI {
         if pos.y > self.scroll_offset as u16 + 15 {
             self.scroll_offset = pos.y.saturating_sub(10) as usize;
         }
+    }
+
+    /// Create a new space
+    pub fn create_space(&mut self, name: String) -> String {
+        let space = self.space_manager.create_space(name);
+        let id = space.id.clone();
+        self.space_panel.spaces = self
+            .space_manager
+            .list_spaces(true)
+            .into_iter()
+            .cloned()
+            .collect();
+        id
+    }
+
+    /// Set the active space
+    pub fn set_active_space(&mut self, space_id: Option<String>) {
+        self.space_manager.set_active_space(space_id.clone());
+        self.space_panel.spaces = self
+            .space_manager
+            .list_spaces(true)
+            .into_iter()
+            .cloned()
+            .collect();
+    }
+
+    /// Get the active space
+    pub fn get_active_space(&self) -> Option<&super::spaces::Space> {
+        self.space_manager.get_active_space()
+    }
+
+    /// List all spaces
+    pub fn list_spaces(&self, include_archived: bool) -> Vec<&super::spaces::Space> {
+        self.space_manager.list_spaces(include_archived)
+    }
+
+    /// Delete a space
+    pub fn delete_space(&mut self, space_id: &str) -> bool {
+        let result = self.space_manager.delete_space(space_id);
+        self.space_panel.spaces = self
+            .space_manager
+            .list_spaces(true)
+            .into_iter()
+            .cloned()
+            .collect();
+        result
+    }
+
+    /// Add an agent to a space
+    pub fn add_agent_to_space(&mut self, space_id: &str, agent_id: &str) {
+        if let Some(space) = self.space_manager.get_space_mut(space_id) {
+            space.add_agent(agent_id.to_string());
+        }
+    }
+
+    /// Remove an agent from a space
+    pub fn remove_agent_from_space(&mut self, space_id: &str, agent_id: &str) {
+        if let Some(space) = self.space_manager.get_space_mut(space_id) {
+            space.remove_agent(agent_id);
+        }
+    }
+
+    /// Get agent dashboard reference
+    pub fn agent_dashboard(&self) -> &super::dashboard::AgentDashboard {
+        &self.agent_dashboard
+    }
+
+    /// Get mutable agent dashboard reference
+    pub fn agent_dashboard_mut(&mut self) -> &mut super::dashboard::AgentDashboard {
+        &mut self.agent_dashboard
+    }
+
+    /// Toggle space panel visibility
+    pub fn toggle_space_panel(&mut self) {
+        self.show_space_panel = !self.show_space_panel;
+    }
+
+    /// Toggle agent dashboard visibility
+    pub fn toggle_agent_dashboard(&mut self) {
+        self.show_agent_dashboard = !self.show_agent_dashboard;
+    }
+
+    /// Set view mode
+    pub fn set_view_mode(&mut self, mode: super::types::ViewMode) {
+        self.view_mode = mode;
+    }
+
+    /// Get current view mode
+    pub fn view_mode(&self) -> &super::types::ViewMode {
+        &self.view_mode
+    }
+
+    /// Save spaces to disk
+    pub fn save_spaces(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.space_manager.save()
+    }
+
+    /// Load spaces from disk
+    pub fn load_spaces(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.space_manager.load()?;
+        self.space_panel.spaces = self
+            .space_manager
+            .list_spaces(true)
+            .into_iter()
+            .cloned()
+            .collect();
+        Ok(())
+    }
+
+    /// Search spaces
+    pub fn search_spaces(&self, query: &str) -> Vec<&super::spaces::Space> {
+        self.space_manager.search(query)
+    }
+
+    /// Get recently active spaces
+    pub fn recently_active_spaces(&self, limit: usize) -> Vec<&super::spaces::Space> {
+        self.space_manager.recently_active(limit)
     }
 }
 
