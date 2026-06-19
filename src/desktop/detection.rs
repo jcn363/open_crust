@@ -20,6 +20,10 @@ pub enum DesktopEnvironment {
     Gnome,
     /// Xfce desktop
     Xfce,
+    /// macOS desktop
+    MacOS,
+    /// Windows desktop
+    Windows,
     /// Unknown desktop environment
     Unknown,
 }
@@ -71,6 +75,8 @@ impl DesktopEnvironment {
             DesktopEnvironment::Plasma => "KDE Plasma",
             DesktopEnvironment::Gnome => "GNOME",
             DesktopEnvironment::Xfce => "Xfce",
+            DesktopEnvironment::MacOS => "macOS",
+            DesktopEnvironment::Windows => "Windows",
             DesktopEnvironment::Unknown => "Unknown",
         }
     }
@@ -158,48 +164,63 @@ impl Default for CinnamonInfo {
 
 /// Detect the current desktop environment
 pub fn detect_desktop() -> DesktopEnvironment {
-    // Check XDG_CURRENT_DESKTOP
-    if let Ok(desktop) = env::var("XDG_CURRENT_DESKTOP") {
-        let desktop_lower = desktop.to_lowercase();
-        if desktop_lower.contains("cinnamon") {
-            return DesktopEnvironment::Cinnamon;
-        } else if desktop_lower.contains("mate") {
-            return DesktopEnvironment::Mate;
-        } else if desktop_lower.contains("kde") {
-            return DesktopEnvironment::Plasma;
-        } else if desktop_lower.contains("gnome") {
-            return DesktopEnvironment::Gnome;
-        } else if desktop_lower.contains("xfce") {
-            return DesktopEnvironment::Xfce;
-        }
-    }
-
-    // Check DESKTOP_SESSION (fallback)
-    if let Ok(session) = env::var("DESKTOP_SESSION") {
-        let session_lower = session.to_lowercase();
-        if session_lower.contains("cinnamon") {
-            return DesktopEnvironment::Cinnamon;
-        } else if session_lower.contains("mate") {
-            return DesktopEnvironment::Mate;
-        } else if session_lower.contains("kde") {
-            return DesktopEnvironment::Plasma;
-        } else if session_lower.contains("gnome") {
-            return DesktopEnvironment::Gnome;
-        } else if session_lower.contains("xfce") {
-            return DesktopEnvironment::Xfce;
-        }
-    }
-
-    // Check for cinnamon-specific processes using pgrep (more reliable than /proc/1/cmdline)
-    if std::process::Command::new("pgrep")
-        .arg("-u")
-        .arg(env::var("USER").unwrap_or_default())
-        .arg("cinnamon")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    // Platform-specific detection
+    #[cfg(target_os = "macos")]
     {
-        return DesktopEnvironment::Cinnamon;
+        return DesktopEnvironment::MacOS;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return DesktopEnvironment::Windows;
+    }
+
+    // Linux detection
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        // Check XDG_CURRENT_DESKTOP
+        if let Ok(desktop) = env::var("XDG_CURRENT_DESKTOP") {
+            let desktop_lower = desktop.to_lowercase();
+            if desktop_lower.contains("cinnamon") {
+                return DesktopEnvironment::Cinnamon;
+            } else if desktop_lower.contains("mate") {
+                return DesktopEnvironment::Mate;
+            } else if desktop_lower.contains("kde") {
+                return DesktopEnvironment::Plasma;
+            } else if desktop_lower.contains("gnome") {
+                return DesktopEnvironment::Gnome;
+            } else if desktop_lower.contains("xfce") {
+                return DesktopEnvironment::Xfce;
+            }
+        }
+
+        // Check DESKTOP_SESSION (fallback)
+        if let Ok(session) = env::var("DESKTOP_SESSION") {
+            let session_lower = session.to_lowercase();
+            if session_lower.contains("cinnamon") {
+                return DesktopEnvironment::Cinnamon;
+            } else if session_lower.contains("mate") {
+                return DesktopEnvironment::Mate;
+            } else if session_lower.contains("kde") {
+                return DesktopEnvironment::Plasma;
+            } else if session_lower.contains("gnome") {
+                return DesktopEnvironment::Gnome;
+            } else if session_lower.contains("xfce") {
+                return DesktopEnvironment::Xfce;
+            }
+        }
+
+        // Check for cinnamon-specific processes using pgrep (more reliable than /proc/1/cmdline)
+        if std::process::Command::new("pgrep")
+            .arg("-u")
+            .arg(env::var("USER").unwrap_or_default())
+            .arg("cinnamon")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return DesktopEnvironment::Cinnamon;
+        }
     }
 
     DesktopEnvironment::Unknown
@@ -342,7 +363,7 @@ pub fn detect_cinnamon() -> CinnamonInfo {
     }
 }
 
-/// Check if running on a supported desktop environment (Cinnamon, Mate, Gnome, Plasma)
+/// Check if running on a supported desktop environment
 pub fn is_supported_desktop() -> bool {
     let desktop = detect_desktop();
     matches!(
@@ -351,6 +372,8 @@ pub fn is_supported_desktop() -> bool {
             | DesktopEnvironment::Mate
             | DesktopEnvironment::Gnome
             | DesktopEnvironment::Plasma
+            | DesktopEnvironment::MacOS
+            | DesktopEnvironment::Windows
     )
 }
 
@@ -374,6 +397,8 @@ mod tests {
                 | DesktopEnvironment::Plasma
                 | DesktopEnvironment::Gnome
                 | DesktopEnvironment::Xfce
+                | DesktopEnvironment::MacOS
+                | DesktopEnvironment::Windows
                 | DesktopEnvironment::Unknown
         ));
     }
@@ -395,6 +420,8 @@ mod tests {
         assert_eq!(DesktopEnvironment::Plasma.name(), "KDE Plasma");
         assert_eq!(DesktopEnvironment::Gnome.name(), "GNOME");
         assert_eq!(DesktopEnvironment::Xfce.name(), "Xfce");
+        assert_eq!(DesktopEnvironment::MacOS.name(), "macOS");
+        assert_eq!(DesktopEnvironment::Windows.name(), "Windows");
         assert_eq!(DesktopEnvironment::Unknown.name(), "Unknown");
     }
 }

@@ -477,6 +477,77 @@ For architecture context, see **docs/ARCHITECTURE.md**.
 **Related modules:** `desktop/mod.rs`  
 **Lines of code:** ~300
 
+### desktop/menu_bar.rs
+**Purpose:** macOS menu bar integration (cocoa/objc)  
+**Key types:** `MenuBarManager`, `MenuBarEvent`, `MenuBarCommand`, `MenuBarStatus`  
+**Key functions:** `start_menu_bar()`, `is_menu_bar_available()`  
+**When to modify:**
+- Adding menu bar items
+- Changing status icon states
+- Modifying agent list display
+
+**Related modules:** `desktop/mod.rs`, `providers/menu_bar.rs`  
+**Lines of code:** ~400
+
+---
+
+## Provider Abstraction Modules
+
+### providers/mod.rs
+**Purpose:** Generic Provider trait and registry  
+**Key types:** `Provider`, `ProviderRegistry<P>`  
+**Key functions:** `register()`, `available()`, `best()`, `get()`  
+**When to modify:**
+- Adding new provider types
+- Changing provider selection logic
+
+**Related modules:** All provider modules  
+**Lines of code:** ~100
+
+### providers/desktop.rs
+**Purpose:** Desktop provider trait for environment detection and theming  
+**Key types:** `DesktopProvider`, `ThemeColors`, `DefaultDesktopProvider`  
+**Key functions:** `detect()`, `cinnamon_info()`, `theme_colors()`  
+**When to modify:**
+- Adding new desktop environments
+- Changing theme extraction
+
+**Related modules:** `desktop/detection.rs`  
+**Lines of code:** ~100
+
+### providers/notifications.rs
+**Purpose:** Notification provider trait  
+**Key types:** `NotificationProvider`, `MacOSNotificationProvider`, `LinuxNotificationProvider`  
+**Key functions:** `send_notification()`, `is_available()`  
+**When to modify:**
+- Adding notification backends
+- Changing notification format
+
+**Related modules:** `desktop/notifications.rs`  
+**Lines of code:** ~150
+
+### providers/file_picker.rs
+**Purpose:** File picker provider trait  
+**Key types:** `FilePickerProvider`, `NemoFilePickerProvider`, `ZenityFilePickerProvider`, `KDialogFilePickerProvider`  
+**Key functions:** `open_file_picker()`, `is_available()`  
+**When to modify:**
+- Adding file picker backends
+- Changing file picker options
+
+**Related modules:** `desktop/file_picker.rs`  
+**Lines of code:** ~200
+
+### providers/menu_bar.rs
+**Purpose:** Menu bar provider trait  
+**Key types:** `MenuBarProvider`, `MenuBarStatus`, `MacOSMenuBarProvider`, `FallbackMenuBarProvider`  
+**Key functions:** `start()`, `stop()`, `set_status()`, `set_agent_count()`  
+**When to modify:**
+- Adding menu bar backends
+- Changing menu bar behavior
+
+**Related modules:** `desktop/menu_bar.rs`  
+**Lines of code:** ~200
+
 ### desktop/file_picker.rs
 **Purpose:** Native file pickers (Nemo, Zenity, KDialog, etc.)  
 **Key types:** `FilePicker`, `FilePickerBackend`, `FilePickerResult`  

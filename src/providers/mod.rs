@@ -5,6 +5,7 @@
 
 pub mod desktop;
 pub mod file_picker;
+pub mod menu_bar;
 pub mod notifications;
 pub mod plugin;
 pub mod tool;

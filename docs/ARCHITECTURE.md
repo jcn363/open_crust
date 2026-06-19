@@ -12,6 +12,22 @@ opencrust/
 │   ├── memory.rs          # Auto memory system (conversation persistence)
 │   ├── recursive_agents.rs # Recursive sub-agent management (5 levels deep)
 │   │
+│   ├── desktop/           # Desktop integration (Linux, macOS, Windows)
+│   │   ├── mod.rs
+│   │   ├── detection.rs   # Desktop environment detection (Cinnamon, MATE, Plasma, GNOME, macOS, Windows)
+│   │   ├── file_picker.rs # Native file pickers (Nemo, Zenity, KDialog, osascript)
+│   │   ├── notifications/ # System notifications (notify-send, osascript)
+│   │   └── menu_bar.rs    # macOS menu bar integration (cocoa/objc)
+│   │
+│   ├── providers/         # Provider abstraction layer
+│   │   ├── mod.rs         # Generic Provider trait and registry
+│   │   ├── desktop.rs     # Desktop provider trait
+│   │   ├── notifications.rs # Notification provider trait
+│   │   ├── file_picker.rs # File picker provider trait
+│   │   ├── menu_bar.rs    # Menu bar provider trait
+│   │   ├── tool.rs        # Tool provider trait
+│   │   └── plugin.rs      # Plugin provider trait
+│   │
 │   ├── llm.rs             # LLM client, tool execution loop, context management
 │   ├── tools.rs           # Tool schema definitions and routing
 │   ├── config.rs          # Config loading/saving (34 providers, model_aliases, subagent cfg)

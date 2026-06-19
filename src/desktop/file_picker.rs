@@ -343,6 +343,80 @@ pub fn kdialog_file_picker(mode: FilePickerMode, options: &FilePickerOptions) ->
     }
 }
 
+/// Show file picker using osascript (macOS)
+#[cfg(target_os = "macos")]
+fn osascript_file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
+    let prompt = options
+        .title
+        .as_deref()
+        .unwrap_or("Select file");
+
+    // Build the AppleScript command based on mode
+    let script = match mode {
+        FilePickerMode::Open => {
+            format!(
+                r#"POSIX path of (choose file with prompt "{}")"#,
+                prompt
+            )
+        }
+        FilePickerMode::OpenMultiple => {
+            format!(
+                r#"set theFiles to (choose file with prompt "{}" with multiple selections allowed)
+set paths to {}
+repeat with f in theFiles
+    set paths to paths & (POSIX path of f) & linefeed
+end repeat
+paths"#,
+                prompt, "missing value"
+            )
+        }
+        FilePickerMode::Save => {
+            format!(
+                r#"POSIX path of (choose file name with prompt "{}")"#,
+                prompt
+            )
+        }
+        FilePickerMode::SelectFolder => {
+            format!(
+                r#"POSIX path of (choose folder with prompt "{}")"#,
+                prompt
+            )
+        }
+    };
+
+    let output = Command::new("osascript")
+        .args(["-e", &script])
+        .output();
+
+    match output {
+        Ok(output) => {
+            if output.status.success() {
+                let output_str = String::from_utf8_lossy(&output.stdout);
+                let paths: Vec<PathBuf> = output_str
+                    .lines()
+                    .filter(|l| !l.is_empty())
+                    .map(PathBuf::from)
+                    .collect();
+
+                FilePickerResult {
+                    paths,
+                    cancelled: false,
+                }
+            } else {
+                // User cancelled or error
+                FilePickerResult {
+                    paths: vec![],
+                    cancelled: true,
+                }
+            }
+        }
+        Err(_) => FilePickerResult {
+            paths: vec![],
+            cancelled: true,
+        },
+    }
+}
+
 /// Show file picker using the best available backend
 pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePickerResult {
     let backend = detect_file_picker_backend();
@@ -351,8 +425,15 @@ pub fn file_picker(mode: FilePickerMode, options: &FilePickerOptions) -> FilePic
         FilePickerBackend::Nemo => nemo_file_picker(mode, options),
         FilePickerBackend::Zenity => zenity_file_picker(mode, options),
         FilePickerBackend::KDialog => kdialog_file_picker(mode, options),
-        FilePickerBackend::Osascript | FilePickerBackend::WindowsForms => {
-            // Not yet implemented for macOS/Windows - fall back to cancelled
+        #[cfg(target_os = "macos")]
+        FilePickerBackend::Osascript => osascript_file_picker(mode, options),
+        #[cfg(not(target_os = "macos"))]
+        FilePickerBackend::Osascript => FilePickerResult {
+            paths: vec![],
+            cancelled: true,
+        },
+        FilePickerBackend::WindowsForms => {
+            // Not yet implemented for Windows - fall back to cancelled
             FilePickerResult {
                 paths: vec![],
                 cancelled: true,
@@ -372,12 +453,14 @@ mod tests {
     #[test]
     fn test_backend_detection() {
         let backend = detect_file_picker_backend();
-        // Just verify detection works - may find Nemo, Zenity, KDialog, or None
+        // Just verify detection works - may find Nemo, Zenity, KDialog, Osascript, or None
         assert!(matches!(
             backend,
             FilePickerBackend::Nemo
                 | FilePickerBackend::Zenity
                 | FilePickerBackend::KDialog
+                | FilePickerBackend::Osascript
+                | FilePickerBackend::WindowsForms
                 | FilePickerBackend::None
         ));
     }

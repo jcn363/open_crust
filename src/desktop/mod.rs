@@ -1,12 +1,15 @@
 //! Desktop integration module
 //!
 //! Provides desktop environment detection, system notifications (Linux via notify-send/DBus,
-//! macOS via osascript), and native file pickers for Linux Mint Cinnamon while keeping the
-//! core TUI unchanged.
+//! macOS via osascript), native file pickers, and macOS menu bar integration.
 
 pub mod detection;
 pub mod file_picker;
 pub mod notifications;
+
+/// macOS menu bar integration (only available on macOS with macos-menu-bar feature)
+#[cfg(all(target_os = "macos", feature = "macos-menu-bar"))]
+pub mod menu_bar;
 
 #[cfg(test)]
 mod tests {
