@@ -1,10 +1,9 @@
 use crate::cli::SessionCommands;
+use crate::error::{OpenCrustError, Result};
 use crate::sessions::SessionManager;
 use serde_json::Value;
 
-pub async fn handle_session(
-    cmd: SessionCommands,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_session(cmd: SessionCommands) -> Result<()> {
     let session_manager = SessionManager::new();
 
     match cmd {
@@ -53,7 +52,7 @@ pub async fn handle_session(
         },
         SessionCommands::Save { id, messages } => {
             let msgs: Vec<Value> = serde_json::from_str(&messages)
-                .map_err(|e| format!("Invalid JSON: {}", e))
+                .map_err(|e| OpenCrustError::Json(e))
                 .unwrap_or_default();
 
             match session_manager.save_session(&id, &msgs) {

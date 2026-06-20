@@ -3,9 +3,9 @@
 //! Provides Brave Search API integration for web searches and HTML-to-Markdown
 //! content extraction from URLs. Used by the LLM as a web research tool.
 
+use crate::error::{OpenCrustError, Result};
 use ::html2md;
 use reqwest::Client;
-use std::error::Error;
 use std::time::Duration;
 
 pub struct WebManager {
@@ -13,15 +13,18 @@ pub struct WebManager {
 }
 
 impl WebManager {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
             client: Client::builder().timeout(Duration::from_secs(30)).build()?,
         })
     }
 
-    pub async fn search(&self, query: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+    pub async fn search(&self, query: &str) -> Result<String> {
         let api_key = std::env::var("BRAVE_API_KEY").map_err(|_| {
-            "BRAVE_API_KEY environment variable not set. Set it to enable Brave Search.".to_string()
+            OpenCrustError::Provider(
+                "BRAVE_API_KEY environment variable not set. Set it to enable Brave Search."
+                    .to_string(),
+            )
         })?;
 
         let response = self
@@ -37,7 +40,10 @@ impl WebManager {
             .await?;
 
         if !response.status().is_success() {
-            return Err(format!("Brave Search API error: {}", response.status()).into());
+            return Err(OpenCrustError::Provider(format!(
+                "Brave Search API error: {}",
+                response.status()
+            )));
         }
 
         let json: serde_json::Value = response.json().await?;
@@ -71,11 +77,15 @@ impl WebManager {
         Ok(output)
     }
 
-    pub async fn fetch_url(&self, url_str: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
-        let parsed = url::Url::parse(url_str).map_err(|_| format!("Invalid URL: {}", url_str))?;
+    pub async fn fetch_url(&self, url_str: &str) -> Result<String> {
+        let parsed = url::Url::parse(url_str)
+            .map_err(|_| OpenCrustError::Provider(format!("Invalid URL: {}", url_str)))?;
         let scheme = parsed.scheme();
         if scheme != "http" && scheme != "https" {
-            return Err(format!("Blocked URL scheme: {}", scheme).into());
+            return Err(OpenCrustError::Security(format!(
+                "Blocked URL scheme: {}",
+                scheme
+            )));
         }
         if let Some(host) = parsed.host_str() {
             // Comprehensive SSRF protection: check all known localhost representations
@@ -90,10 +100,16 @@ impl WebManager {
                 || host == "0x7f000001"
                 || host == "0177.0.0.1"
             {
-                return Err(format!("Blocked local host: {}", host).into());
+                return Err(OpenCrustError::Security(format!(
+                    "Blocked local host: {}",
+                    host
+                )));
             }
             if host.ends_with(".local") || host.ends_with(".internal") {
-                return Err(format!("Blocked private host: {}", host).into());
+                return Err(OpenCrustError::Security(format!(
+                    "Blocked private host: {}",
+                    host
+                )));
             }
         }
         let res = self
@@ -105,7 +121,9 @@ impl WebManager {
 
         let html = res.text().await?;
         if html.len() > 10_000_000 {
-            return Err("Response too large (>10MB)".into());
+            return Err(OpenCrustError::Provider(
+                "Response too large (>10MB)".into(),
+            ));
         }
         Ok(self.html_to_md(&html))
     }

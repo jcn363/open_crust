@@ -1,4 +1,5 @@
 use crate::cli::SkillsCommands;
+use crate::error::Result;
 use crate::skills::SkillManager;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -6,7 +7,7 @@ use tokio::sync::Mutex;
 pub async fn handle_skills(
     cmd: SkillsCommands,
     skill_manager: Arc<Mutex<SkillManager>>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     let mut skills = skill_manager.lock().await;
     match cmd {
         SkillsCommands::List => {

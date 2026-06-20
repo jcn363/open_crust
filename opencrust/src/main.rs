@@ -7,7 +7,7 @@ use opencrust::*;
 use std::sync::Arc;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let mut config = config::Config::load();
     apply_cinnamon_theme(&mut config);
@@ -24,7 +24,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 return Ok(());
             }
         };
-        return run_multi_agent(&args.agents, &prompt, &config).await;
+        run_multi_agent(&args.agents, &prompt, &config)
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
+        return Ok(());
     }
 
     // Start background model list refresh if enabled
@@ -36,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // Handle headless mode (--prompt) - must be before other command handling
     if let Some(ref prompt) = args.prompt {
-        return run_headless(
+        run_headless(
             prompt,
             args.file.as_deref(),
             args.project.as_deref(),
@@ -47,7 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             skill_manager,
             custom_tool_manager,
         )
-        .await;
+        .await?;
+        return Ok(());
     }
 
     let llm_client = llm::LlmClient::new(
@@ -76,12 +80,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     // ACP mode
     if matches!(args.command, Some(Commands::Acp)) {
-        return acp::run_acp_loop(llm_client).await;
+        acp::run_acp_loop(llm_client)
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
+        return Ok(());
     }
 
     // Launch TUI
     let plugin_manager = llm_client.plugin_manager.clone();
-    run_tui(llm_client, skill_manager, plugin_manager).await?;
+    run_tui(llm_client, skill_manager, plugin_manager)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     Ok(())
 }

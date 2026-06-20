@@ -10,10 +10,9 @@ use crate::desktop::notifications::{
     Notification, NotificationUrgency, is_notification_available, notify_error, notify_success,
     send_notification_smart,
 };
+use crate::error::Result;
 
-pub async fn handle_desktop(
-    cmd: DesktopCommands,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_desktop(cmd: DesktopCommands) -> Result<()> {
     match cmd {
         DesktopCommands::FilePicker { mode, dir, title } => {
             if !is_file_picker_available() {

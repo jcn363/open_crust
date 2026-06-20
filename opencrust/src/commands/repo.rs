@@ -1,9 +1,8 @@
 use crate::cli::RepoCommands;
+use crate::error::Result;
 use crate::multi_repo::MultiRepoManager;
 
-pub async fn handle_repo(
-    cmd: RepoCommands,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_repo(cmd: RepoCommands) -> Result<()> {
     let repo_mgr = MultiRepoManager::new();
     match cmd {
         RepoCommands::List => {

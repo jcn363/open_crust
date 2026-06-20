@@ -16,6 +16,7 @@ pub mod skills;
 use crate::cli::Commands;
 use crate::config::Config;
 use crate::custom_tools::CustomToolManager;
+use crate::error::Result;
 use crate::lsp::LspManager;
 use crate::mcp::McpManager;
 use crate::skills::SkillManager;
@@ -34,7 +35,7 @@ pub async fn dispatch(
     lsp_manager: Arc<Mutex<LspManager>>,
     skill_manager: Arc<Mutex<SkillManager>>,
     custom_tool_manager: Arc<Mutex<CustomToolManager>>,
-) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<bool> {
     match command {
         Commands::Acp => {
             // ACP is handled in main.rs before dispatch since it needs LlmClient
@@ -92,13 +93,12 @@ pub async fn dispatch(
 }
 
 mod run {
+    use crate::error::{OpenCrustError, Result};
     use crate::security::execute_command_safely;
 
-    pub async fn handle_run(
-        command: String,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn handle_run(command: String) -> Result<()> {
         let output = execute_command_safely(&command)
-            .map_err(|e| format!("Failed to execute command: {}", e))?;
+            .map_err(|e| OpenCrustError::Other(format!("Failed to execute command: {}", e)))?;
         if output.status.success() {
             println!("{}", String::from_utf8_lossy(&output.stdout));
         } else {

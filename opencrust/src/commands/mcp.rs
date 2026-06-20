@@ -1,5 +1,6 @@
 use crate::cli::McpCommands;
 use crate::config::Config;
+use crate::error::{OpenCrustError, Result};
 use crate::mcp::McpManager;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -8,7 +9,7 @@ pub async fn handle_mcp(
     cmd: McpCommands,
     config: &Config,
     __mcp_manager: Arc<Mutex<McpManager>>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     match cmd {
         McpCommands::List => {
             println!("Available MCP servers (curated list):");
@@ -244,8 +245,9 @@ pub async fn handle_mcp(
             mcp_manager.lock().await.load_from_config(&config.mcp).await;
 
             let arguments = match args {
-                Some(json_str) => serde_json::from_str(json_str.as_str())
-                    .map_err(|e| format!("Invalid JSON arguments: {}", e)),
+                Some(json_str) => {
+                    serde_json::from_str(json_str.as_str()).map_err(|e| OpenCrustError::Json(e))
+                }
                 None => Ok(serde_json::json!({})),
             };
 

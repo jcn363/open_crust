@@ -2,15 +2,13 @@ use crate::audit::{AuditExport, AuditQuery, ExportFormat};
 use crate::cli::{ComplianceCommands, PermissionCommands};
 use crate::compliance::{ComplianceManager, EvidencePackage};
 use crate::config::Config;
+use crate::error::{OpenCrustError, Result};
 use crate::permissions::{Role, RoleTemplate};
 use chrono::NaiveDate;
 use hostname;
 use std::path::PathBuf;
 
-pub async fn handle_compliance(
-    cmd: ComplianceCommands,
-    config: &Config,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_compliance(cmd: ComplianceCommands, config: &Config) -> Result<()> {
     let log_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("opencrust/logs");
@@ -29,19 +27,18 @@ pub async fn handle_compliance(
             match compliance_mgr.full_check(&out_dir) {
                 Ok(report) => {
                     // Generate report in requested format
-                    let content: Result<String, Box<dyn std::error::Error + Send + Sync>> =
-                        match format.to_lowercase().as_str() {
-                            "json" => report
-                                .to_json()
-                                .map_err(|e| format!("JSON export failed: {}", e).into()),
-                            "html" => Ok(report.to_html()),
-                            "csv" => Ok(report.to_csv()),
-                            "soc2" => Ok(report.to_soc2_type2()),
-                            _ => {
-                                eprintln!("Unknown format '{}', defaulting to SOC2", format);
-                                Ok(report.to_soc2_type2())
-                            }
-                        };
+                    let content: Result<String> = match format.to_lowercase().as_str() {
+                        "json" => report.to_json().map_err(|e| {
+                            OpenCrustError::Other(format!("JSON export failed: {}", e))
+                        }),
+                        "html" => Ok(report.to_html()),
+                        "csv" => Ok(report.to_csv()),
+                        "soc2" => Ok(report.to_soc2_type2()),
+                        _ => {
+                            eprintln!("Unknown format '{}', defaulting to SOC2", format);
+                            Ok(report.to_soc2_type2())
+                        }
+                    };
                     let content = content?;
 
                     let report_path = out_dir.join(format!(
@@ -199,9 +196,7 @@ pub async fn handle_compliance(
     Ok(())
 }
 
-fn handle_permissions(
-    cmd: PermissionCommands,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn handle_permissions(cmd: PermissionCommands) -> Result<()> {
     match cmd {
         PermissionCommands::List => {
             println!("Available role templates:");
@@ -252,16 +247,15 @@ fn handle_permissions(
     Ok(())
 }
 
-fn parse_role(role: &str) -> Result<Role, Box<dyn std::error::Error + Send + Sync>> {
+fn parse_role(role: &str) -> Result<Role> {
     match role.to_lowercase().as_str() {
         "admin" => Ok(Role::Admin),
         "developer" => Ok(Role::Developer),
         "reviewer" => Ok(Role::Reviewer),
-        _ => Err(format!(
+        _ => Err(OpenCrustError::Other(format!(
             "Unknown role: {}. Valid roles: admin, developer, reviewer",
             role
-        )
-        .into()),
+        ))),
     }
 }
 
@@ -270,7 +264,7 @@ fn export_to_syslog(
     entries: &[crate::audit::AuditEntry],
     server: &str,
     facility: &str,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     use std::net::UdpSocket;
 
     let socket = UdpSocket::bind("0.0.0.0:0")?;

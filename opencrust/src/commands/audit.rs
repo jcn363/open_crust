@@ -2,12 +2,10 @@ use crate::audit::AuditQuery;
 use crate::cli::AuditCommands;
 use crate::compliance::{ComplianceManager, EvidencePackage};
 use crate::config::Config;
+use crate::error::Result;
 use std::path::PathBuf;
 
-pub async fn handle_audit(
-    cmd: AuditCommands,
-    config: &Config,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_audit(cmd: AuditCommands, config: &Config) -> Result<()> {
     let log_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join("opencrust/logs");

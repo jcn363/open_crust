@@ -1,9 +1,8 @@
 use crate::cli::PluginCommands;
+use crate::error::Result;
 use crate::plugins::PluginManager;
 
-pub async fn handle_plugin(
-    cmd: PluginCommands,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn handle_plugin(cmd: PluginCommands) -> Result<()> {
     let mut plugin_mgr = PluginManager::new();
     plugin_mgr.discover();
     match cmd {

@@ -20,6 +20,7 @@ pub use types::{Goal, PlanModeState};
 use crate::audit::AuditLogger;
 use crate::config::{Config, PermissionAction};
 use crate::custom_tools::CustomToolManager;
+use crate::error::{OpenCrustError, Result};
 use crate::lsp::LspManager;
 use crate::mcp::McpManager;
 use crate::orchestrator::Orchestrator;
@@ -34,7 +35,6 @@ use crate::web::WebManager;
 use async_recursion::async_recursion;
 use reqwest::Client;
 use serde_json::{Value, json};
-use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc;
@@ -65,7 +65,7 @@ impl LlmClient {
         lsp_manager: Arc<Mutex<LspManager>>,
         skill_manager: Arc<Mutex<SkillManager>>,
         custom_tool_manager: Arc<Mutex<CustomToolManager>>,
-    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<Self> {
         let permission_manager = Arc::new(PermissionManager::new(config.clone()));
         let audit_logger = Arc::new(AuditLogger::new());
         let pinned_files = Arc::new(Mutex::new(Vec::new()));
@@ -161,10 +161,10 @@ impl LlmClient {
         prompt: &str,
         progress_tx: mpsc::Sender<String>,
         mut approval_rx: Option<&mut mpsc::Receiver<bool>>,
-    ) -> Result<String, Box<dyn Error + Send + Sync>> {
+    ) -> Result<String> {
         // Security: check for prompt injection attempts
         if let Err(e) = crate::security::check_prompt_injection(prompt) {
-            return Err(format!("Security: {}", e).into());
+            return Err(OpenCrustError::Security(e.to_string()));
         }
 
         // Fire on_message hook
@@ -354,7 +354,7 @@ impl LlmClient {
                 }
                 return Ok(content.to_string());
             } else {
-                return Err("Empty response".into());
+                return Err(OpenCrustError::Other("Empty response".to_string()));
             }
         }
     }
@@ -362,9 +362,7 @@ impl LlmClient {
 
 /// Create a minimal LlmClient for testing.
 #[cfg(test)]
-pub(crate) fn new_test_client(
-    config: Arc<Config>,
-) -> Result<LlmClient, Box<dyn std::error::Error + Send + Sync>> {
+pub(crate) fn new_test_client(config: Arc<Config>) -> Result<LlmClient> {
     use tokio::sync::Mutex;
     let mcp = Arc::new(Mutex::new(crate::mcp::McpManager::new()));
     let lsp = Arc::new(Mutex::new(crate::lsp::LspManager::new()));

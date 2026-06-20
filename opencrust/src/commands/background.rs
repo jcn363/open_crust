@@ -2,6 +2,7 @@ use crate::background_agents::BackgroundAgentManager;
 use crate::cli::BackgroundCommands;
 use crate::config::Config;
 use crate::custom_tools::CustomToolManager;
+use crate::error::Result;
 use crate::llm::LlmClient;
 use crate::lsp::LspManager;
 use crate::mcp::McpManager;
@@ -16,7 +17,7 @@ pub async fn handle_background(
     _lsp_manager: Arc<Mutex<LspManager>>,
     _skill_manager: Arc<Mutex<SkillManager>>,
     _custom_tool_manager: Arc<Mutex<CustomToolManager>>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     let agent_mgr = BackgroundAgentManager::new();
     let config = Config::load();
     match cmd {

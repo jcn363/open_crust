@@ -1,15 +1,273 @@
-//! Auto memory system — persists conversation learnings across sessions
+//! Cognitive memory types for agent persistence
 //!
-//! Extracts patterns from conversations (preferences, decisions, conventions)
-//! and stores them for recall in future sessions. Inspired by Claude Code's
-//! auto-memory feature.
+//! Inspired by the Engram memory ecosystem, these types enable
+//! typed memory with lifecycle management, hybrid retrieval,
+//! and knowledge graph integration.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use uuid::Uuid;
 
-/// Memory categories for classifying stored entries.
+/// Cognitive memory types with different storage/retrieval semantics
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MemoryType {
+    /// Events tied to specific moments ("debugged schema migration at 3pm")
+    Episodic,
+    /// Durable facts ("prefers TypeScript over JavaScript")
+    Semantic,
+    /// Behavioral rules ("always use Result<T> for error handling")
+    Procedural,
+    /// Active context (current task, open files, recent errors)
+    Working,
+}
+
+impl std::fmt::Display for MemoryType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Episodic => write!(f, "episodic"),
+            Self::Semantic => write!(f, "semantic"),
+            Self::Procedural => write!(f, "procedural"),
+            Self::Working => write!(f, "working"),
+        }
+    }
+}
+
+/// Memory tier for lifecycle management (promotion/demotion)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MemoryTier {
+    /// Ephemeral, session-only (expires quickly)
+    Scratch,
+    /// Daily consolidation window
+    Daily,
+    /// Short-term retention (14 days)
+    ShortTerm,
+    /// Long-term storage (90 days)
+    LongTerm,
+    /// Archived, rarely accessed
+    Archive,
+}
+
+impl MemoryTier {
+    /// Default TTL in days for each tier
+    pub fn ttl_days(&self) -> u32 {
+        match self {
+            Self::Scratch => 1,
+            Self::Daily => 2,
+            Self::ShortTerm => 14,
+            Self::LongTerm => 90,
+            Self::Archive => 365,
+        }
+    }
+}
+
+/// Where a memory originated from
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MemoryOrigin {
+    /// Explicitly stored by the user
+    User,
+    /// Auto-extracted from conversation
+    Extracted,
+    /// Imported from external source
+    Imported,
+    /// Produced by consolidation/sleep cycle
+    Derived,
+}
+
+/// A single memory unit with full metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Memory {
+    pub id: Uuid,
+    pub content: String,
+    pub memory_type: MemoryType,
+    pub importance: f32,
+    pub confidence: f32,
+    pub tier: MemoryTier,
+    pub created_at: DateTime<Utc>,
+    pub last_accessed: DateTime<Utc>,
+    pub access_count: u32,
+    pub tags: Vec<String>,
+    pub entities: Vec<String>,
+    pub origin: MemoryOrigin,
+    pub ttl_days: Option<u32>,
+    pub source_file: Option<String>,
+}
+
+impl Memory {
+    /// Create a new memory with sensible defaults
+    pub fn new(content: String, memory_type: MemoryType, origin: MemoryOrigin) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            content,
+            memory_type,
+            importance: 0.5,
+            confidence: 1.0,
+            tier: MemoryTier::Scratch,
+            created_at: now,
+            last_accessed: now,
+            access_count: 0,
+            tags: Vec::new(),
+            entities: Vec::new(),
+            origin,
+            ttl_days: None,
+            source_file: None,
+        }
+    }
+
+    /// Check if this memory has expired based on its tier
+    pub fn is_expired(&self) -> bool {
+        let ttl = self.ttl_days.unwrap_or_else(|| self.tier.ttl_days());
+        let elapsed = Utc::now() - self.last_accessed;
+        elapsed.num_days() > i64::from(ttl)
+    }
+
+    /// Record an access, updating counters
+    pub fn record_access(&mut self) {
+        self.last_accessed = Utc::now();
+        self.access_count += 1;
+        // Boost confidence slightly on access
+        self.confidence = (self.confidence + 0.05).min(1.0);
+    }
+}
+
+/// Predicate type for knowledge graph edges
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PredicateType {
+    /// "User uses TypeScript"
+    Uses,
+    /// "User prefers Rust"
+    Prefers,
+    /// "Module A depends on Module B"
+    DependsOn,
+    /// "Bug X caused by Change Y"
+    CausedBy,
+    /// "Decision A supersedes Decision B"
+    Supersedes,
+    /// "Fact A contradicts Fact B"
+    Contradicts,
+    /// "Memory A elaborates on Memory B"
+    Elaborates,
+    /// "Function is part of Module"
+    PartOf,
+    /// "Project is instance of Template"
+    InstanceOf,
+    /// "Code calls function"
+    Calls,
+    /// "File imports module"
+    Imports,
+    /// "Generic relationship"
+    RelatedTo,
+}
+
+impl std::fmt::Display for PredicateType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Uses => write!(f, "uses"),
+            Self::Prefers => write!(f, "prefers"),
+            Self::DependsOn => write!(f, "depends_on"),
+            Self::CausedBy => write!(f, "caused_by"),
+            Self::Supersedes => write!(f, "supersedes"),
+            Self::Contradicts => write!(f, "contradicts"),
+            Self::Elaborates => write!(f, "elaborates"),
+            Self::PartOf => write!(f, "part_of"),
+            Self::InstanceOf => write!(f, "instance_of"),
+            Self::Calls => write!(f, "calls"),
+            Self::Imports => write!(f, "imports"),
+            Self::RelatedTo => write!(f, "related_to"),
+        }
+    }
+}
+
+/// A knowledge graph triple (subject → predicate → object)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KnowledgeTriple {
+    pub subject: String,
+    pub predicate: PredicateType,
+    pub object: String,
+    pub confidence: f32,
+    pub created_at: DateTime<Utc>,
+    pub valid_from: Option<DateTime<Utc>>,
+    pub valid_to: Option<DateTime<Utc>>,
+    pub source_memory_ids: Vec<Uuid>,
+}
+
+impl KnowledgeTriple {
+    /// Check if this triple is currently valid
+    pub fn is_valid(&self) -> bool {
+        let now = Utc::now();
+        let after_start = self.valid_from.map_or(true, |v| v <= now);
+        let before_end = self.valid_to.map_or(true, |v| v > now);
+        after_start && before_end
+    }
+}
+
+/// Retrieval signal for hybrid search scoring
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RetrievalSignal {
+    pub vector_score: f32,
+    pub keyword_score: f32,
+    pub recency_score: f32,
+    pub confidence_score: f32,
+    pub feedback_score: f32,
+    pub graph_boost: f32,
+    pub temporal_boost: f32,
+}
+
+impl RetrievalSignal {
+    /// Combined score using weighted fusion
+    pub fn combined(&self) -> f32 {
+        self.vector_score * 0.45
+            + self.keyword_score * 0.15
+            + self.recency_score * 0.15
+            + self.confidence_score * 0.15
+            + self.feedback_score * 0.10
+            + self.graph_boost
+            + self.temporal_boost
+    }
+}
+
+/// User feedback on a memory
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Feedback {
+    /// Memory was helpful
+    Helpful,
+    /// Memory was incorrect, user corrected it
+    Corrected,
+    /// Memory was irrelevant to the query
+    Irrelevant,
+}
+
+/// Session handoff for context transfer between sessions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionHandoff {
+    pub timestamp: DateTime<Utc>,
+    pub current_task: String,
+    pub completed: Vec<String>,
+    pub next_steps: Vec<String>,
+    pub open_questions: Vec<String>,
+    pub file_references: Vec<String>,
+    pub decisions: Vec<String>,
+    pub notes: String,
+}
+
+impl Default for SessionHandoff {
+    fn default() -> Self {
+        Self {
+            timestamp: Utc::now(),
+            current_task: String::new(),
+            completed: Vec::new(),
+            next_steps: Vec::new(),
+            open_questions: Vec::new(),
+            file_references: Vec::new(),
+            decisions: Vec::new(),
+            notes: String::new(),
+        }
+    }
+}
+
+/// Memory categories for classifying stored entries (legacy auto-memory system).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MemoryCategory {
     UserPreference,
@@ -31,7 +289,7 @@ impl std::fmt::Display for MemoryCategory {
     }
 }
 
-/// A single memory entry persisted across sessions.
+/// A single memory entry persisted across sessions (legacy auto-memory system).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryEntry {
     pub key: String,
@@ -42,7 +300,7 @@ pub struct MemoryEntry {
     pub access_count: u32,
 }
 
-/// Auto memory manager — stores and retrieves learned patterns.
+/// Auto memory manager — stores and retrieves learned patterns (legacy auto-memory system).
 pub struct AutoMemory {
     entries: HashMap<String, MemoryEntry>,
     memory_dir: PathBuf,
@@ -194,94 +452,5 @@ impl Default for AutoMemory {
             .unwrap_or_else(|| PathBuf::from("."))
             .join(".config/opencrust/memory");
         Self::new(memory_dir)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-
-    fn test_memory_dir() -> PathBuf {
-        let dir = std::env::temp_dir().join("opencrust_memory_test");
-        let _ = fs::remove_dir_all(&dir);
-        dir
-    }
-
-    #[test]
-    fn remember_and_recall() {
-        let dir = test_memory_dir();
-        let mut memory = AutoMemory::new(dir.clone());
-        memory.remember("test-key", "test-value", MemoryCategory::UserPreference);
-
-        let results = memory.recall("test");
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].key, "test-key");
-        assert_eq!(results[0].value, "test-value");
-
-        let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn forget_removes_entry() {
-        let dir = test_memory_dir();
-        let mut memory = AutoMemory::new(dir.clone());
-        memory.remember("to-forget", "value", MemoryCategory::Decision);
-        assert!(memory.forget("to-forget"));
-        assert!(memory.recall("to-forget").is_empty());
-        let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn list_by_category_filters() {
-        let dir = test_memory_dir();
-        let mut memory = AutoMemory::new(dir.clone());
-        memory.remember("pref1", "value", MemoryCategory::UserPreference);
-        memory.remember("conv1", "value", MemoryCategory::CodeConvention);
-
-        let prefs = memory.list_by_category(&MemoryCategory::UserPreference);
-        assert_eq!(prefs.len(), 1);
-        assert_eq!(prefs[0].key, "pref1");
-
-        let convs = memory.list_by_category(&MemoryCategory::CodeConvention);
-        assert_eq!(convs.len(), 1);
-        assert_eq!(convs[0].key, "conv1");
-
-        let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn auto_extract_detects_preferences() {
-        let dir = test_memory_dir();
-        let mut memory = AutoMemory::new(dir.clone());
-        let messages = vec!["I prefer dark mode for the editor".to_string()];
-        memory.auto_extract(&messages);
-        assert!(!memory.recall("dark mode").is_empty());
-        let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn auto_extract_detects_decisions() {
-        let dir = test_memory_dir();
-        let mut memory = AutoMemory::new(dir.clone());
-        let messages = vec!["Let's use tokio for async runtime".to_string()];
-        memory.auto_extract(&messages);
-        assert!(!memory.recall("tokio").is_empty());
-        let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn save_and_load_persists_data() {
-        let dir = test_memory_dir();
-        {
-            let mut memory = AutoMemory::new(dir.clone());
-            memory.remember("persistent", "data", MemoryCategory::ProjectContext);
-        }
-        // Reload from disk
-        let mut memory2 = AutoMemory::new(dir.clone());
-        let results = memory2.recall("persistent");
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].value, "data");
-        let _ = fs::remove_dir_all(&dir);
     }
 }

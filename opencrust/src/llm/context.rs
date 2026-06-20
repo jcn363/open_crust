@@ -11,39 +11,40 @@ impl LlmClient {
     /// pinned files, and active goal.
     pub(crate) async fn build_system_prompt(&self) -> String {
         let rules_content = rules::load_rules(&self.config.instructions);
-        let mut system_prompt = format!(
+        let mut builder = ContextBuilder::new(MAX_CONTEXT_TOKENS);
+
+        // System prompt + rules as first item
+        let system_and_rules = format!(
             "{}\n\n## Instructions and Rules\n{}",
             BASE_SYSTEM_PROMPT, rules_content
         );
+        builder.push(system_and_rules);
 
-        // Skills integration
+        // Skills integration as second item
         {
             let skills = self.skill_manager.lock().await;
             let available_skills = skills.get_available_skills_xml();
-            system_prompt.push_str("\n\n## Available Skills\n");
-            system_prompt.push_str(&available_skills);
+            builder.push(format!("## Available Skills\n{}", available_skills));
         }
 
-        // Pinned files integration
+        // Pinned files integration as individual items
         {
             let pinned = self.pinned_files.lock().await;
             if !pinned.is_empty() {
-                system_prompt.push_str("\n\n## Pinned Context\n");
                 for path in pinned.iter() {
                     if let Ok(content) = std::fs::read_to_string(path) {
-                        system_prompt
-                            .push_str(&format!("<file path=\"{}\">\n{}\n</file>\n", path, content));
+                        builder.push(format!("<file path=\"{}\">\n{}\n</file>", path, content));
                     }
                 }
             }
         }
 
-        // Goal integration
+        // Goal integration if present
         if let Some(goal_prompt) = self.get_goal_prompt() {
-            system_prompt.push_str(&goal_prompt);
+            builder.push(goal_prompt);
         }
 
-        system_prompt
+        builder.build()
     }
 
     /// Auto-summarize context when approaching budget threshold.
@@ -152,6 +153,17 @@ impl LlmClient {
             Err(_) => "Previous conversation context (summarized due to length)".to_string(),
         };
 
+        // Truncate summary to MAX_CONTEXT_ITEM_TOKENS if needed
+        let summary_tokens = estimate_tokens(&summary);
+        let summary = if summary_tokens > MAX_CONTEXT_ITEM_TOKENS {
+            // Truncate by character proportion to fit token budget
+            let char_budget = (summary.len() * MAX_CONTEXT_ITEM_TOKENS) / summary_tokens;
+            let truncated: String = summary.chars().take(char_budget).collect();
+            format!("{}... [truncated]", truncated)
+        } else {
+            summary
+        };
+
         let mut new_history = Vec::new();
         if let Some(sp) = system_prompt {
             new_history.push(sp);
@@ -165,5 +177,131 @@ impl LlmClient {
         *messages_history = new_history;
 
         (true, Some(summary))
+    }
+}
+
+// ============================================================================
+// Context Size Bounds
+// ============================================================================
+
+/// Maximum tokens for a single context item
+pub const MAX_CONTEXT_ITEM_TOKENS: usize = 10_000;
+
+/// Maximum total context tokens
+pub const MAX_CONTEXT_TOKENS: usize = 128_000;
+
+/// Trait for context items that can be bounded
+pub trait ContextualItem {
+    /// Estimate token count for this item
+    fn estimate_tokens(&self) -> usize;
+
+    /// Truncate this item to fit within token budget
+    fn truncate_to(&self, max_tokens: usize) -> Self;
+}
+
+/// Context builder that enforces size bounds
+pub struct ContextBuilder {
+    items: Vec<String>,
+    total_tokens: usize,
+    max_tokens: usize,
+}
+
+impl ContextBuilder {
+    pub fn new(max_tokens: usize) -> Self {
+        Self {
+            items: Vec::new(),
+            total_tokens: 0,
+            max_tokens,
+        }
+    }
+
+    /// Add a context item, evicting oldest if over budget
+    pub fn push(&mut self, item: String) {
+        let estimated = estimate_tokens(&item);
+        self.items.push(item);
+        self.total_tokens += estimated;
+
+        // Evict from front if over budget
+        while self.total_tokens > self.max_tokens && self.items.len() > 1 {
+            let removed = self.items.remove(0);
+            self.total_tokens -= estimate_tokens(&removed);
+        }
+    }
+
+    /// Get the final context string
+    pub fn build(&self) -> String {
+        self.items.join("\n\n")
+    }
+
+    /// Current token count
+    pub fn token_count(&self) -> usize {
+        self.total_tokens
+    }
+
+    /// Number of items
+    pub fn item_count(&self) -> usize {
+        self.items.len()
+    }
+}
+
+/// Rough token estimate (words / 0.75)
+pub fn estimate_tokens(text: &str) -> usize {
+    (text.split_whitespace().count() as f32 / 0.75) as usize
+}
+
+/// Estimate total tokens across all messages in a conversation history.
+pub(crate) fn estimate_message_tokens(messages: &[Value]) -> usize {
+    messages
+        .iter()
+        .filter_map(|m| m.get("content").and_then(|c| c.as_str()))
+        .map(estimate_tokens)
+        .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_estimate_tokens() {
+        assert!(estimate_tokens("hello world") > 0);
+    }
+
+    #[test]
+    fn test_context_builder_eviction() {
+        let mut builder = ContextBuilder::new(100);
+        // Add many items to trigger eviction
+        for i in 0..20 {
+            builder.push(format!("Item {} with some text content here", i));
+        }
+        assert!(builder.token_count() <= 100);
+    }
+
+    #[test]
+    fn test_estimate_message_tokens() {
+        let messages = vec![
+            json!({"role": "system", "content": "You are a helpful assistant"}),
+            json!({"role": "user", "content": "Hello world"}),
+            json!({"role": "assistant", "content": "Hi there! How can I help?"}),
+        ];
+        let tokens = estimate_message_tokens(&messages);
+        assert!(tokens > 0);
+        // Rough check: "You are a helpful assistant" ~ 5 words / 0.75 = ~7
+        // "Hello world" ~ 2 words / 0.75 = ~3
+        // "Hi there! How can I help?" ~ 6 words / 0.75 = ~8
+        // Total ~ 18
+        assert!(tokens >= 15 && tokens <= 25);
+    }
+
+    #[test]
+    fn test_context_builder_max_tokens() {
+        let mut builder = ContextBuilder::new(50);
+        builder.push("First item with some content".to_string());
+        builder.push("Second item with more content here".to_string());
+        builder.push("Third item".to_string());
+        // Total should not exceed max_tokens (50)
+        assert!(builder.token_count() <= 50);
+        // Should have at least 1 item (the most recent)
+        assert!(builder.item_count() >= 1);
     }
 }

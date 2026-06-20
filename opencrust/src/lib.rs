@@ -18,6 +18,7 @@ pub mod context;
 pub mod custom_commands;
 pub mod custom_tools;
 pub mod desktop;
+pub mod error;
 pub mod event_loop;
 pub mod events;
 pub mod formatters;
@@ -61,6 +62,7 @@ pub use event_loop::run_tui;
 pub use manager_init::{apply_cinnamon_theme, init_managers, spawn_model_refresh};
 pub use startup::run_multi_agent;
 
+use crate::error::{OpenCrustError, Result};
 use std::sync::Arc;
 
 /// Run OpenCrust in headless mode (no TUI, just prompt and response)
@@ -75,19 +77,17 @@ pub async fn run_headless(
     lsp_manager: Arc<tokio::sync::Mutex<lsp::LspManager>>,
     skill_manager: Arc<tokio::sync::Mutex<skills::SkillManager>>,
     custom_tool_manager: Arc<tokio::sync::Mutex<custom_tools::CustomToolManager>>,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<()> {
     // Get the prompt from argument or file
     let prompt_text = if let Some(file_path) = file {
-        std::fs::read_to_string(file_path)
-            .map_err(|e| format!("Failed to read prompt file '{}': {}", file_path, e))?
+        std::fs::read_to_string(file_path).map_err(|e| OpenCrustError::Io(e))?
     } else {
         prompt.to_string()
     };
 
     // Change working directory if --project is specified
     if let Some(dir) = project {
-        std::env::set_current_dir(dir)
-            .map_err(|e| format!("Failed to change to directory '{}': {}", dir, e))?;
+        std::env::set_current_dir(dir).map_err(|e| OpenCrustError::Io(e))?;
         eprintln!("Working directory: {}", std::env::current_dir()?.display());
     }
 
@@ -96,7 +96,9 @@ pub async fn run_headless(
 
     // Override provider if specified
     if let Some(provider_str) = provider {
-        config.provider = provider_str.parse()?;
+        config.provider = provider_str.parse().map_err(|e: String| {
+            OpenCrustError::Parse(format!("Invalid provider '{}': {}", provider_str, e))
+        })?;
     }
 
     // Override model if specified
@@ -122,7 +124,7 @@ pub async fn run_headless(
         }
         Err(e) => {
             eprintln!("Error: {}", e);
-            Err(e)
+            Err(OpenCrustError::Llm(e.to_string()))
         }
     }
 }
